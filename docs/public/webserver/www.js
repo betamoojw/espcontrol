@@ -1,3 +1,11 @@
+// Load the original ESPHome webserver v3 React app
+(function () {
+  var s = document.createElement("script");
+  s.src = "https://oi.esphome.io/v3/www.js";
+  document.head.appendChild(s);
+})();
+
+// Screen preview
 (function () {
   var CSS =
     ".sp-wrap{display:flex;justify-content:center;padding:24px 16px 8px}" +
