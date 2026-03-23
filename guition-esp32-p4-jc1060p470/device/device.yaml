@@ -107,8 +107,8 @@ light:
   - platform: monochromatic
     output: gpio_backlight_pwm
     name: Display Backlight
-    icon: mdi:lightbulb-on
     id: display_backlight
+    internal: true
     restore_mode: ALWAYS_ON
     default_transition_length: 0s
     gamma_correct: 1.0

@@ -105,8 +105,8 @@ esphome:
             bool indoor_on  = id(indoor_temp_enable).state;
             bool outdoor_on = id(outdoor_temp_enable).state;
 
-            if (!indoor_on && !outdoor_on) {
-              lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            if (indoor_on || outdoor_on) {
+              lv_obj_clear_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
             }
 
             // --- Indoor temperature subscription ---

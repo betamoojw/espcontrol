@@ -15,6 +15,14 @@ switch:
     icon: "mdi:home-thermometer"
     web_server:
       sorting_group_id: sg_display
+    on_turn_on:
+      - lambda: 'lv_obj_clear_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);'
+    on_turn_off:
+      - if:
+          condition:
+            switch.is_off: outdoor_temp_enable
+          then:
+            - lambda: 'lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);'
 
   - platform: template
     name: "Display: Outdoor Temp"
@@ -25,6 +33,14 @@ switch:
     icon: "mdi:sun-thermometer"
     web_server:
       sorting_group_id: sg_display
+    on_turn_on:
+      - lambda: 'lv_obj_clear_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);'
+    on_turn_off:
+      - if:
+          condition:
+            switch.is_off: indoor_temp_enable
+          then:
+            - lambda: 'lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);'
 
 text:
   - platform: template
