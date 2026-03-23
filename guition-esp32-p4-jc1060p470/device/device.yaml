@@ -51,6 +51,7 @@ ota:
 # Enable Home Assistant API
 api:
   reboot_timeout: 0s
+  homeassistant_states: true
 
 # Enable logging
 logger:

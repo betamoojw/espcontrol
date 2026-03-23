@@ -35,7 +35,7 @@ esphome:
               }
 
               // Set icon based on selection or auto-detect from entity domain
-              std::string icon_choice = id(button_1_icon).state;
+              std::string icon_choice = id(button_1_icon).current_option();
               if (icon_choice == "Auto") {
                 std::string domain = entity_id.substr(0, entity_id.find('.'));
                 const char *icon_text = "\U000F0493"; // default: cog
@@ -144,7 +144,7 @@ esphome:
                 presence_id, {},
                 [](const std::string &state) {
                   if (state == "on") {
-                    lv_display_trigger_activity(NULL);
+                    lv_disp_trig_activity(NULL);
                     id(display_backlight).turn_on().perform();
                     id(screensaver_idle_check).execute();
                   }
