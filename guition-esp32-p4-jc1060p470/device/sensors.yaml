@@ -245,13 +245,21 @@ esphome:
                 }
                 lv_label_set_text(icon_lbl, icon_codepoints[icon_idx]);
 
+                // Set unit label text if configured
+                if (has_sensor[idx - 1]) {
+                  std::string unit_str = s.sensor_unit->state;
+                  if (!unit_str.empty()) {
+                    lv_label_set_text(s.unit_lbl, unit_str.c_str());
+                  }
+                }
+
                 // Checked state subscription (with icon/sensor swap when sensor configured)
                 lv_obj_t *btn_ptr = s.btn;
-                lv_obj_t *sensor_lbl = s.sensor_lbl;
+                lv_obj_t *sensor_ctr = s.sensor_container;
                 bool *slot_has_sensor = &has_sensor[idx - 1];
                 api::global_api_server->subscribe_home_assistant_state(
                   entity_id, {},
-                  std::function<void(const std::string &)>([btn_ptr, icon_lbl, sensor_lbl, slot_has_sensor](const std::string &state) {
+                  std::function<void(const std::string &)>([btn_ptr, icon_lbl, sensor_ctr, slot_has_sensor](const std::string &state) {
                     bool is_on = state == "on" || state == "open" || state == "playing" ||
                                  state == "home" || state == "unlocked";
                     if (is_on) {
@@ -262,10 +270,10 @@ esphome:
                     if (*slot_has_sensor) {
                       if (is_on) {
                         lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
-                        lv_obj_clear_flag(sensor_lbl, LV_OBJ_FLAG_HIDDEN);
+                        lv_obj_clear_flag(sensor_ctr, LV_OBJ_FLAG_HIDDEN);
                       } else {
                         lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
-                        lv_obj_add_flag(sensor_lbl, LV_OBJ_FLAG_HIDDEN);
+                        lv_obj_add_flag(sensor_ctr, LV_OBJ_FLAG_HIDDEN);
                       }
                     }
                   })
@@ -273,6 +281,7 @@ esphome:
 
                 // Sensor value subscription
                 if (has_sensor[idx - 1]) {
+                  lv_obj_t *sensor_lbl = s.sensor_lbl;
                   api::global_api_server->subscribe_home_assistant_state(
                     sensor_id, {},
                     std::function<void(const std::string &)>([sensor_lbl](const std::string &state) {
