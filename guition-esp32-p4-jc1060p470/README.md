@@ -2,13 +2,13 @@
 
 7-inch 1024x600 touch LCD panel with ESP32-P4, running ESPHome and LVGL for Home Assistant control. Up to 20 configurable buttons toggle any Home Assistant entity, with a live clock, indoor/outdoor temperature display, screensaver, and over-the-air firmware updates. Everything is configured through the built-in web UI — no YAML editing required after the initial flash.
 
-![Guition ESP32-P4 JC1060P470](../images/guition-esp32-p4-jc1060p470.jpg)
+**Documentation:** [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/)
 
 ## Features
 
 - **20 button slots** — toggle any Home Assistant entity (lights, switches, fans, locks, covers, media players, etc.)
 - **Drag-and-drop button ordering** — rearrange buttons from the web UI
-- **19 built-in icons** plus Auto mode that picks an icon based on the entity domain
+- **Material Design icon set** (large dropdown in the web UI) plus **Auto** mode that picks an icon from the entity domain when possible
 - **Custom labels** — or leave blank to use the entity's friendly name from Home Assistant
 - **Configurable on/off button colours**
 - **Indoor and outdoor temperature** — displayed in the top bar from any HA sensor entity
@@ -53,11 +53,7 @@ The built-in web interface has three tabs:
 
 ## Icons
 
-Buttons support 19 icons from Material Design Icons (v7.4.47):
-
-Lightbulb, Power Plug, Fan, Lock, Garage, Blinds Open, Blinds Closed, Thermometer, Speaker, Television, Camera, Motion Sensor, Door, Window, Water Heater, Air Conditioner, Battery, LED Strip, Power
-
-Set a button's icon to **Auto** and it will be chosen based on the entity domain (e.g. `light.*` → Lightbulb, `fan.*` → Fan, `lock.*` → Lock).
+Per-button icons use **Material Design Icons** (v7.4.47). The full list is defined in [`config/button_template.yaml`](config/button_template.yaml); see the [Buttons & Icons](https://jtenniswood.github.io/espcontrol/buttons-and-icons) page for **Auto** domain mapping.
 
 ## Firmware Updates
 
