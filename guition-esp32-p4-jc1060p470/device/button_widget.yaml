@@ -1,0 +1,27 @@
+button:
+  height: $button_height
+  width: $button_width
+  id: button_${num}
+  hidden: true
+  styles: control
+  widgets:
+    - label:
+        text_font: $icon_font
+        align: top_left
+        id: button_${num}_icon_label
+        text: $icon_cog
+    - label:
+        align: bottom_left
+        id: button_${num}_text_label
+        text: "Configure"
+  on_press:
+    - if:
+        condition:
+          lambda: 'return !id(button_${num}_entity).state.empty();'
+        then:
+          - homeassistant.action:
+              action: homeassistant.toggle
+              data_template:
+                entity_id: "{{ entity_id }}"
+              variables:
+                entity_id: !lambda 'return id(button_${num}_entity).state;'

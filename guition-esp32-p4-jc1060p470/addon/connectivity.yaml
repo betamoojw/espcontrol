@@ -18,7 +18,7 @@ wifi:
     - delay: 800ms
     - if:
         condition:
-          lambda: 'return !id(button_1_entity).state.empty();'
+          lambda: 'return !id(button_order).state.empty();'
         then:
           - lvgl.page.show: main_page
           - lvgl.widget.update:

@@ -1,8 +1,9 @@
 # =============================================================================
 # SENSORS - Dynamic HA entity subscriptions
 # =============================================================================
-# On boot, reads configured entity_ids from text components and dynamically
-# subscribes to Home Assistant state updates. Callbacks update LVGL widgets.
+# On boot, parses button_order to determine which buttons are active,
+# shows/positions them on the LVGL display, and subscribes to Home
+# Assistant state updates. Temperature and presence subscriptions follow.
 # =============================================================================
 
 globals:
@@ -18,90 +19,155 @@ esphome:
     - priority: -100
       then:
         - lambda: |-
+            // --- Button slot descriptor ---
+            struct BtnSlot {
+              esphome::template_::TemplateTextComponent *entity;
+              esphome::template_::TemplateTextComponent *label;
+              esphome::template_::TemplateSelectComponent *icon;
+              lv_obj_t *btn;
+              lv_obj_t *icon_lbl;
+              lv_obj_t *text_lbl;
+            };
+
+            BtnSlot slots[] = {
+              { id(button_1_entity),  id(button_1_label),  id(button_1_icon),  id(button_1),  id(button_1_icon_label),  id(button_1_text_label) },
+              { id(button_2_entity),  id(button_2_label),  id(button_2_icon),  id(button_2),  id(button_2_icon_label),  id(button_2_text_label) },
+              { id(button_3_entity),  id(button_3_label),  id(button_3_icon),  id(button_3),  id(button_3_icon_label),  id(button_3_text_label) },
+              { id(button_4_entity),  id(button_4_label),  id(button_4_icon),  id(button_4),  id(button_4_icon_label),  id(button_4_text_label) },
+              { id(button_5_entity),  id(button_5_label),  id(button_5_icon),  id(button_5),  id(button_5_icon_label),  id(button_5_text_label) },
+              { id(button_6_entity),  id(button_6_label),  id(button_6_icon),  id(button_6),  id(button_6_icon_label),  id(button_6_text_label) },
+              { id(button_7_entity),  id(button_7_label),  id(button_7_icon),  id(button_7),  id(button_7_icon_label),  id(button_7_text_label) },
+              { id(button_8_entity),  id(button_8_label),  id(button_8_icon),  id(button_8),  id(button_8_icon_label),  id(button_8_text_label) },
+              { id(button_9_entity),  id(button_9_label),  id(button_9_icon),  id(button_9),  id(button_9_icon_label),  id(button_9_text_label) },
+              { id(button_10_entity), id(button_10_label), id(button_10_icon), id(button_10), id(button_10_icon_label), id(button_10_text_label) },
+              { id(button_11_entity), id(button_11_label), id(button_11_icon), id(button_11), id(button_11_icon_label), id(button_11_text_label) },
+              { id(button_12_entity), id(button_12_label), id(button_12_icon), id(button_12), id(button_12_icon_label), id(button_12_text_label) },
+              { id(button_13_entity), id(button_13_label), id(button_13_icon), id(button_13), id(button_13_icon_label), id(button_13_text_label) },
+              { id(button_14_entity), id(button_14_label), id(button_14_icon), id(button_14), id(button_14_icon_label), id(button_14_text_label) },
+              { id(button_15_entity), id(button_15_label), id(button_15_icon), id(button_15), id(button_15_icon_label), id(button_15_text_label) },
+              { id(button_16_entity), id(button_16_label), id(button_16_icon), id(button_16), id(button_16_icon_label), id(button_16_text_label) },
+              { id(button_17_entity), id(button_17_label), id(button_17_icon), id(button_17), id(button_17_icon_label), id(button_17_text_label) },
+              { id(button_18_entity), id(button_18_label), id(button_18_icon), id(button_18), id(button_18_icon_label), id(button_18_text_label) },
+              { id(button_19_entity), id(button_19_label), id(button_19_icon), id(button_19), id(button_19_icon_label), id(button_19_text_label) },
+              { id(button_20_entity), id(button_20_label), id(button_20_icon), id(button_20), id(button_20_icon_label), id(button_20_text_label) },
+            };
+            constexpr int NUM_SLOTS = 20;
+
+            // --- Parse button_order (comma-separated 1-indexed slot numbers) ---
+            std::string order_str = id(button_order).state;
+            std::vector<int> order;
+            if (!order_str.empty()) {
+              size_t start = 0, comma;
+              while ((comma = order_str.find(',', start)) != std::string::npos) {
+                int v = atoi(order_str.substr(start, comma - start).c_str());
+                if (v >= 1 && v <= NUM_SLOTS) order.push_back(v);
+                start = comma + 1;
+              }
+              int v = atoi(order_str.substr(start).c_str());
+              if (v >= 1 && v <= NUM_SLOTS) order.push_back(v);
+            }
+
             // --- Universal button colors ---
             std::string on_hex = id(button_on_color).state;
             std::string off_hex = id(button_off_color).state;
-            lv_obj_t *buttons[] = { id(button_1) };
-            for (auto *btn : buttons) {
-              if (on_hex.length() == 6) {
-                uint32_t on_val = strtoul(on_hex.c_str(), nullptr, 16);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(on_val), static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
-              }
-              if (off_hex.length() == 6) {
-                uint32_t off_val = strtoul(off_hex.c_str(), nullptr, 16);
-                lv_obj_set_style_bg_color(btn, lv_color_hex(off_val), static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
-              }
+            uint32_t on_val = 0, off_val = 0;
+            bool has_on = on_hex.length() == 6;
+            bool has_off = off_hex.length() == 6;
+            if (has_on) on_val = strtoul(on_hex.c_str(), nullptr, 16);
+            if (has_off) off_val = strtoul(off_hex.c_str(), nullptr, 16);
+
+            // --- Hide all buttons, then show active ones in order ---
+            for (int i = 0; i < NUM_SLOTS; i++) {
+              lv_obj_add_flag(slots[i].btn, LV_OBJ_FLAG_HIDDEN);
             }
 
-            // --- Button 1: entity state subscription ---
-            std::string entity_id = id(button_1_entity).state;
-            if (!entity_id.empty()) {
-              // Set custom label if provided, otherwise subscribe to friendly_name
-              std::string custom_label = id(button_1_label).state;
-              if (!custom_label.empty()) {
-                lv_label_set_text(id(button_1_text_label), custom_label.c_str());
-              } else {
+            static const char* icon_codepoints[] = {
+              "\U000F0493",  //  0: Auto (cog fallback)
+              "\U000F0335",  //  1: Lightbulb
+              "\U000F0654",  //  2: Power Plug
+              "\U000F0210",  //  3: Fan
+              "\U000F033E",  //  4: Lock
+              "\U000F0372",  //  5: Garage
+              "\U000F1011",  //  6: Blinds Open
+              "\U000F00AC",  //  7: Blinds Closed
+              "\U000F050F",  //  8: Thermometer
+              "\U000F04C3",  //  9: Speaker
+              "\U000F0502",  // 10: Television
+              "\U000F0213",  // 11: Camera
+              "\U000F0D91",  // 12: Motion Sensor
+              "\U000F081A",  // 13: Door
+              "\U000F111C",  // 14: Window
+              "\U000F0F92",  // 15: Water Heater
+              "\U000F0D43",  // 16: Air Conditioner
+              "\U000F089E",  // 17: Battery
+              "\U000F07D6",  // 18: LED Strip
+              "\U000F0425",  // 19: Power
+            };
+
+            int pos = 0;
+            for (int idx : order) {
+              auto &s = slots[idx - 1];
+              lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
+              lv_obj_move_to_index(s.btn, pos++);
+
+              // Apply colors
+              if (has_on) {
+                lv_obj_set_style_bg_color(s.btn, lv_color_hex(on_val),
+                  static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+              }
+              if (has_off) {
+                lv_obj_set_style_bg_color(s.btn, lv_color_hex(off_val),
+                  static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
+              }
+
+              // Subscribe to HA entity state
+              std::string entity_id = s.entity->state;
+              if (!entity_id.empty()) {
+                // Label: custom or friendly_name fallback
+                lv_obj_t *text_lbl = s.text_lbl;
+                std::string custom_label = s.label->state;
+                if (!custom_label.empty()) {
+                  lv_label_set_text(text_lbl, custom_label.c_str());
+                } else {
+                  api::global_api_server->subscribe_home_assistant_state(
+                    entity_id, std::string("friendly_name"),
+                    std::function<void(const std::string &)>([text_lbl](const std::string &name) {
+                      lv_label_set_text(text_lbl, name.c_str());
+                    })
+                  );
+                }
+
+                // Icon
+                lv_obj_t *icon_lbl = s.icon_lbl;
+                size_t icon_idx = s.icon->active_index().value_or(0);
+                if (icon_idx == 0) {
+                  std::string domain = entity_id.substr(0, entity_id.find('.'));
+                  if (domain == "light")              icon_idx = 1;
+                  else if (domain == "switch")        icon_idx = 2;
+                  else if (domain == "fan")           icon_idx = 3;
+                  else if (domain == "lock")          icon_idx = 4;
+                  else if (domain == "cover")         icon_idx = 6;
+                  else if (domain == "climate")       icon_idx = 16;
+                  else if (domain == "media_player")  icon_idx = 9;
+                  else if (domain == "camera")        icon_idx = 11;
+                  else if (domain == "binary_sensor") icon_idx = 12;
+                }
+                lv_label_set_text(icon_lbl, icon_codepoints[icon_idx]);
+
+                // Checked state subscription
+                lv_obj_t *btn_ptr = s.btn;
                 api::global_api_server->subscribe_home_assistant_state(
-                  entity_id, std::string("friendly_name"),
-                  std::function<void(const std::string &)>([](const std::string &name) {
-                    lv_label_set_text(id(button_1_text_label), name.c_str());
+                  entity_id, {},
+                  std::function<void(const std::string &)>([btn_ptr](const std::string &state) {
+                    if (state == "on" || state == "open" || state == "playing" ||
+                        state == "home" || state == "unlocked") {
+                      lv_obj_add_state(btn_ptr, LV_STATE_CHECKED);
+                    } else {
+                      lv_obj_clear_state(btn_ptr, LV_STATE_CHECKED);
+                    }
                   })
                 );
               }
-
-              // Icon codepoints indexed to match "Button: Icon" select options
-              static const char* icon_codepoints[] = {
-                "\U000F0493",  //  0: Auto (cog fallback)
-                "\U000F0335",  //  1: Lightbulb
-                "\U000F0654",  //  2: Power Plug
-                "\U000F0210",  //  3: Fan
-                "\U000F033E",  //  4: Lock
-                "\U000F0372",  //  5: Garage
-                "\U000F1011",  //  6: Blinds Open
-                "\U000F00AC",  //  7: Blinds Closed
-                "\U000F050F",  //  8: Thermometer
-                "\U000F04C3",  //  9: Speaker
-                "\U000F0502",  // 10: Television
-                "\U000F0213",  // 11: Camera
-                "\U000F0D91",  // 12: Motion Sensor
-                "\U000F081A",  // 13: Door
-                "\U000F111C",  // 14: Window
-                "\U000F0F92",  // 15: Water Heater
-                "\U000F0D43",  // 16: Air Conditioner
-                "\U000F089E",  // 17: Battery
-                "\U000F07D6",  // 18: LED Strip
-                "\U000F0425",  // 19: Power
-              };
-
-              size_t i = id(button_1_icon).active_index().value_or(0);
-
-              if (i == 0) {
-                std::string domain = entity_id.substr(0, entity_id.find('.'));
-                if (domain == "light")              i = 1;
-                else if (domain == "switch")        i = 2;
-                else if (domain == "fan")           i = 3;
-                else if (domain == "lock")          i = 4;
-                else if (domain == "cover")         i = 6;
-                else if (domain == "climate")       i = 16;
-                else if (domain == "media_player")  i = 9;
-                else if (domain == "camera")        i = 11;
-                else if (domain == "binary_sensor") i = 12;
-              }
-
-              lv_label_set_text(id(button_1_icon_label), icon_codepoints[i]);
-
-              // Subscribe to entity state for checked/unchecked
-              api::global_api_server->subscribe_home_assistant_state(
-                entity_id, {},
-                std::function<void(const std::string &)>([](const std::string &state) {
-                  if (state == "on" || state == "open" || state == "playing" ||
-                      state == "home" || state == "unlocked") {
-                    lv_obj_add_state(id(button_1), LV_STATE_CHECKED);
-                  } else {
-                    lv_obj_clear_state(id(button_1), LV_STATE_CHECKED);
-                  }
-                })
-              );
             }
 
             // --- Temperature display ---
