@@ -1,11 +1,11 @@
-// Load the original ESPHome webserver v3 React app
+// Load the original ESPHome webserver v3 React app (used for API only)
 (function () {
   var s = document.createElement("script");
   s.src = "https://oi.esphome.io/v3/www.js";
   document.head.appendChild(s);
 })();
 
-// Custom UI: two-page layout (Settings / Logs) with dynamic button management
+// Custom UI: three-page layout (Screen / Settings / Logs)
 (function () {
   var NUM_SLOTS = 20;
 
@@ -24,7 +24,7 @@
     Camera: "camera",
     "Motion Sensor": "motion-sensor",
     Door: "door",
-    "Window": "window-open-variant",
+    Window: "window-open-variant",
     "Water Heater": "water-boiler",
     "Air Conditioner": "air-filter",
     Battery: "battery",
@@ -45,37 +45,28 @@
   };
 
   var ICON_OPTIONS = [
-    "Auto",
-    "Lightbulb",
-    "Power Plug",
-    "Fan",
-    "Lock",
-    "Garage",
-    "Blinds Open",
-    "Blinds Closed",
-    "Thermometer",
-    "Speaker",
-    "Television",
-    "Camera",
-    "Motion Sensor",
-    "Door",
-    "Window",
-    "Water Heater",
-    "Air Conditioner",
-    "Battery",
-    "LED Strip",
-    "Power",
+    "Auto", "Lightbulb", "Power Plug", "Fan", "Lock", "Garage",
+    "Blinds Open", "Blinds Closed", "Thermometer", "Speaker", "Television",
+    "Camera", "Motion Sensor", "Door", "Window", "Water Heater",
+    "Air Conditioner", "Battery", "LED Strip", "Power",
   ];
 
   var CSS =
     "#sp-app{font-family:Roboto,sans-serif;color:#e0e0e0;max-width:600px;margin:0 auto}" +
+    "esp-app{display:none !important}" +
+
+    // Header
     ".sp-header{display:flex;background:#1a1a1a;border-bottom:1px solid #333;" +
     "position:sticky;top:0;z-index:100;border-radius:0 0 8px 8px;overflow:hidden}" +
     ".sp-tab{flex:1;padding:14px 0;text-align:center;color:#888;cursor:pointer;" +
     "font-size:14px;font-weight:500;border-bottom:2px solid transparent;transition:all .2s}" +
     ".sp-tab:hover{color:#bbb}" +
     ".sp-tab.active{color:#fff;border-bottom-color:#03a9f4}" +
+
+    // Pages
     ".sp-page{display:none}.sp-page.active{display:block}" +
+
+    // Screen preview
     ".sp-wrap{display:flex;justify-content:center;padding:20px 16px 4px}" +
     ".sp-screen{width:100%;max-width:480px;aspect-ratio:1024/600;background:#000;" +
     "border-radius:10px;position:relative;overflow:hidden;" +
@@ -89,6 +80,8 @@
     "color:#fff;font-size:1.95cqw;white-space:nowrap}" +
     ".sp-main{position:absolute;top:4.1cqw;left:0.49cqw;right:0.49cqw;bottom:0.49cqw;" +
     "display:flex;flex-wrap:wrap;align-content:flex-start;gap:0.98cqw;padding:0.49cqw}" +
+
+    // Preview buttons
     ".sp-btn{width:19cqw;height:12.7cqw;border-radius:0.78cqw;padding:1.37cqw;" +
     "display:flex;flex-direction:column;justify-content:space-between;" +
     "cursor:pointer;transition:all .2s;box-sizing:border-box;border:2px solid transparent}" +
@@ -97,14 +90,20 @@
     ".sp-btn-icon{font-size:4.69cqw;line-height:1;color:#fff}" +
     ".sp-btn-label{font-size:1.8cqw;line-height:1.2;color:#fff;" +
     "white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    ".sp-add-btn{border:2px dashed #444;background:transparent !important;" +
+    ".sp-add-btn{border:2px dashed rgba(255,255,255,.25);background:transparent !important;" +
     "display:flex;align-items:center;justify-content:center;cursor:pointer}" +
     ".sp-add-btn:hover{border-color:#03a9f4}" +
-    ".sp-add-icon{font-size:5cqw;color:#555}" +
+    ".sp-add-icon{font-size:5cqw;color:rgba(255,255,255,.35)}" +
+
+    // Hint
     ".sp-hint{text-align:center;font-size:11px;opacity:.4;padding:6px 0 12px}" +
+
+    // Config area
     ".sp-config{padding:0 16px 16px}" +
     ".sp-section-title{font-size:13px;font-weight:500;color:#888;" +
     "margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px}" +
+
+    // Button list
     ".sp-list{list-style:none;margin:0;padding:0}" +
     ".sp-list-item{display:flex;align-items:center;padding:10px 12px;" +
     "background:#1e1e1e;border-radius:6px;margin-bottom:6px;cursor:pointer;" +
@@ -122,9 +121,13 @@
     ".sp-list-icon{font-size:20px;margin-right:10px;width:24px;text-align:center;color:#aaa}" +
     ".sp-drop-before{border-top:2px solid #03a9f4 !important}" +
     ".sp-drop-after{border-bottom:2px solid #03a9f4 !important}" +
+
+    // Settings panel
     ".sp-panel{background:#1e1e1e;border-radius:8px;padding:16px;margin-top:12px;" +
     "border:1px solid #2a2a2a}" +
     ".sp-panel-title{font-size:14px;font-weight:500;margin-bottom:12px}" +
+
+    // Form fields
     ".sp-field{margin-bottom:12px}" +
     ".sp-field-label{display:block;font-size:11px;color:#888;margin-bottom:4px;" +
     "text-transform:uppercase;letter-spacing:0.3px}" +
@@ -138,12 +141,49 @@
     "font-weight:500;cursor:pointer;font-family:inherit;transition:filter .15s}" +
     ".sp-action-btn:hover{filter:brightness(1.15)}" +
     ".sp-delete-btn{background:#d32f2f;color:#fff}" +
+
+    // Toggle switch
+    ".sp-toggle-row{display:flex;align-items:center;justify-content:space-between;" +
+    "padding:10px 0}" +
+    ".sp-toggle-label{font-size:14px}" +
+    ".sp-toggle{position:relative;width:44px;height:24px;flex-shrink:0}" +
+    ".sp-toggle input{opacity:0;width:0;height:0;position:absolute}" +
+    ".sp-toggle-track{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;" +
+    "background:#444;border-radius:24px;transition:.3s}" +
+    ".sp-toggle-track:before{content:'';position:absolute;height:18px;width:18px;" +
+    "left:3px;bottom:3px;background:#888;border-radius:50%;transition:.3s}" +
+    ".sp-toggle input:checked+.sp-toggle-track{background:#03a9f4}" +
+    ".sp-toggle input:checked+.sp-toggle-track:before{transform:translateX(20px);background:#fff}" +
+
+    // Conditional field (shown below toggle when enabled)
+    ".sp-cond-field{padding:0 0 8px;display:none}" +
+    ".sp-cond-field.sp-visible{display:block}" +
+
+    // Range slider
+    ".sp-range-row{display:flex;align-items:center;gap:12px;padding:4px 0}" +
+    ".sp-range{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:#444;" +
+    "border-radius:3px;outline:none}" +
+    ".sp-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;" +
+    "border-radius:50%;background:#03a9f4;cursor:pointer}" +
+    ".sp-range-val{font-size:13px;color:#aaa;min-width:32px;text-align:right}" +
+
+    // Number input
+    ".sp-number-row{display:flex;align-items:center;gap:8px}" +
+    ".sp-number{width:80px;padding:8px 10px;background:#2a2a2a;border:1px solid #444;" +
+    "border-radius:6px;color:#e0e0e0;font-size:14px;font-family:inherit;text-align:center;" +
+    "outline:none;box-sizing:border-box}" +
+    ".sp-number:focus{border-color:#03a9f4}" +
+    ".sp-number-unit{font-size:13px;color:#888}" +
+
+    // Apply bar
     ".sp-apply-bar{padding:16px;text-align:center}" +
     ".sp-apply-btn{background:#03a9f4;color:#fff;border:none;border-radius:6px;" +
     "padding:12px 32px;font-size:14px;font-weight:500;cursor:pointer;" +
     "font-family:inherit;transition:filter .15s}" +
     ".sp-apply-btn:hover{filter:brightness(1.15)}" +
     ".sp-apply-note{font-size:11px;color:#666;margin-top:6px}" +
+
+    // Log viewer
     ".sp-log-toolbar{display:flex;justify-content:flex-end;padding:12px 16px 0}" +
     ".sp-log-clear{background:#333;color:#ccc;border:none;border-radius:4px;" +
     "padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit}" +
@@ -157,8 +197,9 @@
     ".sp-log-warn{color:#ffa726}" +
     ".sp-log-debug{color:#666}" +
     ".sp-log-verbose{color:#555}" +
-    ".sp-empty{text-align:center;padding:24px;color:#666;font-size:13px}" +
-    "esp-app.sp-hidden{display:none !important}";
+
+    // Empty state
+    ".sp-empty{text-align:center;padding:24px;color:#666;font-size:13px}";
 
   var state = {
     order: [],
@@ -166,9 +207,14 @@
     onColor: "FF8C00",
     offColor: "313131",
     selectedSlot: -1,
-    activeTab: "settings",
+    activeTab: "screen",
     _indoorOn: false,
     _outdoorOn: false,
+    indoorEntity: "",
+    outdoorEntity: "",
+    presenceEntity: "",
+    screensaverTimeout: 300,
+    backlight: 255,
   };
 
   for (var i = 0; i < NUM_SLOTS; i++) {
@@ -184,12 +230,8 @@
     if (!str || !str.trim()) return [];
     return str
       .split(",")
-      .map(function (s) {
-        return parseInt(s.trim(), 10);
-      })
-      .filter(function (n) {
-        return n >= 1 && n <= NUM_SLOTS && !isNaN(n);
-      });
+      .map(function (s) { return parseInt(s.trim(), 10); })
+      .filter(function (n) { return n >= 1 && n <= NUM_SLOTS && !isNaN(n); });
   }
 
   function resolveIcon(slot) {
@@ -208,19 +250,38 @@
   }
 
   function postText(entityId, value) {
-    fetch("/text/" + entityId + "?value=" + encodeURIComponent(value), {
-      method: "POST",
-    });
+    fetch("/text/" + entityId + "?value=" + encodeURIComponent(value), { method: "POST" });
   }
 
   function postSelect(entityId, option) {
-    fetch("/select/" + entityId + "?option=" + encodeURIComponent(option), {
-      method: "POST",
-    });
+    fetch("/select/" + entityId + "?option=" + encodeURIComponent(option), { method: "POST" });
   }
 
   function postButtonPress(entityId) {
     fetch("/button/" + entityId + "/press", { method: "POST" });
+  }
+
+  function postSwitch(entityId, on) {
+    fetch("/switch/" + entityId + "/" + (on ? "turn_on" : "turn_off"), { method: "POST" });
+  }
+
+  function postNumber(entityId, value) {
+    fetch("/number/" + entityId + "?value=" + encodeURIComponent(value), { method: "POST" });
+  }
+
+  function postLight(entityId, brightness) {
+    fetch("/light/" + entityId + "/turn_on?brightness=" + brightness, { method: "POST" });
+  }
+
+  function escHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function escAttr(s) {
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   // ── Init ─────────────────────────────────────────────────────────────
@@ -232,19 +293,18 @@
 
     var mdi = document.createElement("link");
     mdi.rel = "stylesheet";
-    mdi.href =
-      "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css";
+    mdi.href = "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css";
     document.head.appendChild(mdi);
 
     var roboto = document.createElement("link");
     roboto.rel = "stylesheet";
-    roboto.href =
-      "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap";
+    roboto.href = "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap";
     document.head.appendChild(roboto);
 
     buildUI();
+    renderPreview();
+    renderButtonList();
     connectEvents();
-    setupStockAppHiding();
     updateClock();
     setInterval(updateClock, 30000);
   }
@@ -256,6 +316,7 @@
     root.id = "sp-app";
 
     buildHeader(root);
+    buildScreenPage(root);
     buildSettingsPage(root);
     buildLogsPage(root);
 
@@ -265,42 +326,40 @@
     } else {
       document.body.insertBefore(root, document.body.firstChild);
     }
-
     els.root = root;
+    switchTab("screen");
   }
 
   function buildHeader(parent) {
     var header = document.createElement("div");
     header.className = "sp-header";
 
-    var tabSettings = document.createElement("div");
-    tabSettings.className = "sp-tab active";
-    tabSettings.textContent = "Settings";
-    tabSettings.addEventListener("click", function () {
-      switchTab("settings");
+    var tabs = [
+      { id: "screen", label: "Screen" },
+      { id: "settings", label: "Settings" },
+      { id: "logs", label: "Logs" },
+    ];
+
+    tabs.forEach(function (t) {
+      var tab = document.createElement("div");
+      tab.className = "sp-tab";
+      tab.textContent = t.label;
+      tab.addEventListener("click", function () { switchTab(t.id); });
+      header.appendChild(tab);
+      els["tab_" + t.id] = tab;
     });
 
-    var tabLogs = document.createElement("div");
-    tabLogs.className = "sp-tab";
-    tabLogs.textContent = "Logs";
-    tabLogs.addEventListener("click", function () {
-      switchTab("logs");
-    });
-
-    header.appendChild(tabSettings);
-    header.appendChild(tabLogs);
     parent.appendChild(header);
-
-    els.tabSettings = tabSettings;
-    els.tabLogs = tabLogs;
   }
 
-  function buildSettingsPage(parent) {
-    var page = document.createElement("div");
-    page.id = "sp-settings";
-    page.className = "sp-page active";
+  // ── Screen Page ──────────────────────────────────────────────────────
 
-    // Screen preview
+  function buildScreenPage(parent) {
+    var page = document.createElement("div");
+    page.id = "sp-screen";
+    page.className = "sp-page";
+
+    // Preview
     var wrap = document.createElement("div");
     wrap.className = "sp-wrap";
     wrap.innerHTML =
@@ -319,10 +378,10 @@
 
     var hint = document.createElement("div");
     hint.className = "sp-hint";
-    hint.textContent = "tap a button to configure it";
+    hint.textContent = "tap a button to configure \u2022 tap + to add";
     page.appendChild(hint);
 
-    // Config area
+    // Button list + settings
     var config = document.createElement("div");
     config.className = "sp-config";
 
@@ -343,26 +402,224 @@
     els.settingsPanel = panel;
 
     page.appendChild(config);
+    page.appendChild(buildApplyBar());
 
-    // Apply bar
-    var applyBar = document.createElement("div");
-    applyBar.className = "sp-apply-bar";
-    var applyBtn = document.createElement("button");
-    applyBtn.className = "sp-apply-btn";
-    applyBtn.textContent = "Apply Configuration";
-    applyBtn.addEventListener("click", function () {
-      postButtonPress("apply_configuration");
+    parent.appendChild(page);
+    els.screenPage = page;
+  }
+
+  // ── Settings Page ────────────────────────────────────────────────────
+
+  function buildSettingsPage(parent) {
+    var page = document.createElement("div");
+    page.id = "sp-settings";
+    page.className = "sp-page";
+
+    var config = document.createElement("div");
+    config.className = "sp-config";
+
+    // --- Appearance ---
+    config.appendChild(sectionTitle("Appearance"));
+
+    var appearPanel = document.createElement("div");
+    appearPanel.className = "sp-panel";
+
+    // On Color
+    appearPanel.appendChild(fieldLabel("On Color"));
+    var onInp = textInput("sp-set-on-color", "FF8C00", "6-digit hex e.g. FF8C00");
+    appearPanel.appendChild(onInp);
+    onInp.addEventListener("blur", function () { postText("button_on_color", this.value); });
+    onInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    els.setOnColor = onInp;
+
+    // Off Color
+    appearPanel.appendChild(fieldLabel("Off Color"));
+    var offInp = textInput("sp-set-off-color", "313131", "6-digit hex e.g. 313131");
+    appearPanel.appendChild(offInp);
+    offInp.addEventListener("blur", function () { postText("button_off_color", this.value); });
+    offInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    els.setOffColor = offInp;
+
+    // Backlight
+    appearPanel.appendChild(fieldLabel("Display Backlight"));
+    var blRow = document.createElement("div");
+    blRow.className = "sp-range-row";
+    var blRange = document.createElement("input");
+    blRange.type = "range";
+    blRange.className = "sp-range";
+    blRange.min = "0";
+    blRange.max = "255";
+    blRange.value = "255";
+    var blVal = document.createElement("span");
+    blVal.className = "sp-range-val";
+    blVal.textContent = "255";
+    blRange.addEventListener("input", function () { blVal.textContent = this.value; });
+    blRange.addEventListener("change", function () { postLight("display_backlight", this.value); });
+    blRow.appendChild(blRange);
+    blRow.appendChild(blVal);
+    appearPanel.appendChild(blRow);
+    els.setBacklight = blRange;
+    els.setBacklightVal = blVal;
+
+    config.appendChild(appearPanel);
+
+    // --- Temperature ---
+    config.appendChild(sectionTitle("Temperature"));
+
+    var tempPanel = document.createElement("div");
+    tempPanel.className = "sp-panel";
+
+    // Indoor
+    var indoorToggle = toggleRow("Indoor Temperature", "sp-set-indoor-toggle", state._indoorOn);
+    tempPanel.appendChild(indoorToggle.row);
+    var indoorField = condField();
+    indoorField.appendChild(fieldLabel("Indoor Temp Entity"));
+    var indoorInp = textInput("sp-set-indoor-entity", "", "e.g. sensor.indoor_temperature");
+    indoorField.appendChild(indoorInp);
+    tempPanel.appendChild(indoorField);
+    indoorToggle.input.addEventListener("change", function () {
+      postSwitch("indoor_temp_enable", this.checked);
     });
-    applyBar.appendChild(applyBtn);
-    var note = document.createElement("div");
-    note.className = "sp-apply-note";
-    note.textContent = "Restarts the device to apply changes";
-    applyBar.appendChild(note);
-    page.appendChild(applyBar);
+    indoorInp.addEventListener("blur", function () { postText("indoor_temp_entity", this.value); });
+    indoorInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    els.setIndoorToggle = indoorToggle.input;
+    els.setIndoorField = indoorField;
+    els.setIndoorEntity = indoorInp;
+
+    // Outdoor
+    var outdoorToggle = toggleRow("Outdoor Temperature", "sp-set-outdoor-toggle", state._outdoorOn);
+    tempPanel.appendChild(outdoorToggle.row);
+    var outdoorField = condField();
+    outdoorField.appendChild(fieldLabel("Outdoor Temp Entity"));
+    var outdoorInp = textInput("sp-set-outdoor-entity", "", "e.g. sensor.outdoor_temperature");
+    outdoorField.appendChild(outdoorInp);
+    tempPanel.appendChild(outdoorField);
+    outdoorToggle.input.addEventListener("change", function () {
+      postSwitch("outdoor_temp_enable", this.checked);
+    });
+    outdoorInp.addEventListener("blur", function () { postText("outdoor_temp_entity", this.value); });
+    outdoorInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    els.setOutdoorToggle = outdoorToggle.input;
+    els.setOutdoorField = outdoorField;
+    els.setOutdoorEntity = outdoorInp;
+
+    config.appendChild(tempPanel);
+
+    // --- Screensaver ---
+    config.appendChild(sectionTitle("Screensaver"));
+
+    var ssPanel = document.createElement("div");
+    ssPanel.className = "sp-panel";
+
+    ssPanel.appendChild(fieldLabel("Idle Timeout"));
+    var numRow = document.createElement("div");
+    numRow.className = "sp-number-row";
+    var numInp = document.createElement("input");
+    numInp.type = "number";
+    numInp.className = "sp-number";
+    numInp.id = "sp-set-ss-timeout";
+    numInp.min = "30";
+    numInp.max = "1800";
+    numInp.step = "30";
+    numInp.value = "300";
+    var numUnit = document.createElement("span");
+    numUnit.className = "sp-number-unit";
+    numUnit.textContent = "seconds";
+    numInp.addEventListener("blur", function () { postNumber("screensaver_timeout", this.value); });
+    numInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    numRow.appendChild(numInp);
+    numRow.appendChild(numUnit);
+    ssPanel.appendChild(numRow);
+    els.setSSTimeout = numInp;
+
+    ssPanel.appendChild(fieldLabel("Presence Sensor Entity"));
+    var presInp = textInput("sp-set-presence", "", "e.g. binary_sensor.presence");
+    ssPanel.appendChild(presInp);
+    presInp.addEventListener("blur", function () { postText("presence_sensor_entity", this.value); });
+    presInp.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+    els.setPresence = presInp;
+
+    config.appendChild(ssPanel);
+
+    page.appendChild(config);
+    page.appendChild(buildApplyBar());
 
     parent.appendChild(page);
     els.settingsPage = page;
   }
+
+  // ── Settings page helpers ───────────────────────────────────────────
+
+  function sectionTitle(text) {
+    var el = document.createElement("div");
+    el.className = "sp-section-title";
+    el.textContent = text;
+    return el;
+  }
+
+  function fieldLabel(text) {
+    var el = document.createElement("label");
+    el.className = "sp-field-label";
+    el.textContent = text;
+    el.style.marginTop = "10px";
+    el.style.display = "block";
+    return el;
+  }
+
+  function textInput(id, value, placeholder) {
+    var el = document.createElement("input");
+    el.type = "text";
+    el.className = "sp-input";
+    el.id = id;
+    el.value = value;
+    el.placeholder = placeholder || "";
+    el.style.marginBottom = "4px";
+    return el;
+  }
+
+  function toggleRow(label, id, checked) {
+    var row = document.createElement("div");
+    row.className = "sp-toggle-row";
+    var lbl = document.createElement("span");
+    lbl.className = "sp-toggle-label";
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    var toggle = document.createElement("label");
+    toggle.className = "sp-toggle";
+    var inp = document.createElement("input");
+    inp.type = "checkbox";
+    inp.id = id;
+    inp.checked = !!checked;
+    var track = document.createElement("span");
+    track.className = "sp-toggle-track";
+    toggle.appendChild(inp);
+    toggle.appendChild(track);
+    row.appendChild(toggle);
+    return { row: row, input: inp };
+  }
+
+  function condField() {
+    var el = document.createElement("div");
+    el.className = "sp-cond-field";
+    return el;
+  }
+
+  function buildApplyBar() {
+    var bar = document.createElement("div");
+    bar.className = "sp-apply-bar";
+    var btn = document.createElement("button");
+    btn.className = "sp-apply-btn";
+    btn.textContent = "Apply Configuration";
+    btn.addEventListener("click", function () { postButtonPress("apply_configuration"); });
+    bar.appendChild(btn);
+    var note = document.createElement("div");
+    note.className = "sp-apply-note";
+    note.textContent = "Restarts the device to apply changes";
+    bar.appendChild(note);
+    return bar;
+  }
+
+  // ── Logs Page ────────────────────────────────────────────────────────
 
   function buildLogsPage(parent) {
     var page = document.createElement("div");
@@ -374,9 +631,7 @@
     var clearBtn = document.createElement("button");
     clearBtn.className = "sp-log-clear";
     clearBtn.textContent = "Clear";
-    clearBtn.addEventListener("click", function () {
-      els.logOutput.innerHTML = "";
-    });
+    clearBtn.addEventListener("click", function () { els.logOutput.innerHTML = ""; });
     toolbar.appendChild(clearBtn);
     page.appendChild(toolbar);
 
@@ -393,21 +648,12 @@
 
   function switchTab(tab) {
     state.activeTab = tab;
-    els.tabSettings.className =
-      "sp-tab" + (tab === "settings" ? " active" : "");
-    els.tabLogs.className = "sp-tab" + (tab === "logs" ? " active" : "");
-    els.settingsPage.className =
-      "sp-page" + (tab === "settings" ? " active" : "");
+    ["screen", "settings", "logs"].forEach(function (t) {
+      els["tab_" + t].className = "sp-tab" + (tab === t ? " active" : "");
+    });
+    els.screenPage.className = "sp-page" + (tab === "screen" ? " active" : "");
+    els.settingsPage.className = "sp-page" + (tab === "settings" ? " active" : "");
     els.logsPage.className = "sp-page" + (tab === "logs" ? " active" : "");
-
-    var espApp = document.querySelector("esp-app");
-    if (espApp) {
-      if (tab === "logs") {
-        espApp.classList.add("sp-hidden");
-      } else {
-        espApp.classList.remove("sp-hidden");
-      }
-    }
   }
 
   // ── Preview rendering ────────────────────────────────────────────────
@@ -428,9 +674,7 @@
       btn.innerHTML =
         '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>' +
         '<span class="sp-btn-label">' + escHtml(label) + "</span>";
-      btn.addEventListener("click", function () {
-        selectButton(slot);
-      });
+      btn.addEventListener("click", function () { selectButton(slot); });
       main.appendChild(btn);
     });
 
@@ -443,12 +687,6 @@
     }
   }
 
-  function escHtml(s) {
-    var d = document.createElement("div");
-    d.textContent = s;
-    return d.innerHTML;
-  }
-
   // ── Button list rendering ───────────────────────────────────────────
 
   function renderButtonList() {
@@ -458,7 +696,7 @@
     if (state.order.length === 0) {
       var empty = document.createElement("li");
       empty.className = "sp-empty";
-      empty.textContent = 'No buttons configured. Tap "+" on the screen above to add one.';
+      empty.textContent = 'No buttons yet \u2014 tap + on the screen to add one.';
       list.appendChild(empty);
       return;
     }
@@ -469,20 +707,16 @@
       var name = btnDisplayName(slot);
 
       var item = document.createElement("li");
-      item.className =
-        "sp-list-item" +
+      item.className = "sp-list-item" +
         (state.selectedSlot === slot ? " sp-list-selected" : "");
       item.dataset.pos = pos;
       item.draggable = true;
-
       item.innerHTML =
         '<span class="sp-list-handle mdi mdi-drag"></span>' +
         '<span class="sp-list-icon mdi mdi-' + iconName + '"></span>' +
         '<div class="sp-list-info">' +
         '<div class="sp-list-name">' + escHtml(name) + "</div>" +
-        (b.entity
-          ? '<div class="sp-list-entity">' + escHtml(b.entity) + "</div>"
-          : "") +
+        (b.entity ? '<div class="sp-list-entity">' + escHtml(b.entity) + "</div>" : "") +
         "</div>";
 
       item.addEventListener("click", function (e) {
@@ -502,64 +736,48 @@
       dragSrcPos = pos;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", String(pos));
-      setTimeout(function () {
-        item.classList.add("sp-dragging");
-      }, 0);
+      setTimeout(function () { item.classList.add("sp-dragging"); }, 0);
     });
-
     item.addEventListener("dragend", function () {
       item.classList.remove("sp-dragging");
       clearDropIndicators();
     });
-
     item.addEventListener("dragover", function (e) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       clearDropIndicators();
       var rect = item.getBoundingClientRect();
-      var midY = rect.top + rect.height / 2;
-      if (e.clientY < midY) {
+      if (e.clientY < rect.top + rect.height / 2) {
         item.classList.add("sp-drop-before");
       } else {
         item.classList.add("sp-drop-after");
       }
     });
-
     item.addEventListener("dragleave", function () {
       item.classList.remove("sp-drop-before", "sp-drop-after");
     });
-
     item.addEventListener("drop", function (e) {
       e.preventDefault();
       clearDropIndicators();
-      var fromPos = dragSrcPos;
-      if (fromPos < 0) return;
-
+      if (dragSrcPos < 0) return;
       var rect = item.getBoundingClientRect();
-      var midY = rect.top + rect.height / 2;
-      var toPos = e.clientY < midY ? pos : pos + 1;
-
-      if (fromPos < toPos) toPos--;
-      if (fromPos === toPos) return;
-
+      var toPos = e.clientY < rect.top + rect.height / 2 ? pos : pos + 1;
+      if (dragSrcPos < toPos) toPos--;
+      if (dragSrcPos === toPos) return;
       var newOrder = state.order.slice();
-      var moved = newOrder.splice(fromPos, 1)[0];
+      var moved = newOrder.splice(dragSrcPos, 1)[0];
       newOrder.splice(toPos, 0, moved);
-
       postText("button_order", newOrder.join(","));
       dragSrcPos = -1;
     });
   }
 
   function clearDropIndicators() {
-    els.buttonList
-      .querySelectorAll(".sp-drop-before,.sp-drop-after")
-      .forEach(function (el) {
-        el.classList.remove("sp-drop-before", "sp-drop-after");
-      });
+    els.buttonList.querySelectorAll(".sp-drop-before,.sp-drop-after")
+      .forEach(function (el) { el.classList.remove("sp-drop-before", "sp-drop-after"); });
   }
 
-  // ── Settings panel ──────────────────────────────────────────────────
+  // ── Button settings panel ───────────────────────────────────────────
 
   function selectButton(slot) {
     state.selectedSlot = slot;
@@ -595,86 +813,51 @@
       '<label class="sp-field-label">Icon</label>' +
       '<select class="sp-select" id="sp-inp-icon">' +
       ICON_OPTIONS.map(function (opt) {
-        return (
-          '<option value="' + opt + '"' +
-          (opt === b.icon ? " selected" : "") +
-          ">" + opt + "</option>"
-        );
+        return '<option value="' + opt + '"' + (opt === b.icon ? " selected" : "") + ">" + opt + "</option>";
       }).join("") +
-      "</select>" +
-      "</div>" +
+      "</select></div>" +
       '<div class="sp-btn-row">' +
-      '<button class="sp-action-btn sp-delete-btn">Delete Button</button>' +
-      "</div>";
+      '<button class="sp-action-btn sp-delete-btn">Delete Button</button></div>';
 
-    var entityInp = panel.querySelector("#sp-inp-entity");
-    var labelInp = panel.querySelector("#sp-inp-label");
-    var iconSel = panel.querySelector("#sp-inp-icon");
-    var delBtn = panel.querySelector(".sp-delete-btn");
-
-    entityInp.addEventListener("blur", function () {
+    panel.querySelector("#sp-inp-entity").addEventListener("blur", function () {
       postText("button_" + slot + "_entity", this.value);
     });
-    entityInp.addEventListener("keydown", function (e) {
+    panel.querySelector("#sp-inp-entity").addEventListener("keydown", function (e) {
       if (e.key === "Enter") this.blur();
     });
-
-    labelInp.addEventListener("blur", function () {
+    panel.querySelector("#sp-inp-label").addEventListener("blur", function () {
       postText("button_" + slot + "_label", this.value);
     });
-    labelInp.addEventListener("keydown", function (e) {
+    panel.querySelector("#sp-inp-label").addEventListener("keydown", function (e) {
       if (e.key === "Enter") this.blur();
     });
-
-    iconSel.addEventListener("change", function () {
+    panel.querySelector("#sp-inp-icon").addEventListener("change", function () {
       postSelect("button_" + slot + "_icon", this.value);
     });
-
-    delBtn.addEventListener("click", function () {
+    panel.querySelector(".sp-delete-btn").addEventListener("click", function () {
       deleteButton(slot);
     });
-  }
-
-  function escAttr(s) {
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
   }
 
   // ── Add / Delete buttons ────────────────────────────────────────────
 
   function addButton() {
     var used = {};
-    state.order.forEach(function (s) {
-      used[s] = true;
-    });
+    state.order.forEach(function (s) { used[s] = true; });
     var slot = -1;
     for (var i = 1; i <= NUM_SLOTS; i++) {
-      if (!used[i]) {
-        slot = i;
-        break;
-      }
+      if (!used[i]) { slot = i; break; }
     }
     if (slot < 0) return;
-
-    var newOrder = state.order.concat(slot);
-    postText("button_order", newOrder.join(","));
+    postText("button_order", state.order.concat(slot).join(","));
   }
 
   function deleteButton(slot) {
-    var newOrder = state.order.filter(function (s) {
-      return s !== slot;
-    });
-    postText("button_order", newOrder.join(","));
+    postText("button_order", state.order.filter(function (s) { return s !== slot; }).join(","));
     postText("button_" + slot + "_entity", "");
     postText("button_" + slot + "_label", "");
     postSelect("button_" + slot + "_icon", "Auto");
-
-    if (state.selectedSlot === slot) {
-      state.selectedSlot = -1;
-    }
+    if (state.selectedSlot === slot) state.selectedSlot = -1;
   }
 
   // ── Clock ───────────────────────────────────────────────────────────
@@ -682,9 +865,9 @@
   function updateClock() {
     if (!els.clock) return;
     var now = new Date();
-    var h = String(now.getHours()).padStart(2, "0");
-    var m = String(now.getMinutes()).padStart(2, "0");
-    els.clock.textContent = h + ":" + m;
+    els.clock.textContent =
+      String(now.getHours()).padStart(2, "0") + ":" +
+      String(now.getMinutes()).padStart(2, "0");
   }
 
   // ── SSE ──────────────────────────────────────────────────────────────
@@ -694,39 +877,36 @@
 
     source.addEventListener("state", function (e) {
       var d;
-      try {
-        d = JSON.parse(e.data);
-      } catch (_) {
-        return;
-      }
+      try { d = JSON.parse(e.data); } catch (_) { return; }
       var id = d.id;
       var val = d.state != null ? String(d.state) : "";
 
-      // Button order
+      // --- Button order ---
       if (id === "text-button_order") {
         state.order = parseOrder(val);
         renderPreview();
         renderButtonList();
-        if (state.selectedSlot > 0 && state.order.indexOf(state.selectedSlot) === -1) {
+        if (state.selectedSlot > 0 && state.order.indexOf(state.selectedSlot) === -1)
           state.selectedSlot = -1;
-        }
         renderSettingsPanel();
         return;
       }
 
-      // Shared colors
+      // --- Shared colors ---
       if (id === "text-button_on_color") {
         state.onColor = val;
+        syncInput(els.setOnColor, val);
         renderPreview();
         return;
       }
       if (id === "text-button_off_color") {
         state.offColor = val;
+        syncInput(els.setOffColor, val);
         renderPreview();
         return;
       }
 
-      // Per-button entity / label
+      // --- Per-button entity / label ---
       var textMatch = id.match(/^text-button_(\d+)_(entity|label)$/);
       if (textMatch) {
         var slot = parseInt(textMatch[1], 10);
@@ -736,18 +916,13 @@
           renderPreview();
           renderButtonList();
           if (state.selectedSlot === slot) {
-            var inp = document.getElementById(
-              field === "entity" ? "sp-inp-entity" : "sp-inp-label"
-            );
-            if (inp && document.activeElement !== inp) {
-              inp.value = val;
-            }
+            syncInput(document.getElementById(field === "entity" ? "sp-inp-entity" : "sp-inp-label"), val);
           }
         }
         return;
       }
 
-      // Per-button icon
+      // --- Per-button icon ---
       var selMatch = id.match(/^select-button_(\d+)_icon$/);
       if (selMatch) {
         var slot = parseInt(selMatch[1], 10);
@@ -756,26 +931,58 @@
           renderPreview();
           renderButtonList();
           if (state.selectedSlot === slot) {
-            var sel = document.getElementById("sp-inp-icon");
-            if (sel && document.activeElement !== sel) {
-              sel.value = val;
-            }
+            syncInput(document.getElementById("sp-inp-icon"), val);
           }
         }
         return;
       }
 
-      // Temperature switches
-      if (
-        id === "switch-indoor_temp_enable" ||
-        id === "switch-outdoor_temp_enable"
-      ) {
-        var on = d.value === true || val === "ON";
-        if (id === "switch-indoor_temp_enable") state._indoorOn = on;
-        if (id === "switch-outdoor_temp_enable") state._outdoorOn = on;
-        var show = state._indoorOn || state._outdoorOn;
-        els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
-        if (!els.temp.textContent) els.temp.textContent = "-\u00B0 / -\u00B0";
+      // --- Temperature switches ---
+      if (id === "switch-indoor_temp_enable") {
+        state._indoorOn = d.value === true || val === "ON";
+        els.setIndoorToggle.checked = state._indoorOn;
+        els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");
+        updateTempPreview();
+        return;
+      }
+      if (id === "switch-outdoor_temp_enable") {
+        state._outdoorOn = d.value === true || val === "ON";
+        els.setOutdoorToggle.checked = state._outdoorOn;
+        els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
+        updateTempPreview();
+        return;
+      }
+
+      // --- Temperature entities ---
+      if (id === "text-indoor_temp_entity") {
+        state.indoorEntity = val;
+        syncInput(els.setIndoorEntity, val);
+        return;
+      }
+      if (id === "text-outdoor_temp_entity") {
+        state.outdoorEntity = val;
+        syncInput(els.setOutdoorEntity, val);
+        return;
+      }
+
+      // --- Screensaver ---
+      if (id === "number-screensaver_timeout") {
+        state.screensaverTimeout = parseFloat(val) || 300;
+        syncInput(els.setSSTimeout, String(state.screensaverTimeout));
+        return;
+      }
+      if (id === "text-presence_sensor_entity") {
+        state.presenceEntity = val;
+        syncInput(els.setPresence, val);
+        return;
+      }
+
+      // --- Backlight ---
+      if (id === "light-display_backlight") {
+        var br = d.brightness != null ? d.brightness : 255;
+        state.backlight = br;
+        els.setBacklight.value = br;
+        els.setBacklightVal.textContent = br;
         return;
       }
     });
@@ -783,13 +990,19 @@
     // Log events
     source.addEventListener("log", function (e) {
       var d;
-      try {
-        d = JSON.parse(e.data);
-      } catch (_) {
-        d = { msg: e.data };
-      }
+      try { d = JSON.parse(e.data); } catch (_) { d = { msg: e.data }; }
       appendLog(d.msg || e.data, d.lvl);
     });
+  }
+
+  function syncInput(el, val) {
+    if (el && document.activeElement !== el) el.value = val;
+  }
+
+  function updateTempPreview() {
+    var show = state._indoorOn || state._outdoorOn;
+    els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
+    if (!els.temp.textContent) els.temp.textContent = "-\u00B0 / -\u00B0";
   }
 
   // ── Log viewer ──────────────────────────────────────────────────────
@@ -798,60 +1011,17 @@
     if (!els.logOutput) return;
     var line = document.createElement("div");
     line.className = "sp-log-line";
-
     if (lvl === 1) line.classList.add("sp-log-error");
     else if (lvl === 2) line.classList.add("sp-log-warn");
     else if (lvl === 5) line.classList.add("sp-log-debug");
     else if (lvl >= 6) line.classList.add("sp-log-verbose");
-
     line.textContent = msg;
 
-    var atBottom =
-      els.logOutput.scrollHeight - els.logOutput.scrollTop - els.logOutput.clientHeight < 40;
+    var atBottom = els.logOutput.scrollHeight - els.logOutput.scrollTop - els.logOutput.clientHeight < 40;
     els.logOutput.appendChild(line);
-
-    // Cap at 1000 lines
-    while (els.logOutput.childNodes.length > 1000) {
+    while (els.logOutput.childNodes.length > 1000)
       els.logOutput.removeChild(els.logOutput.firstChild);
-    }
-
-    if (atBottom) {
-      els.logOutput.scrollTop = els.logOutput.scrollHeight;
-    }
-  }
-
-  // ── Stock app management ────────────────────────────────────────────
-
-  function setupStockAppHiding() {
-    var observer = new MutationObserver(function () {
-      hideButtonConfigGroup();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    setInterval(hideButtonConfigGroup, 2000);
-  }
-
-  function hideButtonConfigGroup() {
-    var app = document.querySelector("esp-app");
-    if (!app) return;
-
-    var walker = document.createTreeWalker(
-      app,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
-    while (walker.nextNode()) {
-      var text = walker.currentNode;
-      if (text.textContent.trim() === "Button Configuration") {
-        var section = text.parentElement;
-        if (section) {
-          var container = section.parentElement;
-          if (container) {
-            container.style.display = "none";
-          }
-        }
-      }
-    }
+    if (atBottom) els.logOutput.scrollTop = els.logOutput.scrollHeight;
   }
 
   // ── Start ───────────────────────────────────────────────────────────
