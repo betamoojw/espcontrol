@@ -1232,7 +1232,63 @@
     renderButtonSettings();
   }
 
-  // ── Add / Delete buttons ────────────────────────────────────────────
+  // ── Context menu ────────────────────────────────────────────────────
+
+  var ctxMenu = null;
+
+  function showContextMenu(e, slot) {
+    e.preventDefault();
+    hideContextMenu();
+
+    ctxMenu = document.createElement("div");
+    ctxMenu.className = "sp-ctx-menu";
+
+    var dupItem = document.createElement("div");
+    dupItem.className = "sp-ctx-item";
+    dupItem.innerHTML = '<span class="mdi mdi-content-copy"></span>Duplicate';
+    dupItem.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();
+      hideContextMenu();
+      duplicateButton(slot);
+    });
+    ctxMenu.appendChild(dupItem);
+
+    var divider = document.createElement("div");
+    divider.className = "sp-ctx-divider";
+    ctxMenu.appendChild(divider);
+
+    var delItem = document.createElement("div");
+    delItem.className = "sp-ctx-item sp-ctx-danger";
+    delItem.innerHTML = '<span class="mdi mdi-delete"></span>Delete';
+    delItem.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();
+      hideContextMenu();
+      deleteButton(slot);
+    });
+    ctxMenu.appendChild(delItem);
+
+    document.body.appendChild(ctxMenu);
+
+    var menuW = ctxMenu.offsetWidth;
+    var menuH = ctxMenu.offsetHeight;
+    var x = e.clientX;
+    var y = e.clientY;
+    if (x + menuW > window.innerWidth) x = window.innerWidth - menuW - 4;
+    if (y + menuH > window.innerHeight) y = window.innerHeight - menuH - 4;
+    if (x < 0) x = 4;
+    if (y < 0) y = 4;
+    ctxMenu.style.left = x + "px";
+    ctxMenu.style.top = y + "px";
+  }
+
+  function hideContextMenu() {
+    if (ctxMenu && ctxMenu.parentNode) {
+      ctxMenu.parentNode.removeChild(ctxMenu);
+    }
+    ctxMenu = null;
+  }
+
+  // ── Add / Duplicate / Delete buttons ───────────────────────────────
 
   function addButton() {
     var used = {};
