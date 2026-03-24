@@ -344,7 +344,7 @@
   };
 
   for (var i = 0; i < NUM_SLOTS; i++) {
-    state.buttons.push({ entity: "", label: "", icon: "Auto", sensor: "" });
+    state.buttons.push({ entity: "", label: "", icon: "Auto", sensor: "", unit: "" });
   }
 
   var els = {};
@@ -991,6 +991,10 @@
     sensorCond.appendChild(fieldLabel("Sensor Entity"));
     var sensorInp = textInput("sp-inp-sensor", b.sensor, "e.g. sensor.printer_percent_complete");
     sensorCond.appendChild(sensorInp);
+    sensorCond.appendChild(fieldLabel("Unit"));
+    var unitInp = textInput("sp-inp-unit", b.unit, "e.g. %");
+    unitInp.style.width = "80px";
+    sensorCond.appendChild(unitInp);
     var sensorHint = document.createElement("div");
     sensorHint.style.cssText = "font-size:11px;color:#666;margin-top:2px";
     sensorHint.textContent = "Show sensor value instead of icon when on";
@@ -1003,8 +1007,11 @@
       } else {
         sensorCond.classList.remove("sp-visible");
         sensorInp.value = "";
+        unitInp.value = "";
         state.buttons[slot - 1].sensor = "";
+        state.buttons[slot - 1].unit = "";
         postText("Button " + slot + " Sensor", "");
+        postText("Button " + slot + " Sensor Unit", "");
         renderPreview();
       }
     });
@@ -1014,6 +1021,13 @@
       renderPreview();
     });
     sensorInp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") this.blur();
+    });
+    unitInp.addEventListener("blur", function () {
+      state.buttons[slot - 1].unit = this.value;
+      postText("Button " + slot + " Sensor Unit", this.value);
+    });
+    unitInp.addEventListener("keydown", function (e) {
       if (e.key === "Enter") this.blur();
     });
 
@@ -1341,6 +1355,7 @@
       label: src.label,
       icon: src.icon,
       sensor: src.sensor,
+      unit: src.unit,
     };
 
     var srcIdx = state.order.indexOf(srcSlot);
@@ -1352,6 +1367,7 @@
     postText("Button " + newSlot + " Entity", src.entity);
     postText("Button " + newSlot + " Label", src.label);
     postText("Button " + newSlot + " Sensor", src.sensor);
+    postText("Button " + newSlot + " Sensor Unit", src.unit);
     postSelect("Button " + newSlot + " Icon", src.icon || "Auto");
     selectButton(newSlot);
   }
@@ -1365,6 +1381,7 @@
     postText("Button " + slot + " Entity", "");
     postText("Button " + slot + " Label", "");
     postText("Button " + slot + " Sensor", "");
+    postText("Button " + slot + " Sensor Unit", "");
     postSelect("Button " + slot + " Icon", "Auto");
   }
 
@@ -1429,16 +1446,16 @@
       }
 
       // --- Per-button entity / label ---
-      var textMatch = id.match(/^text-button_(\d+)_(entity|label|sensor)$/);
+      var textMatch = id.match(/^text-button_(\d+)_(entity|label|sensor|sensor_unit)$/);
       if (textMatch) {
         var slot = parseInt(textMatch[1], 10);
-        var field = textMatch[2];
+        var field = textMatch[2] === "sensor_unit" ? "unit" : textMatch[2];
         if (slot >= 1 && slot <= NUM_SLOTS) {
           state.buttons[slot - 1][field] = val;
           renderPreview();
           if (state.selectedSlot === slot && isSettingsFocused()) {
-            var inputId = field === "entity" ? "sp-inp-entity" : field === "label" ? "sp-inp-label" : "sp-inp-sensor";
-            syncInput(document.getElementById(inputId), val);
+            var idMap = { entity: "sp-inp-entity", label: "sp-inp-label", sensor: "sp-inp-sensor", unit: "sp-inp-unit" };
+            syncInput(document.getElementById(idMap[field]), val);
           } else {
             renderButtonSettings();
           }
