@@ -1465,9 +1465,14 @@
     }
 
     function openPicker() {
-      buildOptions("");
+      if (currentIcon === "Auto") {
+        input.value = "";
+        buildOptions("");
+      } else {
+        buildOptions(currentIcon);
+        input.select();
+      }
       picker.classList.add("sp-open");
-      input.value = "";
     }
 
     function closePicker() {
