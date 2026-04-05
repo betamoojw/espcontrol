@@ -7,5 +7,4 @@
 lvgl:
   buffer_size: 100%
   displays: my_display
-  byte_order: little_endian
   touchscreens: my_touchscreen
