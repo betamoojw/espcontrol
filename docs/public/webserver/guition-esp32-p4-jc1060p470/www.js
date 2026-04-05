@@ -491,7 +491,8 @@
     buttons: [],
     onColor: "FF8C00",
     offColor: "313131",
-    selectedSlot: -1,
+    selectedSlots: [],
+    lastClickedSlot: -1,
     activeTab: "screen",
     _indoorOn: false,
     _outdoorOn: false,
@@ -734,7 +735,7 @@
 
     var hint = document.createElement("div");
     hint.className = "sp-hint";
-    hint.textContent = "tap a button to configure \u2022 tap + to add \u2022 right click to manage";
+    hint.textContent = "tap to configure \u2022 shift/ctrl+tap to multi-select \u2022 right click to manage";
     page.appendChild(hint);
 
     // Button settings (shown when a preview button is selected)
@@ -1202,7 +1203,7 @@
       var color = state.offColor;
 
       var btn = document.createElement("div");
-      btn.className = "sp-btn" + (state.selectedSlot === slot ? " sp-selected" : "");
+      btn.className = "sp-btn" + (state.selectedSlots.indexOf(slot) !== -1 ? " sp-selected" : "");
       btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
       btn.draggable = true;
       var hasWhenOn = b.sensor || (b.icon_on && b.icon_on !== "Auto");
@@ -1214,9 +1215,37 @@
         sensorBadge +
         '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>' +
         '<span class="sp-btn-label">' + escHtml(label) + "</span>";
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", function (e) {
         if (didDrag) { didDrag = false; return; }
-        selectButton(state.selectedSlot === slot ? -1 : slot);
+        if (e.shiftKey && state.lastClickedSlot > 0) {
+          var anchorIdx = state.order.indexOf(state.lastClickedSlot);
+          var curIdx = state.order.indexOf(slot);
+          if (anchorIdx !== -1 && curIdx !== -1) {
+            var from = Math.min(anchorIdx, curIdx);
+            var to = Math.max(anchorIdx, curIdx);
+            state.selectedSlots = state.order.slice(from, to + 1);
+            renderPreview();
+            renderButtonSettings();
+            return;
+          }
+        }
+        if (e.ctrlKey || e.metaKey) {
+          var pos = state.selectedSlots.indexOf(slot);
+          if (pos !== -1) {
+            state.selectedSlots.splice(pos, 1);
+          } else {
+            state.selectedSlots.push(slot);
+            state.lastClickedSlot = slot;
+          }
+          renderPreview();
+          renderButtonSettings();
+          return;
+        }
+        if (state.selectedSlots.length === 1 && state.selectedSlots[0] === slot) {
+          selectButton(-1);
+        } else {
+          selectButton(slot);
+        }
       });
       btn.addEventListener("contextmenu", function (e) {
         showContextMenu(e, slot);
@@ -1240,9 +1269,17 @@
     var container = els.buttonSettings;
     container.innerHTML = "";
 
-    if (state.selectedSlot < 1) return;
+    if (state.selectedSlots.length === 0) return;
 
-    var slot = state.selectedSlot;
+    if (state.selectedSlots.length > 1) {
+      var hint = document.createElement("div");
+      hint.className = "sp-hint";
+      hint.textContent = state.selectedSlots.length + " buttons selected \u2022 right click to delete";
+      container.appendChild(hint);
+      return;
+    }
+
+    var slot = state.selectedSlots[0];
     var b = state.buttons[slot - 1];
 
     var title = document.createElement("div");
@@ -1644,7 +1681,12 @@
   // ── Button settings panel ───────────────────────────────────────────
 
   function selectButton(slot) {
-    state.selectedSlot = slot;
+    if (slot < 1) {
+      state.selectedSlots = [];
+    } else {
+      state.selectedSlots = [slot];
+      state.lastClickedSlot = slot;
+    }
     renderPreview();
     renderButtonSettings();
   }
@@ -1657,32 +1699,54 @@
     e.preventDefault();
     hideContextMenu();
 
+    var isMulti = state.selectedSlots.length > 1 && state.selectedSlots.indexOf(slot) !== -1;
+
+    if (state.selectedSlots.indexOf(slot) === -1 && state.selectedSlots.length > 1) {
+      state.selectedSlots.push(slot);
+      isMulti = true;
+      renderPreview();
+      renderButtonSettings();
+    }
+
     ctxMenu = document.createElement("div");
     ctxMenu.className = "sp-ctx-menu";
 
-    var dupItem = document.createElement("div");
-    dupItem.className = "sp-ctx-item";
-    dupItem.innerHTML = '<span class="mdi mdi-content-copy"></span>Duplicate';
-    dupItem.addEventListener("mousedown", function (ev) {
-      ev.preventDefault();
-      hideContextMenu();
-      duplicateButton(slot);
-    });
-    ctxMenu.appendChild(dupItem);
+    if (isMulti) {
+      var bulkSlots = state.selectedSlots.slice();
+      var delItem = document.createElement("div");
+      delItem.className = "sp-ctx-item sp-ctx-danger";
+      delItem.innerHTML = '<span class="mdi mdi-delete"></span>Delete ' + bulkSlots.length + " Buttons";
+      delItem.addEventListener("mousedown", function (ev) {
+        ev.preventDefault();
+        hideContextMenu();
+        deleteButtons(bulkSlots);
+      });
+      ctxMenu.appendChild(delItem);
+    } else {
+      var dupItem = document.createElement("div");
+      dupItem.className = "sp-ctx-item";
+      dupItem.innerHTML = '<span class="mdi mdi-content-copy"></span>Duplicate';
+      dupItem.addEventListener("mousedown", function (ev) {
+        ev.preventDefault();
+        hideContextMenu();
+        duplicateButton(slot);
+      });
+      ctxMenu.appendChild(dupItem);
 
-    var divider = document.createElement("div");
-    divider.className = "sp-ctx-divider";
-    ctxMenu.appendChild(divider);
+      var divider = document.createElement("div");
+      divider.className = "sp-ctx-divider";
+      ctxMenu.appendChild(divider);
 
-    var delItem = document.createElement("div");
-    delItem.className = "sp-ctx-item sp-ctx-danger";
-    delItem.innerHTML = '<span class="mdi mdi-delete"></span>Delete';
-    delItem.addEventListener("mousedown", function (ev) {
-      ev.preventDefault();
-      hideContextMenu();
-      deleteButton(slot);
-    });
-    ctxMenu.appendChild(delItem);
+      var delItem = document.createElement("div");
+      delItem.className = "sp-ctx-item sp-ctx-danger";
+      delItem.innerHTML = '<span class="mdi mdi-delete"></span>Delete';
+      delItem.addEventListener("mousedown", function (ev) {
+        ev.preventDefault();
+        hideContextMenu();
+        deleteButton(slot);
+      });
+      ctxMenu.appendChild(delItem);
+    }
 
     document.body.appendChild(ctxMenu);
 
@@ -1755,7 +1819,8 @@
 
   function deleteButton(slot) {
     state.order = state.order.filter(function (s) { return s !== slot; });
-    if (state.selectedSlot === slot) state.selectedSlot = -1;
+    var pos = state.selectedSlots.indexOf(slot);
+    if (pos !== -1) state.selectedSlots.splice(pos, 1);
     renderPreview();
     renderButtonSettings();
     postText("Button Order", state.order.join(","));
@@ -1765,6 +1830,23 @@
     postText("Button " + slot + " Sensor Unit", "");
     postSelect("Button " + slot + " Icon", "Auto");
     postSelect("Button " + slot + " Icon On", "Auto");
+  }
+
+  function deleteButtons(slots) {
+    state.order = state.order.filter(function (s) { return slots.indexOf(s) === -1; });
+    state.selectedSlots = [];
+    state.lastClickedSlot = -1;
+    slots.forEach(function (slot) {
+      postText("Button " + slot + " Entity", "");
+      postText("Button " + slot + " Label", "");
+      postText("Button " + slot + " Sensor", "");
+      postText("Button " + slot + " Sensor Unit", "");
+      postSelect("Button " + slot + " Icon", "Auto");
+      postSelect("Button " + slot + " Icon On", "Auto");
+    });
+    postText("Button Order", state.order.join(","));
+    renderPreview();
+    renderButtonSettings();
   }
 
   // ── Export / Import ─────────────────────────────────────────────────
@@ -1900,7 +1982,8 @@
           updateTempPreview();
         }
 
-        state.selectedSlot = -1;
+        state.selectedSlots = [];
+        state.lastClickedSlot = -1;
         renderPreview();
         renderButtonSettings();
         showBanner("Configuration imported successfully", "success");
@@ -1931,7 +2014,8 @@
     _eventSource = source;
 
     source.addEventListener("open", function () {
-      state.selectedSlot = -1;
+      state.selectedSlots = [];
+      state.lastClickedSlot = -1;
       orderReceived = false;
       if (els.banner) els.banner.className = "sp-banner";
       els.root.querySelectorAll(".sp-apply-btn").forEach(function (btn) {
@@ -1953,10 +2037,11 @@
       "text-button_order": function (val) {
         orderReceived = true;
         state.order = parseOrder(val);
+        state.selectedSlots = state.selectedSlots.filter(function (s) {
+          return state.order.indexOf(s) !== -1;
+        });
         renderPreview();
         renderButtonSettings();
-        if (state.selectedSlot > 0 && state.order.indexOf(state.selectedSlot) === -1)
-          state.selectedSlot = -1;
       },
       "text-button_on_color": function (val) {
         state.onColor = val;
@@ -2048,7 +2133,7 @@
           if (slot >= 1 && slot <= NUM_SLOTS) {
             state.buttons[slot - 1][field] = val;
             renderPreview();
-            if (state.selectedSlot === slot && isSettingsFocused()) {
+            if (state.selectedSlots.length === 1 && state.selectedSlots[0] === slot && isSettingsFocused()) {
               var idMap = { entity: "sp-inp-entity", label: "sp-inp-label", sensor: "sp-inp-sensor", unit: "sp-inp-unit" };
               syncInput(document.getElementById(idMap[field]), val);
             } else {
@@ -2065,7 +2150,7 @@
           if (slot >= 1 && slot <= NUM_SLOTS) {
             state.buttons[slot - 1].icon = val;
             renderPreview();
-            if (state.selectedSlot === slot && isSettingsFocused()) {
+            if (state.selectedSlots.length === 1 && state.selectedSlots[0] === slot && isSettingsFocused()) {
               syncInput(document.getElementById("sp-inp-icon"), val);
               var prev = document.querySelector(".sp-icon-picker-preview");
               if (prev) prev.className = "sp-icon-picker-preview mdi mdi-" + (ICON_MAP[val] || "cog");
@@ -2082,7 +2167,7 @@
           if (slot >= 1 && slot <= NUM_SLOTS) {
             state.buttons[slot - 1].icon_on = val;
             renderPreview();
-            if (state.selectedSlot === slot && isSettingsFocused()) {
+            if (state.selectedSlots.length === 1 && state.selectedSlots[0] === slot && isSettingsFocused()) {
               syncInput(document.getElementById("sp-inp-icon-on"), val);
               var prev = document.getElementById("sp-inp-icon-on-picker");
               if (prev) {
