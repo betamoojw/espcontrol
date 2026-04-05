@@ -9,7 +9,6 @@ switch:
   - platform: template
     name: "Indoor Temp Enable"
     id: indoor_temp_enable
-    internal: true
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
@@ -36,7 +35,6 @@ switch:
   - platform: template
     name: "Outdoor Temp Enable"
     id: outdoor_temp_enable
-    internal: true
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
@@ -64,7 +62,6 @@ text:
   - platform: template
     name: "Indoor Temp Entity"
     id: indoor_temp_entity
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -79,7 +76,6 @@ text:
   - platform: template
     name: "Outdoor Temp Entity"
     id: outdoor_temp_entity
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -95,7 +91,6 @@ text:
   - platform: template
     name: "Presence Sensor Entity"
     id: presence_sensor_entity
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -112,7 +107,6 @@ number:
   - platform: template
     name: "Screensaver Timeout"
     id: screensaver_timeout
-    internal: true
     min_value: 30
     max_value: 1800
     step: 30

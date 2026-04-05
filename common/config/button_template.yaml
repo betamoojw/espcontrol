@@ -9,7 +9,6 @@ text:
   - platform: template
     name: "Button ${num} Entity"
     id: button_${num}_entity
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -24,7 +23,6 @@ text:
   - platform: template
     name: "Button ${num} Label"
     id: button_${num}_label
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -39,7 +37,6 @@ text:
   - platform: template
     name: "Button ${num} Sensor"
     id: button_${num}_sensor
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -54,7 +51,6 @@ text:
   - platform: template
     name: "Button ${num} Sensor Unit"
     id: button_${num}_sensor_unit
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: ""
@@ -69,7 +65,6 @@ text:
   - platform: template
     name: "Button ${num} Icon"
     id: button_${num}_icon
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: "Auto"
@@ -84,7 +79,6 @@ text:
   - platform: template
     name: "Button ${num} Icon On"
     id: button_${num}_icon_on
-    internal: true
     optimistic: true
     restore_value: true
     initial_value: "Auto"
