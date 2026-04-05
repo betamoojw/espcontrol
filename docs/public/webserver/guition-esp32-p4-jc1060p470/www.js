@@ -1253,7 +1253,7 @@
     var lf = document.createElement("div");
     lf.className = "sp-field";
     lf.appendChild(fieldLabel("Label"));
-    var labelInp = textInput("sp-inp-label", b.label, "Optional custom label");
+    var labelInp = textInput("sp-inp-label", b.label, "eg Kitchen");
     lf.appendChild(labelInp);
     panel.appendChild(lf);
 
