@@ -7,7 +7,7 @@
 
 // Custom UI: three-page layout (Screen / Settings / Logs)
 (function () {
-  var NUM_SLOTS = 30;
+  var NUM_SLOTS = 9;
   var DEVICE_ID = "guition-esp32-s3-4848s040";
 
   var ICON_MAP = {
@@ -265,10 +265,10 @@
     "color:#fff;font-size:3.75cqw;white-space:nowrap}" +
     ".sp-main{position:absolute;top:7.5cqw;left:1.04cqw;right:1.04cqw;bottom:0.83cqw;" +
     "display:flex;flex-direction:row;flex-wrap:wrap;align-content:flex-start;gap:2.08cqw;" +
-    "overflow-y:auto;overflow-x:hidden}" +
+    "overflow:hidden}" +
 
     // Preview buttons
-    ".sp-btn{width:30.42cqw;height:29.17cqw;border-radius:1.67cqw;padding:2.92cqw;" +
+    ".sp-btn{width:31.25cqw;height:28.96cqw;border-radius:1.67cqw;padding:2.92cqw;" +
     "display:flex;flex-direction:column;justify-content:space-between;" +
     "cursor:pointer;transition:all .2s;box-sizing:border-box;border:2px solid transparent;" +
     "position:relative}" +

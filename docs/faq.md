@@ -65,16 +65,21 @@ The panel includes hundreds of icons from the Material Design Icons set. If the 
 
 ## How many buttons can I have?
 
-The firmware supports up to **30 buttons** per panel. The 7-inch display shows around 20 at once (with horizontal scrolling for more), while the 4.3-inch display shows around 15 at once (with vertical scrolling for more).
+Each panel has a fixed grid of buttons sized to fill the screen:
+
+- **7-inch JC1060P470** — 20 buttons (4 rows x 5 columns)
+- **4.3-inch JC4880P443** — 12 buttons (4 rows x 3 columns)
+- **4-inch 4848S040** — 9 buttons (3 rows x 3 columns)
 
 ## Which panels are supported?
 
-Espcontrol currently supports two Guition ESP32-P4 panels:
+Espcontrol currently supports three Guition touchscreen panels:
 
-- **JC1060P470** — 7-inch, 1024x600, landscape orientation
-- **JC4880P443** — 4.3-inch, 480x800, portrait orientation
+- **JC1060P470** — 7-inch, 1024x600, landscape orientation (ESP32-P4)
+- **JC4880P443** — 4.3-inch, 480x800, portrait orientation (ESP32-P4)
+- **4848S040** — 4-inch, 480x480, square (ESP32-S3)
 
-Both use the same firmware features, button configuration, and web UI. The layout automatically matches each panel's screen size and orientation.
+All use the same firmware features, button configuration, and web UI. The grid layout automatically matches each panel's screen size and orientation.
 
 ## Does the panel work with other smart home platforms?
 

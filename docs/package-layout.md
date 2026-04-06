@@ -13,7 +13,7 @@ Shared resources (fonts, icons, config templates, generic addons) live under [`c
 ## Load order (summary)
 
 1. **Device & assets** — `device/device.yaml`, `common/assets/fonts.yaml`, `common/assets/icons.yaml`, `device/lvgl_base.yaml`, `theme/button.yaml`
-2. **User-configurable templates** — `common/config/button.yaml`, `common/config/display.yaml`, twenty × `common/config/button_template.yaml` with `vars: { num: "N" }`
+2. **User-configurable templates** — `common/config/button.yaml`, `common/config/display.yaml`, N × `common/config/button_template.yaml` with `vars: { num: "N" }` (9, 12, or 20 depending on device grid)
 3. **Addons** — connectivity (device-specific), time, backlight, backlight schedule, network, firmware update (from `common/addon/`)
 4. **LVGL screens** — **loading** first (required first page), then WiFi setup, then button setup
 5. **Main UI** — `device/lvgl.yaml`, `device/sensors.yaml`

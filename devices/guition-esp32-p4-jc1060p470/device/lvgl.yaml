@@ -2,8 +2,10 @@
 # LVGL MAIN PAGE - Top-layer HUD and button grid
 # =============================================================================
 # Defines the primary UI: a top-layer overlay with temperature and clock
-# labels, and the main page containing a flex-wrap grid of 20 button widgets.
-# Buttons start hidden; sensors.yaml unhides active ones at boot.
+# labels, and the main page containing a fixed 4x5 grid of 20 button widgets.
+# Uses row_wrap for left-to-right, top-to-bottom order on the 1024x600
+# landscape display. Buttons start hidden; sensors.yaml unhides active ones
+# at boot.
 # =============================================================================
 
 lvgl:
@@ -36,14 +38,14 @@ lvgl:
           hidden: true
 
   # ---------------------------------------------------------------------------
-  # Main page (flex-wrap grid of button widgets)
+  # Main page (fixed 4x5 grid of button widgets)
   # ---------------------------------------------------------------------------
   pages:
     - id: main_page
       scrollbar_mode: "off"
       layout:
         type: flex
-        flex_flow: column_wrap
+        flex_flow: row_wrap
         pad_row: 10
         pad_column: 10
       width: 100%
@@ -75,13 +77,3 @@ lvgl:
         - !include { file: button_widget.yaml, vars: { num: "18" } }
         - !include { file: button_widget.yaml, vars: { num: "19" } }
         - !include { file: button_widget.yaml, vars: { num: "20" } }
-        - !include { file: button_widget.yaml, vars: { num: "21" } }
-        - !include { file: button_widget.yaml, vars: { num: "22" } }
-        - !include { file: button_widget.yaml, vars: { num: "23" } }
-        - !include { file: button_widget.yaml, vars: { num: "24" } }
-        - !include { file: button_widget.yaml, vars: { num: "25" } }
-        - !include { file: button_widget.yaml, vars: { num: "26" } }
-        - !include { file: button_widget.yaml, vars: { num: "27" } }
-        - !include { file: button_widget.yaml, vars: { num: "28" } }
-        - !include { file: button_widget.yaml, vars: { num: "29" } }
-        - !include { file: button_widget.yaml, vars: { num: "30" } }

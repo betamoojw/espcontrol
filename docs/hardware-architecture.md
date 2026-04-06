@@ -6,7 +6,7 @@ description:
 
 # Specifications
 
-Espcontrol runs on **Guition ESP32-P4** touchscreen panels designed for smart home control.
+Espcontrol runs on **Guition ESP32** touchscreen panels designed for smart home control.
 
 ## Supported panels
 
@@ -19,7 +19,8 @@ Espcontrol runs on **Guition ESP32-P4** touchscreen panels designed for smart ho
 | Display type | LCD (MIPI DSI) |
 | Touch | Capacitive touchscreen |
 | Backlight | Adjustable brightness (PWM) |
-| Layout | Horizontal scroll, column-wrap grid |
+| Processor | ESP32-P4 |
+| Layout | Fixed 4x5 grid (20 buttons) |
 
 ### 4.3-inch — JC4880P443
 
@@ -30,11 +31,24 @@ Espcontrol runs on **Guition ESP32-P4** touchscreen panels designed for smart ho
 | Display type | LCD (MIPI DSI) |
 | Touch | Capacitive touchscreen |
 | Backlight | Adjustable brightness (PWM) |
-| Layout | Vertical scroll, row-wrap grid |
+| Processor | ESP32-P4 |
+| Layout | Fixed 4x3 grid (12 buttons) |
+
+### 4-inch — 4848S040
+
+| Spec | Value |
+| --- | --- |
+| Screen size | 4 inches |
+| Resolution | 480 x 480 pixels (square) |
+| Display type | LCD (SPI + RGB) |
+| Touch | Capacitive touchscreen |
+| Backlight | Adjustable brightness (PWM) |
+| Processor | ESP32-S3 |
+| Layout | Fixed 3x3 grid (9 buttons) |
 
 ## Processor and memory
 
-Both panels share the same SoC and memory configuration.
+The ESP32-P4 panels share the same SoC and memory configuration. The 4-inch panel uses an ESP32-S3.
 
 | Spec | Value |
 | --- | --- |

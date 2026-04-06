@@ -2,13 +2,13 @@
 
 # Espcontrol
 
-Turn a 7-inch touchscreen into a control panel for your smart home. Espcontrol is free, open-source firmware for the **Guition ESP32-P4 JC1060P470** display that connects to [Home Assistant](https://www.home-assistant.io/) and lets you control up to 20 devices with a single tap.
+Turn a touchscreen into a control panel for your smart home. Espcontrol is free, open-source firmware for **Guition ESP32** touchscreens that connects to [Home Assistant](https://www.home-assistant.io/) and lets you control up to 20 devices with a single tap.
 
 **Documentation and install guide:** [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/)
 
 ## Features
 
-- **Up to 20 buttons** — control lights, switches, fans, locks, covers, media players, and more
+- **Up to 20 buttons** — control lights, switches, fans, locks, covers, media players, and more (9, 12, or 20 depending on screen size)
 - **Drag-and-drop layout** — rearrange buttons from your browser
 - **Automatic icons** — the panel picks an icon based on the device type, or choose from hundreds of icons manually
 - **Custom labels** — name each button however you like, or let it use the name from Home Assistant

@@ -2,20 +2,20 @@
 title: Espcontrol — Home Assistant touch control panel
 titleTemplate: :title
 description:
-  Touchscreen control panel for Home Assistant: up to 30 buttons, web-based configuration, automatic firmware updates.
+  Touchscreen control panel for Home Assistant: up to 20 buttons, web-based configuration, automatic firmware updates.
 ---
 
 ![Espcontrol on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](/home_screen_hero.jpg)
 
 # Espcontrol
 
-**Espcontrol** is free, open-source firmware that turns **Guition ESP32** touchscreens into a control panel for [Home Assistant](https://www.home-assistant.io/). Supported panels include the **7-inch JC1060P470** (1024x600, landscape), the **4.3-inch JC4880P443** (480x800, portrait), and the **4-inch 4848S040** (480x480, square). You get up to **30 configurable buttons** that can toggle or control any smart home device, plus a status bar with a clock and temperatures, a screensaver, automatic brightness, and **over-the-air updates**. After the first install, everything is configured through the device's **built-in web page** — no coding or file editing required.
+**Espcontrol** is free, open-source firmware that turns **Guition ESP32** touchscreens into a control panel for [Home Assistant](https://www.home-assistant.io/). Supported panels include the **7-inch JC1060P470** (1024x600, landscape, 20 buttons), the **4.3-inch JC4880P443** (480x800, portrait, 12 buttons), and the **4-inch 4848S040** (480x480, square, 9 buttons). Each panel uses a fixed grid layout sized to its screen, plus a status bar with a clock and temperatures, a screensaver, automatic brightness, and **over-the-air updates**. After the first install, everything is configured through the device's **built-in web page** — no coding or file editing required.
 
 **Source code and issues:** [github.com/jtenniswood/espcontrol](https://github.com/jtenniswood/espcontrol).
 
 ## Features
 
-- **Up to 30 buttons** — control lights, switches, fans, locks, covers, media players, and more
+- **Up to 20 buttons** — control lights, switches, fans, locks, covers, media players, and more (9, 12, or 20 depending on screen size)
 - **Drag-and-drop ordering** — rearrange buttons from the web page on your phone or computer
 - **Automatic icons** — the panel picks an icon based on the device type, or choose from hundreds manually
 - **Custom labels** — name each button however you like, or leave it blank to use the name from Home Assistant
