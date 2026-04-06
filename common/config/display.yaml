@@ -8,6 +8,7 @@
 switch:
   - platform: template
     name: "Indoor Temp Enable"
+    internal: true
     id: indoor_temp_enable
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -34,6 +35,7 @@ switch:
 
   - platform: template
     name: "Outdoor Temp Enable"
+    internal: true
     id: outdoor_temp_enable
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -61,6 +63,7 @@ switch:
 text:
   - platform: template
     name: "Indoor Temp Entity"
+    internal: true
     id: indoor_temp_entity
     optimistic: true
     restore_value: true
@@ -75,6 +78,7 @@ text:
 
   - platform: template
     name: "Outdoor Temp Entity"
+    internal: true
     id: outdoor_temp_entity
     optimistic: true
     restore_value: true
@@ -90,6 +94,7 @@ text:
   # Optional presence sensor for screensaver (e.g. mmWave)
   - platform: template
     name: "Presence Sensor Entity"
+    internal: true
     id: presence_sensor_entity
     optimistic: true
     restore_value: true
@@ -106,6 +111,7 @@ number:
   # Screensaver idle timeout
   - platform: template
     name: "Screensaver Timeout"
+    internal: true
     id: screensaver_timeout
     min_value: 30
     max_value: 1800

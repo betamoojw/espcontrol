@@ -8,6 +8,7 @@
 text:
   - platform: template
     name: "Button On Color"
+    internal: true
     id: button_on_color
     optimistic: true
     restore_value: true
@@ -22,6 +23,7 @@ text:
 
   - platform: template
     name: "Button Off Color"
+    internal: true
     id: button_off_color
     optimistic: true
     restore_value: true
@@ -36,6 +38,7 @@ text:
 
   - platform: template
     name: "Button Order"
+    internal: true
     id: button_order
     optimistic: true
     restore_value: true
