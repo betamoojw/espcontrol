@@ -3123,10 +3123,11 @@
           };
         }
 
-        // Import subpage configs
+        // Import subpage configs (skip slots beyond this device's capacity)
         state.subpages = {};
         if (data.subpages) {
           for (var k in data.subpages) {
+            if (parseInt(k, 10) > NUM_SLOTS) continue;
             var sp = parseSubpageConfig(data.subpages[k]);
             sp.sizes = {};
             buildSubpageGrid(sp);
