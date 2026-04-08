@@ -555,6 +555,7 @@
   var previewDropIdx = -1;
   var dragRafPending = false;
   var dragSrcEl = null;
+  var dragIsSubpage = false;
   var orderReceived = false;
   var migrationTimer = null;
   var _eventSource = null;
@@ -1544,6 +1545,7 @@
           (sp.sizes[slot] === 2 ? " sp-btn-double" : "") +
           (state.subpageSelectedSlots.indexOf(slot) !== -1 ? " sp-selected" : "");
         btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
+        btn.draggable = true;
         btn.setAttribute("data-pos", pos);
         var hasWhenOn = b.sensor || (b.icon_on && b.icon_on !== "Auto");
         var badgeIcon = b.sensor ? "gauge" : "swap-horizontal";
@@ -1554,8 +1556,9 @@
           sensorBadge +
           '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>' +
           '<span class="sp-btn-label">' + escHtml(label) + "</span>";
-        (function (s) {
+        (function (s, p) {
           btn.addEventListener("click", function () {
+            if (didDrag) { didDrag = false; return; }
             if (state.subpageSelectedSlots.length === 1 && state.subpageSelectedSlots[0] === s) {
               state.subpageSelectedSlots = [];
             } else {
@@ -1568,7 +1571,8 @@
           btn.addEventListener("contextmenu", function (e) {
             showSubpageContextMenu(e, s);
           });
-        })(slot);
+          setupPreviewDrag(btn, p);
+        })(slot, pos);
         main.appendChild(btn);
       } else {
         var empty = document.createElement("div");
@@ -2222,6 +2226,35 @@
     state.grid = grid;
   }
 
+  function moveToCellSubpage(fromPos, toPos) {
+    var sp = getSubpage(state.editingSubpage);
+    var maxPos = NUM_SLOTS - 1;
+    if (toPos >= maxPos || sp.grid[toPos] === -1) return;
+    var grid = sp.grid.slice();
+    var movingSlot = grid[fromPos];
+    var targetSlot = grid[toPos];
+    clearSpans(grid);
+    grid[toPos] = movingSlot;
+    grid[fromPos] = targetSlot;
+    for (var i = 0; i < maxPos; i++) {
+      if (grid[i] > 0 && sp.sizes[grid[i]] === 2) {
+        var below = i + GRID_COLS;
+        if (below < maxPos) {
+          if (grid[below] > 0) {
+            var displaced = grid[below];
+            grid[below] = -1;
+            for (var j = 0; j < maxPos; j++) {
+              if (grid[j] === 0) { grid[j] = displaced; break; }
+            }
+          } else {
+            grid[below] = -1;
+          }
+        }
+      }
+    }
+    sp.grid = grid;
+  }
+
   function clearPlaceholder() {
     if (previewPlaceholder) {
       previewPlaceholder.classList.remove("sp-drop-placeholder");
@@ -2246,8 +2279,9 @@
         previewDropIdx = pendingCellIdx;
         clearPlaceholder();
         var cells = container.children;
-        if (pendingCellIdx >= 0 && pendingCellIdx < cells.length) {
-          previewPlaceholder = cells[pendingCellIdx];
+        var domIdx = dragIsSubpage ? pendingCellIdx + 1 : pendingCellIdx;
+        if (domIdx >= 0 && domIdx < cells.length) {
+          previewPlaceholder = cells[domIdx];
           previewPlaceholder.classList.add("sp-drop-placeholder");
         }
       });
@@ -2266,16 +2300,24 @@
       previewDropIdx = -1;
       clearPlaceholder();
       if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
-      if (dragSrcPos < 0 || toPos < 0 || toPos >= NUM_SLOTS) return;
-      if (dragSrcPos === toPos) {
-        dragSrcPos = -1;
-        return;
+      if (dragIsSubpage) {
+        var maxPos = NUM_SLOTS - 1;
+        if (dragSrcPos < 0 || toPos < 0 || toPos >= maxPos) { dragSrcPos = -1; dragIsSubpage = false; return; }
+        if (dragSrcPos === toPos) { dragSrcPos = -1; dragIsSubpage = false; return; }
+        moveToCellSubpage(dragSrcPos, toPos);
+        renderPreview();
+        renderButtonSettings();
+        saveSubpageConfig(state.editingSubpage);
+      } else {
+        if (dragSrcPos < 0 || toPos < 0 || toPos >= NUM_SLOTS) { dragSrcPos = -1; return; }
+        if (dragSrcPos === toPos) { dragSrcPos = -1; return; }
+        moveToCell(dragSrcPos, toPos);
+        renderPreview();
+        renderButtonSettings();
+        postText("Button Order", serializeGrid(state.grid));
       }
-      moveToCell(dragSrcPos, toPos);
-      renderPreview();
-      renderButtonSettings();
-      postText("Button Order", serializeGrid(state.grid));
       dragSrcPos = -1;
+      dragIsSubpage = false;
     });
   }
 
@@ -2283,6 +2325,7 @@
     btn.addEventListener("dragstart", function (e) {
       dragSrcPos = pos;
       dragSrcEl = btn;
+      dragIsSubpage = !!state.editingSubpage;
       didDrag = true;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", String(pos));
@@ -2291,6 +2334,7 @@
     btn.addEventListener("dragend", function () {
       dragSrcPos = -1;
       previewDropIdx = -1;
+      dragIsSubpage = false;
       clearPlaceholder();
       if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
     });

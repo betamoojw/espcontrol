@@ -160,3 +160,6 @@ display:
     pclk_frequency: 8MHz
     update_interval: never
     auto_clear_enabled: False
+    transform:
+      mirror_x: true
+      mirror_y: true
