@@ -151,6 +151,7 @@ export default defineConfig({
         text: 'Configuring',
         items: [
           { text: 'Setup', link: '/features/setup' },
+          { text: 'Subpages', link: '/features/subpages' },
           { text: 'Appearance', link: '/features/appearance' },
           { text: 'Display & Screensaver', link: '/features/display-screensaver' },
           { text: 'Backlight Schedule', link: '/features/backlight-schedule' },

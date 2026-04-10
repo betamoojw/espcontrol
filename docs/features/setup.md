@@ -21,13 +21,7 @@ Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A
 3. **Choose an icon** — type to search, or select **Auto** to let the panel pick one based on the device type.
 4. **Set a label** (optional). If left blank the button uses the device's friendly name from Home Assistant.
 
-### Button types
-
-**Toggle** — connected to a Home Assistant device. Tap it on the panel to switch the device on or off. The button changes colour to show the current state.
-
-**Subpage** — works like a folder. Tapping it opens a new page with its own set of buttons, great for grouping related controls without filling up the home screen. The subpage has one fewer slot than the home screen because the first slot is a **Back** button. Subpage buttons show a small **arrow badge** on the home screen.
-
-To configure a subpage, click **Configure Subpage** in the button settings, or right-click the button and choose **Edit Subpage**. Add and arrange buttons there the same way you would on the home screen, then click the back arrow to return.
+**[Subpage](/features/subpages)** — works like a folder that opens a new page of buttons. See [Subpages](/features/subpages) for details.
 
 ### When Entity On
 
@@ -45,7 +39,6 @@ Drag and drop any button to reposition it. If you drop it onto an occupied space
 ### Double-height buttons
 
 Right-click a button and choose **Double Height** to make it span two rows. To revert, right-click and choose **Single Height**. If a button already occupies the space below, it gets moved automatically.
-
 
 ## Apply Configuration
 
