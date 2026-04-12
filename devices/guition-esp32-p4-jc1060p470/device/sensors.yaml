@@ -363,6 +363,11 @@ esphome:
                 LV_GRID_ALIGN_STRETCH, col, 1,
                 LV_GRID_ALIGN_STRETCH, row, row_span);
 
+              if (row_span > 1) {
+                lv_label_set_long_mode(s.text_lbl, LV_LABEL_LONG_WRAP);
+                lv_obj_set_width(s.text_lbl, lv_pct(100));
+              }
+
               if (has_on) {
                 lv_obj_set_style_bg_color(s.btn, lv_color_hex(on_val),
                   static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
@@ -1038,6 +1043,10 @@ esphome:
 
                 lv_obj_t *stl = lv_label_create(sb_btn);
                 lv_obj_align(stl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+                if (rs > 1) {
+                  lv_label_set_long_mode(stl, LV_LABEL_LONG_WRAP);
+                  lv_obj_set_width(stl, lv_pct(100));
+                }
 
                 if (!sb.entity.empty()) {
                   if (!sb.label.empty()) {
