@@ -77,13 +77,13 @@
     "Spotlight", "Sprinkler", "String Lights", "Sun", "Table", "Television",
     "Thermometer", "Thermometer Alert", "Thermometer High", "Thermometer Low", "Thermostat", "Timer",
     "Toilet", "Transmission Tower", "Trash Can", "Wall Outlet", "Washer", "Water",
-    "Water Heater", "Radar", "Water Percent", "Weather Cloudy", "Weather Cloudy Alert", "Weather Dust",
-    "Weather Fog", "Weather Hail", "Weather Hazy", "Weather Hurricane", "Weather Lightning", "Weather Lightning Rainy",
-    "Weather Night", "Weather Night Cloudy", "Weather Partly Cloudy", "Weather Partly Lightning", "Weather Partly Rainy", "Weather Partly Snowy",
-    "Weather Partly Snowy Rainy", "Weather Pouring", "Weather Rainy", "Weather Snowy", "Weather Snowy Heavy", "Weather Snowy Rainy",
-    "Weather Sunny", "Weather Sunny Alert", "Weather Sunny Off", "Weather Sunset", "Weather Sunset Down", "Weather Sunset Up",
-    "Weather Tornado", "Weather Windy", "Weather Windy Variant", "Wind Power", "Wind Turbine", "Wind Turbine Alert",
-    "Wind Turbine Check", "Window",
+    "Water Heater", "Water Percent", "Weather Cloudy", "Weather Cloudy Alert", "Weather Dust", "Weather Fog",
+    "Weather Hail", "Weather Hazy", "Weather Hurricane", "Weather Lightning", "Weather Lightning Rainy", "Weather Night",
+    "Weather Night Cloudy", "Weather Partly Cloudy", "Weather Partly Lightning", "Weather Partly Rainy", "Weather Partly Snowy", "Weather Partly Snowy Rainy",
+    "Weather Pouring", "Weather Rainy", "Weather Snowy", "Weather Snowy Heavy", "Weather Snowy Rainy", "Weather Sunny",
+    "Weather Sunny Alert", "Weather Sunny Off", "Weather Sunset", "Weather Sunset Down", "Weather Sunset Up", "Weather Tornado",
+    "Weather Windy", "Weather Windy Variant", "Wind Power", "Wind Turbine", "Wind Turbine Alert", "Wind Turbine Check",
+    "Window",
   ];
   // --- GENERATED:ICONS END ---
 
@@ -142,43 +142,6 @@
           renderPreview();
         }
       ));
-    },
-  });
-  // --- type: radar ---
-  registerButtonType("radar", {
-    label: "Radar",
-    allowInSubpage: false,
-    labelPlaceholder: "e.g. Local Radar",
-    onSelect: function (b) {
-      b.entity = ""; b.sensor = ""; b.unit = "";
-      b.icon = "Radar"; b.icon_on = "Auto";
-    },
-    renderSettings: function (panel, b, slot, helpers) {
-      var hint = document.createElement("div");
-      hint.className = "sp-field-hint";
-      hint.textContent = "Uses the location from Settings \u203A Weather.";
-      panel.appendChild(hint);
-
-      var zf = document.createElement("div");
-      zf.className = "sp-field";
-      zf.appendChild(helpers.fieldLabel("Zoom (1\u20137)", helpers.idPrefix + "zoom"));
-      var zoomInp = helpers.textInput(helpers.idPrefix + "zoom", b.zoom || "6", "6");
-      zoomInp.className = "sp-input sp-input--narrow";
-      zf.appendChild(zoomInp);
-      panel.appendChild(zf);
-      helpers.bindField(zoomInp, "zoom", true);
-    },
-    renderPreview: function (b, helpers) {
-      var label = b.label || "Radar";
-      var zoom = b.zoom || "6";
-      return {
-        iconHtml:
-          '<div class="sp-radar-tile" data-zoom="' + helpers.escHtml(zoom) + '">' +
-            '<span class="sp-radar-placeholder mdi mdi-radar"></span>' +
-          '</div>',
-        labelHtml:
-          '<span class="sp-btn-label">' + helpers.escHtml(label) + '</span>',
-      };
     },
   });
   // --- type: sensor ---
@@ -407,13 +370,6 @@
     ".sp-btn-double{grid-row:span 2}" +
     ".sp-btn-double .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
     ".sp-btn-double .sp-btn-label-row .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
-    ".sp-btn-quad{grid-row:span 2;grid-column:span 2}" +
-    ".sp-btn-quad .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
-    ".sp-radar-tile{position:absolute;inset:0;overflow:hidden;border-radius:inherit;" +
-    "display:flex;align-items:center;justify-content:center}" +
-    ".sp-radar-placeholder{font-size:8cqw;color:rgba(255,255,255,.2)}" +
-    ".sp-radar-img{width:100%;height:100%;object-fit:cover}" +
-    ".sp-btn:has(.sp-radar-img) .sp-btn-label{text-shadow:0 1px 4px rgba(0,0,0,.8);position:relative;z-index:1}" +
     ".sp-empty-cell{border:2px dashed rgba(255,255,255,.15);background:transparent;" +
     "border-radius:var(--empty-r);display:flex;align-items:center;justify-content:center;" +
     "cursor:pointer;transition:border-color .2s}" +
@@ -617,8 +573,6 @@
     "overflow:hidden;word-break:break-word;min-height:0}" +
     ".sp-back-btn.sp-btn-double{grid-row:span 2}" +
     ".sp-back-btn.sp-btn-double .sp-btn-label{-webkit-line-clamp:var(--back-lines-dbl)}" +
-    ".sp-back-btn.sp-btn-quad{grid-row:span 2;grid-column:span 2}" +
-    ".sp-back-btn.sp-btn-quad .sp-btn-label{-webkit-line-clamp:var(--back-lines-dbl)}" +
 
     ".sp-btn-label-row{display:flex;align-items:baseline;width:100%;overflow:hidden}" +
     ".sp-btn-label-row .sp-btn-label{flex:1;min-width:0}" +
@@ -743,53 +697,20 @@
     for (var i = 0; i < parts.length && i < NUM_SLOTS; i++) {
       var s = parts[i].trim();
       if (!s) continue;
-      var last = s.charAt(s.length - 1);
-      var dbl = last === "d";
-      var quad = last === "q";
+      var dbl = s.charAt(s.length - 1) === "d";
       var n = parseInt(s, 10);
       if (n >= 1 && n <= NUM_SLOTS && !isNaN(n)) {
         grid[i] = n;
-        if (quad) state.sizes[n] = 4;
-        else if (dbl) state.sizes[n] = 2;
+        if (dbl) state.sizes[n] = 2;
       }
     }
     applySpans(grid, state.sizes, NUM_SLOTS);
     return grid;
   }
 
-  function displaceCell(grid, idx, sizes, owner, maxSlots) {
-    if (idx >= maxSlots) return false;
-    if (grid[idx] === 0 || grid[idx] === -1) { grid[idx] = -1; return true; }
-    if (grid[idx] > 0 || grid[idx] === -2) {
-      var displaced = grid[idx];
-      for (var j = 0; j < maxSlots; j++) {
-        if (grid[j] === 0) { grid[j] = displaced; grid[idx] = -1; return true; }
-      }
-    }
-    return false;
-  }
-
   function applySpans(grid, sizes, maxSlots) {
     for (var i = 0; i < maxSlots; i++) {
-      var s = grid[i];
-      if (!((s > 0 || s === -2) && (sizes[s] === 2 || sizes[s] === 4))) continue;
-
-      if (sizes[s] === 4) {
-        var col = i % GRID_COLS;
-        var right = i + 1;
-        var below = i + GRID_COLS;
-        var diag = below + 1;
-        if (col + 1 >= GRID_COLS || below >= maxSlots) { delete sizes[s]; continue; }
-        var ok = displaceCell(grid, right, sizes, s, maxSlots) &&
-                 displaceCell(grid, below, sizes, s, maxSlots) &&
-                 displaceCell(grid, diag, sizes, s, maxSlots);
-        if (!ok) {
-          if (grid[right] === -1) grid[right] = 0;
-          if (grid[below] === -1) grid[below] = 0;
-          if (grid[diag] === -1) grid[diag] = 0;
-          delete sizes[s];
-        }
-      } else {
+      if ((grid[i] > 0 || grid[i] === -2) && sizes[grid[i]] === 2) {
         var below = i + GRID_COLS;
         if (below >= maxSlots) continue;
         if (grid[below] > 0 || grid[below] === -2) {
@@ -798,7 +719,10 @@
           for (var j = 0; j < maxSlots; j++) {
             if (grid[j] === 0) { grid[j] = displaced; placed = true; break; }
           }
-          if (!placed) { delete sizes[grid[i]]; continue; }
+          if (!placed) {
+            delete sizes[grid[i]];
+            continue;
+          }
         }
         grid[below] = -1;
       }
@@ -813,8 +737,7 @@
     if (last < 0) return "";
     return grid.slice(0, last + 1).map(function (slot) {
       if (slot <= 0) return "";
-      var suffix = state.sizes[slot] === 4 ? "q" : (state.sizes[slot] === 2 ? "d" : "");
-      return slot + suffix;
+      return slot + (state.sizes[slot] === 2 ? "d" : "");
     }).join(",");
   }
 
@@ -824,40 +747,6 @@
     }
   }
 
-  function clearSlotSpan(grid, pos, sizes, slot, maxSlots) {
-    var sz = sizes[slot] || 1;
-    if (sz === 4) {
-      var right = pos + 1, below = pos + GRID_COLS, diag = below + 1;
-      if (right < maxSlots && grid[right] === -1) grid[right] = 0;
-      if (below < maxSlots && grid[below] === -1) grid[below] = 0;
-      if (diag < maxSlots && grid[diag] === -1) grid[diag] = 0;
-    } else if (sz === 2) {
-      var below = pos + GRID_COLS;
-      if (below < maxSlots && grid[below] === -1) grid[below] = 0;
-    }
-    delete sizes[slot];
-  }
-
-  function displaceIfOccupied(grid, idx, maxSlots, isSub) {
-    if (idx >= maxSlots) return;
-    if (grid[idx] > 0 || grid[idx] === -2) {
-      if (isSub) return;
-      var displaced = grid[idx];
-      grid[idx] = 0;
-      var freeCell = firstFreeCell(idx + 1);
-      if (freeCell >= 0) grid[freeCell] = displaced;
-    }
-  }
-
-  function saveGridState(c) {
-    if (c.isSub) {
-      var sp = getSubpage(state.editingSubpage);
-      sp.order = serializeSubpageGrid(sp);
-      saveSubpageConfig(state.editingSubpage);
-    } else {
-      postText("Button Order", serializeGrid(state.grid));
-    }
-  }
 
   function resolveIcon(b) {
     var sel = b.icon || "Auto";
@@ -1848,7 +1737,7 @@
 
       if (slot === -2) {
         var backBtn = document.createElement("div");
-        backBtn.className = "sp-back-btn" + (c.sizes[-2] === 4 ? " sp-btn-quad" : c.sizes[-2] === 2 ? " sp-btn-double" : "");
+        backBtn.className = "sp-back-btn" + (c.sizes[-2] === 2 ? " sp-btn-double" : "");
         backBtn.innerHTML =
           '<span class="sp-btn-icon mdi mdi-chevron-left"></span>' +
           '<span class="sp-btn-label">Back</span>';
@@ -1862,7 +1751,7 @@
         var b = c.buttons[bIdx];
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
-        var color = (b.type === "sensor" || b.type === "weather" || b.type === "radar") ? state.sensorColor : state.offColor;
+        var color = (b.type === "sensor" || b.type === "weather") ? state.sensorColor : state.offColor;
         var previewTypeDef = !c.isSub ? (BUTTON_TYPES[b.type || ""] || null) : null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
           ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
@@ -1870,7 +1759,7 @@
 
         var btn = document.createElement("div");
         btn.className = "sp-btn" +
-          (c.sizes[slot] === 4 ? " sp-btn-quad" : c.sizes[slot] === 2 ? " sp-btn-double" : "") +
+          (c.sizes[slot] === 2 ? " sp-btn-double" : "") +
           (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
         btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
         btn.draggable = true;
@@ -1898,57 +1787,6 @@
         empty.setAttribute("data-pos", pos);
         empty.innerHTML = '<span class="sp-add-icon mdi mdi-plus"></span>';
         main.appendChild(empty);
-      }
-    }
-    loadRadarTiles();
-  }
-
-  // ── Radar tile image loading ──────────────────────────────────────────
-
-  var _radarCache = { host: "", path: "", ts: 0 };
-
-  function loadRadarTiles() {
-    var tiles = els.previewMain.querySelectorAll(".sp-radar-tile");
-    if (!tiles.length) return;
-    var lat = state.weatherLat;
-    var lon = state.weatherLon;
-    if (!lat || !lon) return;
-    var now = Date.now();
-    if (_radarCache.path && now - _radarCache.ts < 5 * 60 * 1000) {
-      applyRadarImages(tiles, _radarCache.host, _radarCache.path, lat, lon);
-      return;
-    }
-    fetch("https://api.rainviewer.com/public/weather-maps.json")
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var frames = data.radar && data.radar.past;
-        if (!frames || !frames.length) return;
-        var latest = frames[frames.length - 1];
-        _radarCache.host = data.host;
-        _radarCache.path = latest.path;
-        _radarCache.ts = Date.now();
-        var current = els.previewMain.querySelectorAll(".sp-radar-tile");
-        applyRadarImages(current, data.host, latest.path, lat, lon);
-      })
-      .catch(function () {});
-  }
-
-  function applyRadarImages(tiles, host, path, lat, lon) {
-    for (var i = 0; i < tiles.length; i++) {
-      var tile = tiles[i];
-      var zoom = tile.getAttribute("data-zoom") || "6";
-      var url = host + path + "/512/" + zoom + "/" + lat + "/" + lon + "/2/1_1.png";
-      var existing = tile.querySelector(".sp-radar-img");
-      if (existing) {
-        existing.src = url;
-      } else {
-        var placeholder = tile.querySelector(".sp-radar-placeholder");
-        if (placeholder) placeholder.style.display = "none";
-        var img = document.createElement("img");
-        img.className = "sp-radar-img";
-        img.src = url;
-        img.alt = "Radar";
-        tile.appendChild(img);
       }
     }
   }
@@ -2419,16 +2257,10 @@
     var targetSlot = grid[toPos];
     grid[toPos] = movingSlot;
     grid[fromPos] = targetSlot;
-    var sz = c.sizes[movingSlot] || 1;
-    if (sz === 4) {
-      var col = toPos % GRID_COLS;
-      if (col + 1 >= GRID_COLS || toPos + GRID_COLS >= c.maxSlots) {
-        delete c.sizes[movingSlot];
-      }
-    } else if (sz === 2 && toPos + GRID_COLS >= c.maxSlots) {
+    applySpans(grid, c.sizes, c.maxSlots);
+    if (c.sizes[movingSlot] === 2 && toPos + GRID_COLS >= c.maxSlots) {
       delete c.sizes[movingSlot];
     }
-    applySpans(grid, c.sizes, c.maxSlots);
     if (c.isSub) {
       getSubpage(state.editingSubpage).grid = grid;
     } else {
@@ -2689,14 +2521,16 @@
       type: src.type || "",
     };
 
-    var srcSize = state.sizes[srcSlot];
-    if (srcSize) state.sizes[newSlot] = srcSize;
+    if (state.sizes[srcSlot] === 2) state.sizes[newSlot] = 2;
 
     var srcPos = state.grid.indexOf(srcSlot);
     var newPos = firstFreeCell(srcPos + 1);
     if (newPos < 0) return;
     state.grid[newPos] = newSlot;
-    applySpans(state.grid, state.sizes, NUM_SLOTS);
+    if (state.sizes[newSlot] === 2) {
+      var belowNew = newPos + GRID_COLS;
+      if (belowNew < NUM_SLOTS && state.grid[belowNew] === 0) state.grid[belowNew] = -1;
+    }
 
     if (src.type === "subpage" && state.subpages[srcSlot]) {
       var spJson = serializeSubpageConfig(state.subpages[srcSlot]);
@@ -2715,11 +2549,14 @@
     var c = ctx();
     for (var i = 0; i < c.maxSlots; i++) {
       if (c.grid[i] === slot) {
-        clearSlotSpan(c.grid, i, c.sizes, slot, c.maxSlots);
         c.grid[i] = 0;
+        if (c.sizes[slot] === 2 && i + GRID_COLS < c.maxSlots && c.grid[i + GRID_COLS] === -1) {
+          c.grid[i + GRID_COLS] = 0;
+        }
         break;
       }
     }
+    delete c.sizes[slot];
 
     var selIdx = c.selected.indexOf(slot);
     if (selIdx !== -1) c.selected.splice(selIdx, 1);
@@ -2748,10 +2585,13 @@
     var c = ctx();
     for (var i = 0; i < c.maxSlots; i++) {
       if (slots.indexOf(c.grid[i]) !== -1) {
-        clearSlotSpan(c.grid, i, c.sizes, c.grid[i], c.maxSlots);
+        if (c.sizes[c.grid[i]] === 2 && i + GRID_COLS < c.maxSlots && c.grid[i + GRID_COLS] === -1) {
+          c.grid[i + GRID_COLS] = 0;
+        }
         c.grid[i] = 0;
       }
     }
+    slots.forEach(function (slot) { delete c.sizes[slot]; });
     c.setSelected([]);
     c.setLastClicked(-1);
     if (c.isSub) {
@@ -2834,50 +2674,35 @@
         }
       }
 
-      var curSize = c.sizes[slot] || 1;
-      addCtxItem("arrow-expand-vertical", curSize === 1 ? "Double Height" : "Single Size", function () {
+      var isDbl = c.sizes[slot] === 2;
+      addCtxItem("arrow-expand-vertical", isDbl ? "Single Height" : "Double Height", function () {
         var slotPos = c.grid.indexOf(slot);
-        clearSlotSpan(c.grid, slotPos, c.sizes, slot, c.maxSlots);
-        if (curSize === 1) {
-          var belowPos = slotPos + GRID_COLS;
+        var belowPos = slotPos + GRID_COLS;
+        if (isDbl) {
+          delete c.sizes[slot];
+          if (belowPos < c.maxSlots && c.grid[belowPos] === -1) c.grid[belowPos] = 0;
+        } else {
           if (belowPos >= c.maxSlots) return;
-          displaceIfOccupied(c.grid, belowPos, c.maxSlots, c.isSub);
+          if (c.grid[belowPos] > 0) {
+            if (c.isSub) return;
+            var displaced = c.grid[belowPos];
+            c.grid[belowPos] = 0;
+            var freeCell = firstFreeCell(belowPos + 1);
+            if (freeCell >= 0) c.grid[freeCell] = displaced;
+          }
           c.sizes[slot] = 2;
           c.grid[belowPos] = -1;
         }
-        saveGridState(c);
+        if (c.isSub) {
+          var sp = getSubpage(state.editingSubpage);
+          sp.order = serializeSubpageGrid(sp);
+          saveSubpageConfig(state.editingSubpage);
+        } else {
+          postText("Button Order", serializeGrid(state.grid));
+        }
         renderPreview();
         renderButtonSettings();
       });
-
-      if (!c.isSub) {
-        var canQuad = (function () {
-          var slotPos = c.grid.indexOf(slot);
-          var col = slotPos % GRID_COLS;
-          return col + 1 < GRID_COLS && slotPos + GRID_COLS < c.maxSlots;
-        })();
-        if (canQuad) {
-          addCtxItem("arrow-expand-all", curSize === 4 ? "Single Size" : "Quad (2\u00d72)", function () {
-            var slotPos = c.grid.indexOf(slot);
-            clearSlotSpan(c.grid, slotPos, c.sizes, slot, c.maxSlots);
-            if (curSize !== 4) {
-              var right = slotPos + 1;
-              var below = slotPos + GRID_COLS;
-              var diag = below + 1;
-              displaceIfOccupied(c.grid, right, c.maxSlots, false);
-              displaceIfOccupied(c.grid, below, c.maxSlots, false);
-              displaceIfOccupied(c.grid, diag, c.maxSlots, false);
-              c.sizes[slot] = 4;
-              c.grid[right] = -1;
-              c.grid[below] = -1;
-              c.grid[diag] = -1;
-            }
-            saveGridState(c);
-            renderPreview();
-            renderButtonSettings();
-          });
-        }
-      }
 
       if (!c.isSub) {
         addCtxItem("content-copy", "Duplicate", function () { duplicateButton(slot); });
@@ -2897,14 +2722,22 @@
     ctxMenu = document.createElement("div");
     ctxMenu.className = "sp-ctx-menu";
     var sp = getSubpage(state.editingSubpage);
-    var backSize = sp.sizes[-2] || 1;
-    addCtxItem("arrow-expand-vertical", backSize > 1 ? "Single Height" : "Double Height", function () {
+    var isDbl = sp.sizes[-2] === 2;
+    addCtxItem("arrow-expand-vertical", isDbl ? "Single Height" : "Double Height", function () {
       var backPos = sp.grid.indexOf(-2);
-      clearSlotSpan(sp.grid, backPos, sp.sizes, -2, NUM_SLOTS);
-      if (backSize === 1) {
-        var belowPos = backPos + GRID_COLS;
+      var belowPos = backPos + GRID_COLS;
+      if (isDbl) {
+        delete sp.sizes[-2];
+        if (belowPos < NUM_SLOTS && sp.grid[belowPos] === -1) sp.grid[belowPos] = 0;
+      } else {
         if (belowPos >= NUM_SLOTS) return;
-        displaceIfOccupied(sp.grid, belowPos, NUM_SLOTS, true);
+        if (sp.grid[belowPos] > 0) {
+          var displaced = sp.grid[belowPos];
+          sp.grid[belowPos] = 0;
+          for (var j = 0; j < NUM_SLOTS; j++) {
+            if (sp.grid[j] === 0) { sp.grid[j] = displaced; break; }
+          }
+        }
         sp.sizes[-2] = 2;
         sp.grid[belowPos] = -1;
       }
@@ -2993,9 +2826,12 @@
         entity: e.entity, label: e.label, icon: e.icon,
         icon_on: e.icon_on, sensor: e.sensor, unit: e.unit, type: e.type || "",
       };
-      if (e.size === 2 || e.size === 4) state.sizes[newSlot] = e.size;
+      if (e.size === 2) state.sizes[newSlot] = 2;
       state.grid[cell] = newSlot;
-      applySpans(state.grid, state.sizes, NUM_SLOTS);
+      if (e.size === 2) {
+        var below = cell + GRID_COLS;
+        if (below < NUM_SLOTS && state.grid[below] === 0) state.grid[below] = -1;
+      }
       if (e.subpageConfig) {
         var spCopy = parseSubpageConfig(e.subpageConfig);
         spCopy.sizes = {};
@@ -3154,20 +2990,18 @@
           for (var j = 0; j < origParts.length; j++) {
             var tok = origParts[j].trim();
             if (!tok) continue;
-            var lastCh = tok.charAt(tok.length - 1);
-            var dbl = lastCh === "d";
-            var quad = lastCh === "q";
+            var dbl = tok.charAt(tok.length - 1) === "d";
             var num = parseInt(tok, 10);
             if (isNaN(num) || num < 1 || num > importedCount || seen[num]) continue;
             seen[num] = true;
-            usedSlots.push({ oldSlot: num, spanSize: quad ? 4 : (dbl ? 2 : 1) });
+            usedSlots.push({ oldSlot: num, isDouble: dbl });
           }
           for (var j = 0; j < importedCount; j++) {
             var sn = j + 1;
             if (seen[sn]) continue;
             var bb = data.buttons[j];
             if (bb.entity || bb.label || bb.type) {
-              usedSlots.push({ oldSlot: sn, spanSize: 1 });
+              usedSlots.push({ oldSlot: sn, isDouble: false });
             }
           }
 
@@ -3179,7 +3013,7 @@
             var ns = j + 1;
             slotMap[usedSlots[j].oldSlot] = ns;
             buttons.push(data.buttons[usedSlots[j].oldSlot - 1]);
-            if (usedSlots[j].spanSize > 1) newSizes[ns] = usedSlots[j].spanSize;
+            if (usedSlots[j].isDouble) newSizes[ns] = 2;
           }
           for (var j = limit; j < NUM_SLOTS; j++) buttons.push(empty);
 

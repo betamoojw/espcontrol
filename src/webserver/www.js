@@ -2800,20 +2800,18 @@
           for (var j = 0; j < origParts.length; j++) {
             var tok = origParts[j].trim();
             if (!tok) continue;
-            var lastCh = tok.charAt(tok.length - 1);
-            var dbl = lastCh === "d";
-            var quad = lastCh === "q";
+            var dbl = tok.charAt(tok.length - 1) === "d";
             var num = parseInt(tok, 10);
             if (isNaN(num) || num < 1 || num > importedCount || seen[num]) continue;
             seen[num] = true;
-            usedSlots.push({ oldSlot: num, spanSize: quad ? 4 : (dbl ? 2 : 1) });
+            usedSlots.push({ oldSlot: num, isDouble: dbl });
           }
           for (var j = 0; j < importedCount; j++) {
             var sn = j + 1;
             if (seen[sn]) continue;
             var bb = data.buttons[j];
             if (bb.entity || bb.label || bb.type) {
-              usedSlots.push({ oldSlot: sn, spanSize: 1 });
+              usedSlots.push({ oldSlot: sn, isDouble: false });
             }
           }
 
@@ -2825,7 +2823,7 @@
             var ns = j + 1;
             slotMap[usedSlots[j].oldSlot] = ns;
             buttons.push(data.buttons[usedSlots[j].oldSlot - 1]);
-            if (usedSlots[j].spanSize > 1) newSizes[ns] = usedSlots[j].spanSize;
+            if (usedSlots[j].isDouble) newSizes[ns] = 2;
           }
           for (var j = limit; j < NUM_SLOTS; j++) buttons.push(empty);
 

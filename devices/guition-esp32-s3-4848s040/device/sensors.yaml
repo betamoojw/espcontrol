@@ -86,7 +86,6 @@ esphome:
 
             int positions[NUM_SLOTS] = {};
             bool is_double[NUM_SLOTS] = {};
-            bool is_quad[NUM_SLOTS] = {};
             std::string order_str = id(button_order).state;
             if (!order_str.empty()) {
               size_t gpos = 0, start = 0;
@@ -96,30 +95,16 @@ esphome:
                 if (comma > start) {
                   std::string token = order_str.substr(start, comma - start);
                   bool dbl = !token.empty() && token.back() == 'd';
-                  bool qd = !token.empty() && token.back() == 'q';
-                  if (dbl || qd) token.pop_back();
+                  if (dbl) token.pop_back();
                   int v = atoi(token.c_str());
-                  if (v >= 1 && v <= NUM_SLOTS) {
-                    positions[gpos] = v;
-                    if (qd) is_quad[v - 1] = true;
-                    else if (dbl) is_double[v - 1] = true;
-                  }
+                  if (v >= 1 && v <= NUM_SLOTS) { positions[gpos] = v; is_double[v - 1] = dbl; }
                 }
                 gpos++;
                 start = comma + 1;
               }
             }
             for (int p = 0; p < NUM_SLOTS; p++) {
-              int si = positions[p];
-              if (si < 1) continue;
-              if (is_quad[si - 1]) {
-                int col = p % COLS;
-                if (col + 1 < COLS && p + COLS < NUM_SLOTS) {
-                  positions[p + 1] = 0;
-                  positions[p + COLS] = 0;
-                  if (p + COLS + 1 < NUM_SLOTS) positions[p + COLS + 1] = 0;
-                }
-              } else if (is_double[si - 1] && p + COLS < NUM_SLOTS) {
+              if (positions[p] > 0 && is_double[positions[p] - 1] && p + COLS < NUM_SLOTS) {
                 positions[p + COLS] = 0;
               }
             }
@@ -354,10 +339,9 @@ esphome:
               lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
               int col = p % COLS;
               int row = p / COLS;
-              int row_span = (is_quad[idx - 1] || is_double[idx - 1]) ? 2 : 1;
-              int col_span = is_quad[idx - 1] ? 2 : 1;
+              int row_span = is_double[idx - 1] ? 2 : 1;
               lv_obj_set_grid_cell(s.btn,
-                LV_GRID_ALIGN_STRETCH, col, col_span,
+                LV_GRID_ALIGN_STRETCH, col, 1,
                 LV_GRID_ALIGN_STRETCH, row, row_span);
 
               if (has_on) {
@@ -749,7 +733,7 @@ esphome:
                 if (comma == std::string::npos) comma = order_str.length();
                 if (comma > start) {
                   std::string token = order_str.substr(start, comma - start);
-                  if (!token.empty() && (token.back() == 'd' || token.back() == 'q')) token.pop_back();
+                  if (!token.empty() && token.back() == 'd') token.pop_back();
                   int v = atoi(token.c_str());
                   if (v >= 1 && v <= NUM_SLOTS) positions[gpos] = v;
                 }
