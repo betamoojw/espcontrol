@@ -264,20 +264,15 @@
         if ((b.sensor || "condition") === f[0]) opt.selected = true;
         feedSelect.appendChild(opt);
       });
-      var unitDefaults = {
-        condition: "", temperature: "\u00B0C", feels_like: "\u00B0C",
-        humidity: "%", wind: "km/h", precip: "mm", cloud: "%",
-      };
-      feedSelect.addEventListener("change", function () {
-        b.sensor = this.value;
-        b.unit = unitDefaults[this.value] || "";
-        helpers.saveField("sensor", this.value);
-        var unitInput = document.getElementById(helpers.idPrefix + "unit");
-        if (unitInput) unitInput.value = b.unit;
-        renderPreview();
-      });
       ff.appendChild(feedSelect);
-      panel.appendChild(ff);
+
+      var labelField = panel.querySelector("#" + helpers.idPrefix + "label");
+      var labelWrap = labelField ? labelField.closest(".sp-field") : null;
+      if (labelWrap) {
+        panel.insertBefore(ff, labelWrap);
+      } else {
+        panel.appendChild(ff);
+      }
 
       var uf = document.createElement("div");
       uf.className = "sp-field";
@@ -287,6 +282,31 @@
       uf.appendChild(unitInp);
       panel.appendChild(uf);
       helpers.bindField(unitInp, "unit", true);
+
+      var isCondition = !b.sensor || b.sensor === "condition";
+      if (labelWrap) labelWrap.style.display = isCondition ? "none" : "";
+      uf.style.display = isCondition ? "none" : "";
+
+      var unitDefaults = {
+        condition: "", temperature: "\u00B0C", feels_like: "\u00B0C",
+        humidity: "%", wind: "km/h", precip: "mm", cloud: "%",
+      };
+      feedSelect.addEventListener("change", function () {
+        b.sensor = this.value;
+        b.unit = unitDefaults[this.value] || "";
+        helpers.saveField("sensor", this.value);
+        unitInp.value = b.unit;
+        var cond = this.value === "condition";
+        if (labelWrap) labelWrap.style.display = cond ? "none" : "";
+        uf.style.display = cond ? "none" : "";
+        if (cond) {
+          b.label = "";
+          b.unit = "";
+          var labelInput = panel.querySelector("#" + helpers.idPrefix + "label");
+          if (labelInput) labelInput.value = "";
+        }
+        renderPreview();
+      });
 
       var hint = document.createElement("div");
       hint.className = "sp-hint";
