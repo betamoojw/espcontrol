@@ -984,21 +984,21 @@
 
     var appearBody = document.createElement("div");
 
-    appearBody.appendChild(fieldLabel("On Color"));
+    appearBody.appendChild(fieldLabel("Primary"));
     var onColor = colorField("sp-set-on-color", "FF8C00", function (hex) {
       postText("Button On Color", hex);
     });
     appearBody.appendChild(onColor);
     els.setOnColor = onColor;
 
-    appearBody.appendChild(fieldLabel("Off Color"));
+    appearBody.appendChild(fieldLabel("Secondary"));
     var offColor = colorField("sp-set-off-color", "313131", function (hex) {
       postText("Button Off Color", hex);
     });
     appearBody.appendChild(offColor);
     els.setOffColor = offColor;
 
-    appearBody.appendChild(fieldLabel("Sensor Color"));
+    appearBody.appendChild(fieldLabel("Tertiary"));
     var sensorColor = colorField("sp-set-sensor-color", "313131", function (hex) {
       postText("Sensor Card Color", hex);
     });
