@@ -1467,8 +1467,7 @@
         var b = c.buttons[bIdx];
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
-        var isSensor = b.type === "sensor";
-        var color = isSensor ? state.sensorColor : state.offColor;
+        var color = (b.type === "sensor") ? state.sensorColor : state.offColor;
         var previewTypeDef = !c.isSub ? (BUTTON_TYPES[b.type || ""] || null) : null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
           ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
@@ -1478,13 +1477,7 @@
         btn.className = "sp-btn" +
           (c.sizes[slot] === 2 ? " sp-btn-double" : "") +
           (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
-        if (isSensor) {
-          btn.style.backgroundColor = "transparent";
-          var borderColor = state.offColor;
-          btn.style.borderColor = "#" + (borderColor.length === 6 ? borderColor : "313131");
-        } else {
-          btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
-        }
+        btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
         btn.draggable = true;
         btn.setAttribute("data-pos", pos);
         btn.setAttribute("data-slot", slot);
