@@ -8,8 +8,8 @@
 // Custom UI: three-page layout (Screen / Settings / Logs)
 (function () {
   // __DEVICE_CONFIG_START__
-  var DEVICE_ID = "guition-esp32-p4-jc1060p470";
-  var CFG = {"slots":20,"cols":5,"rows":4,"dragMode":"swap","dragAnimation":true,"screen":{"width":"100%","aspect":"1024/600"},"topbar":{"height":3.2,"padding":"0.39cqw","fontSize":1.95},"grid":{"top":3.9,"left":0.49,"right":0.49,"bottom":0.49,"gap":0.98,"fr":"1fr"},"btn":{"radius":0.78,"padding":1.37,"iconSize":4.69,"labelSize":1.8},"emptyCell":{"radius":0.78},"sensorBadge":{"top":1,"right":1,"fontSize":1.6},"subpageBadge":{"bottom":1,"right":1,"fontSize":2},"backBtn":{"radius":0.78,"padding":1.37,"iconSize":4.69,"labelSize":1.8}};
+  var DEVICE_ID = "guition-esp32-s3-4848s040";
+  var CFG = {"slots":9,"cols":3,"rows":3,"dragMode":"displace","dragAnimation":true,"screen":{"width":"66%","aspect":"1/1"},"topbar":{"height":7.5,"padding":"0.83cqw","fontSize":3.75},"grid":{"top":7.5,"left":1.04,"right":1.04,"bottom":0.83,"gap":2.08,"fr":"1fr"},"btn":{"radius":1.67,"padding":2.92,"iconSize":9.58,"labelSize":3.96,"labelLines":2,"labelLinesDouble":3},"emptyCell":{"radius":1.67},"sensorBadge":{"top":2.08,"right":2.08,"fontSize":3.33},"subpageBadge":{"bottom":2.08,"right":2.08,"fontSize":4},"backBtn":{"radius":1.67,"padding":2.92,"iconSize":9.58,"labelSize":3.96,"labelLines":2,"labelLinesDouble":3}};
   // __DEVICE_CONFIG_END__
   var NUM_SLOTS = CFG.slots;
   var GRID_COLS = CFG.cols;
@@ -124,6 +124,186 @@
     }, def);
   }
   // __BUTTON_TYPES_START__
+  // --- type: push ---
+  registerButtonType("push", {
+    label: "Button",
+    allowInSubpage: false,
+    labelPlaceholder: "e.g. Doorbell",
+    onSelect: function (b) {
+      b.entity = ""; b.sensor = ""; b.unit = ""; b.icon_on = "Auto";
+      b.icon = "Gesture Tap";
+    },
+    renderSettings: function (panel, b, slot, helpers) {
+      panel.appendChild(helpers.makeIconPicker(
+        helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
+        b.icon || "Auto", function (opt) {
+          b.icon = opt;
+          helpers.saveField("icon", opt);
+          renderPreview();
+        }
+      ));
+    },
+  });
+  // --- type: sensor ---
+  registerButtonType("sensor", {
+    label: "Sensor",
+    allowInSubpage: true,
+    labelPlaceholder: "e.g. Living Room",
+    onSelect: function (b) {
+      b.entity = "";
+      b.icon = "Auto";
+      b.icon_on = "Auto";
+    },
+    renderSettings: function (panel, b, slot, helpers) {
+      var sf = document.createElement("div");
+      sf.className = "sp-field";
+      sf.appendChild(helpers.fieldLabel("Sensor Entity", helpers.idPrefix + "sensor"));
+      var sensorInp = helpers.textInput(helpers.idPrefix + "sensor", b.sensor, "e.g. sensor.living_room_temperature");
+      sf.appendChild(sensorInp);
+      panel.appendChild(sf);
+      helpers.bindField(sensorInp, "sensor", true);
+
+      var uf = document.createElement("div");
+      uf.className = "sp-field";
+      uf.appendChild(helpers.fieldLabel("Unit", helpers.idPrefix + "unit"));
+      var unitInp = helpers.textInput(helpers.idPrefix + "unit", b.unit, "e.g. \u00B0C");
+      unitInp.className = "sp-input sp-input--narrow";
+      uf.appendChild(unitInp);
+      panel.appendChild(uf);
+      helpers.bindField(unitInp, "unit", true);
+    },
+    renderPreview: function (b, helpers) {
+      var label = b.label || b.sensor || "Sensor";
+      var unit = b.unit ? helpers.escHtml(b.unit) : "";
+      return {
+        iconHtml:
+          '<span class="sp-sensor-preview">' +
+            '<span class="sp-sensor-value">0</span>' +
+            '<span class="sp-sensor-unit">' + unit + '</span>' +
+          '</span>',
+        labelHtml:
+          '<span class="sp-btn-label">' + helpers.escHtml(label) + '</span>',
+      };
+    },
+  });
+  // --- type: subpage ---
+  registerButtonType("subpage", {
+    label: "Subpage",
+    allowInSubpage: false,
+    labelPlaceholder: "e.g. Lighting",
+    onSelect: function (b) {
+      b.entity = ""; b.sensor = ""; b.unit = ""; b.icon_on = "Auto";
+    },
+    renderSettings: function (panel, b, slot, helpers) {
+      panel.appendChild(helpers.makeIconPicker(
+        helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
+        b.icon || "Auto", function (opt) {
+          b.icon = opt;
+          helpers.saveField("icon", opt);
+          renderPreview();
+        }
+      ));
+      var displayStateEnabled = b.sensor === "indicator";
+      var displayStateToggle = helpers.toggleRow("Display State", helpers.idPrefix + "whenon-toggle", displayStateEnabled);
+      panel.appendChild(displayStateToggle.row);
+
+      var hasIconOn = b.icon_on && b.icon_on !== "Auto";
+
+      var iconOnToggle = helpers.toggleRow("Change Icon When On", helpers.idPrefix + "iconon-toggle", hasIconOn);
+      iconOnToggle.row.style.display = displayStateEnabled ? "" : "none";
+      panel.appendChild(iconOnToggle.row);
+
+      var iconOnCond = condField();
+      if (displayStateEnabled && hasIconOn) iconOnCond.classList.add("sp-visible");
+
+      var iconOnSection = document.createElement("div");
+      iconOnSection.className = "sp-field";
+      iconOnSection.appendChild(helpers.fieldLabel("Icon When On", helpers.idPrefix + "icon-on"));
+      var iconOnVal = hasIconOn ? b.icon_on : "Auto";
+      var iconOnPicker = document.createElement("div");
+      iconOnPicker.className = "sp-icon-picker";
+      iconOnPicker.id = helpers.idPrefix + "icon-on-picker";
+      iconOnPicker.innerHTML =
+        '<span class="sp-icon-picker-preview mdi mdi-' + iconSlug(iconOnVal) + '"></span>' +
+        '<input class="sp-icon-picker-input" id="' + helpers.idPrefix + 'icon-on" type="text" ' +
+        'placeholder="Search icons\u2026" value="' + escAttr(iconOnVal) + '" autocomplete="off">' +
+        '<div class="sp-icon-dropdown"></div>';
+      iconOnSection.appendChild(iconOnPicker);
+      iconOnCond.appendChild(iconOnSection);
+
+      initIconPicker(iconOnPicker, iconOnVal, function (opt) {
+        b.icon_on = opt;
+        helpers.saveField("icon_on", opt);
+        renderPreview();
+      });
+
+      panel.appendChild(iconOnCond);
+
+      iconOnToggle.input.addEventListener("change", function () {
+        if (this.checked) {
+          iconOnCond.classList.add("sp-visible");
+        } else {
+          b.icon_on = "Auto";
+          helpers.saveField("icon_on", "Auto");
+          iconOnCond.classList.remove("sp-visible");
+          var ionPreview = iconOnPicker.querySelector(".sp-icon-picker-preview");
+          if (ionPreview) ionPreview.className = "sp-icon-picker-preview mdi mdi-cog";
+          var ionInput = iconOnPicker.querySelector(".sp-icon-picker-input");
+          if (ionInput) ionInput.value = "Auto";
+          renderPreview();
+        }
+      });
+
+      displayStateToggle.input.addEventListener("change", function () {
+        if (this.checked) {
+          b.sensor = "indicator";
+          helpers.saveField("sensor", "indicator");
+          iconOnToggle.row.style.display = "";
+        } else {
+          b.sensor = "";
+          helpers.saveField("sensor", "");
+          iconOnToggle.row.style.display = "none";
+          if (iconOnToggle.input.checked) {
+            iconOnToggle.input.checked = false;
+            b.icon_on = "Auto";
+            helpers.saveField("icon_on", "Auto");
+            iconOnCond.classList.remove("sp-visible");
+            var ionPreview = iconOnPicker.querySelector(".sp-icon-picker-preview");
+            if (ionPreview) ionPreview.className = "sp-icon-picker-preview mdi mdi-cog";
+            var ionInput = iconOnPicker.querySelector(".sp-icon-picker-input");
+            if (ionInput) ionInput.value = "Auto";
+            renderPreview();
+          }
+        }
+      });
+
+      var configBtn = document.createElement("button");
+      configBtn.className = "sp-action-btn";
+      configBtn.style.background = "var(--accent)";
+      configBtn.style.color = "#fff";
+      configBtn.style.width = "100%";
+      configBtn.style.marginTop = "12px";
+      configBtn.textContent = "Configure Subpage";
+      configBtn.addEventListener("click", function () { enterSubpage(slot); });
+      panel.appendChild(configBtn);
+    },
+    renderPreview: function (b, helpers) {
+      var label = b.label || b.entity || "Configure";
+      return {
+        labelHtml:
+          '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +
+          '<span class="sp-subpage-badge mdi mdi-chevron-right"></span></span>',
+      };
+    },
+    contextMenuItems: function (slot, b, helpers) {
+      helpers.addCtxItem("cog", "Edit Subpage", function () { enterSubpage(slot); });
+    },
+  });
+  // --- type: toggle ---
+  registerButtonType("", {
+    label: "Toggle",
+    allowInSubpage: true,
+  });
   // __BUTTON_TYPES_END__
 
   var CSS =

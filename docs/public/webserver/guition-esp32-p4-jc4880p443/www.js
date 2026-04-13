@@ -380,6 +380,17 @@
     ".sp-hint{text-align:center;font-size:.75rem;opacity:.4;padding:6px 0 12px}" +
 
     ".sp-config{padding:var(--gap) var(--gap) var(--gap)}" +
+
+    ".sp-settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);" +
+    "z-index:100;align-items:center;justify-content:center}" +
+    ".sp-settings-overlay.sp-visible{display:flex}" +
+    ".sp-settings-modal{position:relative;background:var(--bg);border:1px solid var(--border);" +
+    "border-radius:var(--radius);width:90%;max-width:420px;max-height:80vh;" +
+    "overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6)}" +
+    ".sp-settings-close{position:absolute;top:8px;right:12px;background:none;border:none;" +
+    "color:var(--text2);font-size:1.4rem;cursor:pointer;z-index:1;line-height:1;padding:4px}" +
+    ".sp-settings-close:hover{color:var(--text)}" +
+
     ".sp-section-title{font-size:.8rem;font-weight:600;color:var(--text2);" +
     "margin:var(--gap) 0 8px;text-transform:uppercase;letter-spacing:.5px}" +
 
@@ -1222,11 +1233,26 @@
     els.previewHint = hint;
     page.appendChild(hint);
 
+    var overlay = document.createElement("div");
+    overlay.className = "sp-settings-overlay";
+    var modal = document.createElement("div");
+    modal.className = "sp-settings-modal";
+    var closeBtn = document.createElement("button");
+    closeBtn.className = "sp-settings-close";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.addEventListener("click", closeSettings);
+    modal.appendChild(closeBtn);
     var config = document.createElement("div");
     config.className = "sp-config";
     els.buttonSettings = config;
+    modal.appendChild(config);
+    overlay.appendChild(modal);
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeSettings();
+    });
+    page.appendChild(overlay);
+    els.settingsOverlay = overlay;
 
-    page.appendChild(config);
     page.appendChild(buildApplyBar());
 
     parent.appendChild(page);
@@ -1801,12 +1827,23 @@
 
   // ── Button settings panel (unified) ────────────────────────────────────
 
+  function closeSettings() {
+    if (els.settingsOverlay) els.settingsOverlay.classList.remove("sp-visible");
+    ctx().setSelected([]);
+    renderPreview();
+  }
+
   function renderButtonSettings() {
     var container = els.buttonSettings;
     container.innerHTML = "";
     var c = ctx();
 
-    if (c.selected.length === 0) return;
+    if (c.selected.length === 0) {
+      if (els.settingsOverlay) els.settingsOverlay.classList.remove("sp-visible");
+      return;
+    }
+
+    if (els.settingsOverlay) els.settingsOverlay.classList.add("sp-visible");
 
     if (c.selected.length > 1) {
       var hint = document.createElement("div");
@@ -2100,6 +2137,13 @@
         renderButtonSettings();
       }
     });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && els.settingsOverlay &&
+        els.settingsOverlay.classList.contains("sp-visible")) {
+      closeSettings();
+    }
   });
 
   // ── Icon picker (optimized) ────────────────────────────────────────────
