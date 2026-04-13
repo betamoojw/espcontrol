@@ -387,7 +387,7 @@
 
     ".sp-back-btn{border-radius:var(--back-r);padding:var(--back-pad);display:flex;flex-direction:column;" +
     "justify-content:space-between;box-sizing:border-box;border:2px solid transparent;" +
-    "position:relative;background:#222;opacity:.6;overflow:hidden;min-width:0}" +
+    "position:relative;overflow:hidden;min-width:0}" +
     ".sp-back-btn .sp-btn-icon{font-size:var(--back-icon);line-height:1;color:#fff}" +
     ".sp-back-btn .sp-btn-label{font-size:var(--back-label);line-height:1.2;color:#fff;" +
     "display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--back-lines);" +
@@ -1538,6 +1538,7 @@
         backBtn.innerHTML =
           '<span class="sp-btn-icon mdi mdi-chevron-left"></span>' +
           '<span class="sp-btn-label">Back</span>';
+        backBtn.style.backgroundColor = "#" + (state.offColor.length === 6 ? state.offColor : "313131");
         backBtn.style.cursor = "pointer";
         backBtn.setAttribute("data-pos", pos);
         backBtn.draggable = true;
