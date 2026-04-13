@@ -175,7 +175,7 @@ inline void setup_toggle_visual(BtnSlot &s, const std::string &cfg) {
 }
 
 inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sensor_id) {
-  api::global_api_server->subscribe_home_assistant_state(
+  esphome::api::global_api_server->subscribe_home_assistant_state(
     sensor_id, {},
     std::function<void(const std::string &)>([sensor_lbl](const std::string &state) {
       char *end;
@@ -192,7 +192,7 @@ inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sens
 }
 
 inline void subscribe_friendly_name(lv_obj_t *text_lbl, const std::string &entity_id) {
-  api::global_api_server->subscribe_home_assistant_state(
+  esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, std::string("friendly_name"),
     std::function<void(const std::string &)>([text_lbl](const std::string &name) {
       lv_label_set_text(text_lbl, name.c_str());
@@ -205,7 +205,7 @@ inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                    bool *slot_has_sensor, bool *slot_has_icon_on,
                                    const char **slot_icon_off, const char **slot_icon_on,
                                    const std::string &entity_id) {
-  api::global_api_server->subscribe_home_assistant_state(
+  esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     std::function<void(const std::string &)>(
       [btn_ptr, icon_lbl, sensor_ctr, slot_has_sensor, slot_has_icon_on,
@@ -229,14 +229,14 @@ inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
 }
 
 inline void send_toggle_action(const std::string &entity_id) {
-  api::HomeassistantActionRequest req;
+  esphome::api::HomeassistantActionRequest req;
   req.service = decltype(req.service)("homeassistant.toggle");
   req.is_event = false;
   req.data.init(1);
   auto &kv = req.data.emplace_back();
   kv.key = decltype(kv.key)("entity_id");
   kv.value = decltype(kv.value)(entity_id.c_str());
-  api::global_api_server->send_homeassistant_action(req);
+  esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
 struct SubpageBtn {
