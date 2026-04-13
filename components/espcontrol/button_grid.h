@@ -243,6 +243,10 @@ struct SubpageBtn {
   std::string entity;
   std::string label;
   std::string icon;
+  std::string icon_on;
+  std::string sensor;
+  std::string unit;
+  std::string type;
 };
 
 inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
@@ -272,7 +276,12 @@ inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
     std::string l = flds.size() > 1 ? flds[1] : "";
     std::string ic = flds.size() > 2 ? flds[2] : "Auto";
     if (ic.empty()) ic = "Auto";
-    btns.push_back({e, l, ic});
+    std::string io = flds.size() > 3 ? flds[3] : "Auto";
+    if (io.empty()) io = "Auto";
+    std::string sn = flds.size() > 4 ? flds[4] : "";
+    std::string un = flds.size() > 5 ? flds[5] : "";
+    std::string tp = flds.size() > 6 ? flds[6] : "";
+    btns.push_back({e, l, ic, io, sn, un, tp});
   }
   return btns;
 }

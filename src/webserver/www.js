@@ -742,6 +742,7 @@
         icon_on: f[3] || "Auto",
         sensor: f[4] || "",
         unit: f[5] || "",
+        type: f[6] || "",
       });
     }
     return { order: order, buttons: buttons };
@@ -752,7 +753,7 @@
     var out = sp.order.join(",");
     for (var i = 0; i < sp.buttons.length; i++) {
       var b = sp.buttons[i];
-      var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto", b.sensor || "", b.unit || ""];
+      var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto", b.sensor || "", b.unit || "", b.type || ""];
       while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
       if (fields.length > 1 && fields[fields.length - 1] === "Auto") {
         while (fields.length > 1 && (fields[fields.length - 1] === "Auto" || !fields[fields.length - 1])) fields.pop();
@@ -1615,7 +1616,8 @@
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
         var color = (b.type === "sensor") ? state.sensorColor : state.offColor;
-        var previewTypeDef = !c.isSub ? (BUTTON_TYPES[b.type || ""] || null) : null;
+        var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
+        if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
           ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
           : null;
@@ -1732,12 +1734,12 @@
       return icf;
     }
 
-    // Type selector (home only)
     var typeDef = BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""];
-    if (!c.isSub) {
+    {
       var typeOpts = [];
       for (var k in BUTTON_TYPES) {
         var td = BUTTON_TYPES[k];
+        if (c.isSub && !td.allowInSubpage) continue;
         typeOpts.push([td.key, td.label]);
       }
       var tf = document.createElement("div");
@@ -1758,7 +1760,7 @@
         b.type = newType;
         var td = BUTTON_TYPES[newType];
         if (td && td.onSelect) td.onSelect(b);
-        saveButtonConfig(slot);
+        saveField("type", newType);
         renderPreview();
         renderButtonSettings();
       });
@@ -1786,7 +1788,7 @@
       idPrefix: idPrefix,
     };
 
-    if (!c.isSub && typeDef && typeDef.renderSettings) {
+    if (typeDef && typeDef.renderSettings && (!c.isSub || typeDef.allowInSubpage)) {
       typeDef.renderSettings(panel, b, slot, typeHelpers);
     } else {
       // Toggle (home or subpage): entity, icon, when-on
@@ -2412,7 +2414,7 @@
       var sp = getSubpage(state.editingSubpage);
       var newSlot = subpageFirstFreeSlot(sp);
       while (sp.buttons.length < newSlot) {
-        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "" });
+        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
       }
       sp.grid[pos] = newSlot;
       sp.order = serializeSubpageGrid(sp);
@@ -2479,13 +2481,14 @@
     var sp = getSubpage(homeSlot);
     var newSlot = subpageFirstFreeSlot(sp);
     while (sp.buttons.length < newSlot) {
-      sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "" });
+      sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
     }
 
     var src = sp.buttons[srcSlot - 1];
     sp.buttons[newSlot - 1] = {
       entity: src.entity, label: src.label, icon: src.icon,
       icon_on: src.icon_on, sensor: src.sensor, unit: src.unit,
+      type: src.type || "",
     };
 
     var srcSz = sp.sizes[srcSlot];
@@ -2544,7 +2547,7 @@
     if (c.isSub) {
       var sp = getSubpage(state.editingSubpage);
       if (slot >= 1 && slot <= sp.buttons.length) {
-        sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "" };
+        sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
       }
       sp.order = serializeSubpageGrid(sp);
       state.subpageLastClicked = -1;
@@ -2584,7 +2587,7 @@
       var sp = getSubpage(state.editingSubpage);
       slots.forEach(function (slot) {
         if (slot >= 1 && slot <= sp.buttons.length) {
-          sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "" };
+          sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
         }
       });
       sp.order = serializeSubpageGrid(sp);
@@ -2813,7 +2816,7 @@
     var entry = {
       entity: src.entity, label: src.label, icon: src.icon,
       icon_on: src.icon_on, sensor: src.sensor, unit: src.unit,
-      type: c.isSub ? "" : (src.type || ""), subpageConfig: null,
+      type: src.type || "", subpageConfig: null,
       size: c.sizes[slot] || 1,
     };
     if (!c.isSub && src.type === "subpage" && state.subpages[slot]) {
@@ -2904,12 +2907,13 @@
       if (cell < 0) break;
       var newSlot = subpageFirstFreeSlot(sp);
       while (sp.buttons.length < newSlot) {
-        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "" });
+        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
       }
       var e = entries[i];
       sp.buttons[newSlot - 1] = {
         entity: e.entity, label: e.label, icon: e.icon,
         icon_on: e.icon_on, sensor: e.sensor, unit: e.unit,
+        type: e.type || "",
       };
       if (e.size === 4) sp.sizes[newSlot] = 4;
       else if (e.size === 2) sp.sizes[newSlot] = 2;
