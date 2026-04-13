@@ -93,6 +93,7 @@ registerButtonType("subpage", {
     configBtn.style.background = "var(--accent)";
     configBtn.style.color = "#fff";
     configBtn.style.width = "100%";
+    configBtn.style.marginTop = "12px";
     configBtn.textContent = "Configure Subpage";
     configBtn.addEventListener("click", function () { enterSubpage(slot); });
     panel.appendChild(configBtn);
