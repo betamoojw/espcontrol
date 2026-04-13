@@ -26,4 +26,3 @@ font:
     id: clockbar_font_lg
     size: 22
     bpp: 4
-    glyphs: !include ../../../common/assets/text_glyphs.yaml

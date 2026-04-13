@@ -22,18 +22,21 @@ font:
     id: clockbar_font
     size: 20
     bpp: 4
-    glyphs: !include text_glyphs.yaml
 
   # Setup screens: titles (40px light)
   - file: "gfonts://Roboto@Light"
     id: setup_title_font
     size: 40
     bpp: 4
-    glyphs: !include text_glyphs.yaml
+    glyphs: >-
+      !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+      ¡¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ—–…·°•€£¥¢
 
   # Setup screens: body text (24px)
   - file: "gfonts://Roboto"
     id: setup_body_font
     size: 24
     bpp: 4
-    glyphs: !include text_glyphs.yaml
+    glyphs: >-
+      !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+      ¡¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ—–…·°•€£¥¢
