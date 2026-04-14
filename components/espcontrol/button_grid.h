@@ -274,26 +274,32 @@ inline lv_obj_t *setup_light_slider(lv_obj_t *btn, uint32_t on_color) {
   lv_slider_set_range(slider, 1, 100);
   lv_slider_set_value(slider, 50, LV_ANIM_OFF);
   lv_obj_set_width(slider, 40);
-  lv_obj_set_height(slider, lv_pct(80));
-  lv_obj_align(slider, LV_ALIGN_RIGHT_MID, -4, 0);
+  lv_obj_set_height(slider, lv_pct(100));
+  lv_obj_align(slider, LV_ALIGN_RIGHT_MID, 0, 0);
 
   lv_obj_set_style_bg_color(slider, lv_color_hex(0x555555),
     static_cast<lv_style_selector_t>(LV_PART_MAIN));
-  lv_obj_set_style_radius(slider, 20,
+  lv_obj_set_style_radius(slider, 8,
     static_cast<lv_style_selector_t>(LV_PART_MAIN));
   lv_obj_set_style_bg_opa(slider, LV_OPA_COVER,
     static_cast<lv_style_selector_t>(LV_PART_MAIN));
 
   lv_obj_set_style_bg_color(slider, lv_color_hex(on_color),
     static_cast<lv_style_selector_t>(LV_PART_INDICATOR));
-  lv_obj_set_style_radius(slider, 20,
+  lv_obj_set_style_radius(slider, 8,
     static_cast<lv_style_selector_t>(LV_PART_INDICATOR));
 
   lv_obj_set_style_bg_color(slider, lv_color_white(),
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_radius(slider, LV_RADIUS_CIRCLE,
+  lv_obj_set_style_radius(slider, 4,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_pad_all(slider, 6,
+  lv_obj_set_style_pad_left(slider, 2,
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+  lv_obj_set_style_pad_right(slider, 2,
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+  lv_obj_set_style_pad_top(slider, -2,
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+  lv_obj_set_style_pad_bottom(slider, -2,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
 
   lv_obj_add_flag(slider, LV_OBJ_FLAG_HIDDEN);
@@ -302,6 +308,7 @@ inline lv_obj_t *setup_light_slider(lv_obj_t *btn, uint32_t on_color) {
 
 inline void setup_light_visual(BtnSlot &s, const std::string &cfg, uint32_t on_color) {
   setup_toggle_visual(s, cfg);
+  lv_obj_set_width(s.text_lbl, lv_pct(60));
 
   lv_obj_t *slider = setup_light_slider(s.btn, on_color);
   lv_obj_set_user_data(s.sensor_container, (void *)slider);
