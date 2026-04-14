@@ -1,3 +1,13 @@
+// =============================================================================
+// BUTTON GRID - LVGL button grid layout, parsing, and HA entity binding
+// =============================================================================
+// Shared C++ utilities included by each device's sensors.yaml lambda. Handles:
+//   - Parsing semicolon-delimited button config strings into structured fields
+//   - Grid layout with double-height (d), double-wide (w), and 2×2 big (b) cells
+//   - LVGL visual setup for toggle buttons, sensor cards, and slider widgets
+//   - Home Assistant state subscriptions and action dispatch
+//   - Subpage creation (nested grid screens with back button)
+// =============================================================================
 #pragma once
 #include <string>
 #include <cstdlib>
@@ -9,16 +19,18 @@
 
 constexpr uint32_t DEFAULT_SLIDER_COLOR = 0xFF8C00;
 
+// LVGL widget handles for one button slot on the main grid
 struct BtnSlot {
-  esphome::text::Text *config;
-  lv_obj_t *btn;
-  lv_obj_t *icon_lbl;
-  lv_obj_t *text_lbl;
-  lv_obj_t *sensor_container;
-  lv_obj_t *sensor_lbl;
-  lv_obj_t *unit_lbl;
+  esphome::text::Text *config;       // persisted config string (entity;label;icon;...)
+  lv_obj_t *btn;                     // button container
+  lv_obj_t *icon_lbl;               // icon label (MDI glyph)
+  lv_obj_t *text_lbl;               // entity name / custom label
+  lv_obj_t *sensor_container;       // flex row shown when sensor overlay is active
+  lv_obj_t *sensor_lbl;             // numeric sensor value
+  lv_obj_t *unit_lbl;               // unit suffix (°C, %, etc.)
 };
 
+// Extract the Nth semicolon-delimited field from a config string
 inline std::string cfg_field(const std::string &cfg, int idx) {
   size_t start = 0;
   for (int i = 0; i < idx; i++) {
@@ -30,14 +42,15 @@ inline std::string cfg_field(const std::string &cfg, int idx) {
   return (end == std::string::npos) ? cfg.substr(start) : cfg.substr(start, end - start);
 }
 
+// Structured view of a button config string: entity;label;icon;icon_on;sensor;unit;type
 struct ParsedCfg {
-  std::string entity;   // 0
-  std::string label;    // 1
-  std::string icon;     // 2
-  std::string icon_on;  // 3
-  std::string sensor;   // 4 -- sensor entity for toggle; orientation "h"|"" for slider/cover
-  std::string unit;     // 5
-  std::string type;     // 6
+  std::string entity;   // 0  HA entity_id (e.g. light.kitchen)
+  std::string label;    // 1  display name (blank = use HA friendly_name)
+  std::string icon;     // 2  icon name for off/default state
+  std::string icon_on;  // 3  icon name for on state (blank = no swap)
+  std::string sensor;   // 4  sensor entity for toggle overlay; "h" for horizontal slider
+  std::string unit;     // 5  unit suffix for sensor display
+  std::string type;     // 6  button type: "" (toggle), sensor, slider, cover, push, subpage
 };
 
 inline ParsedCfg parse_cfg(const std::string &cfg) {
@@ -52,12 +65,14 @@ inline ParsedCfg parse_cfg(const std::string &cfg) {
   return p;
 }
 
+// Parse a 6-char hex color string (no # prefix) into a uint32_t RGB value
 inline uint32_t parse_hex_color(const std::string &hex, bool &valid) {
   valid = hex.length() == 6;
   if (!valid) return 0;
   return strtoul(hex.c_str(), nullptr, 16);
 }
 
+// Reduce green channel to 80% to compensate for display panel color shift
 inline uint32_t correct_color(uint32_t rgb) {
   uint8_t r = (rgb >> 16) & 0xFF;
   uint8_t g = (uint8_t)(((rgb >> 8) & 0xFF) * 80 / 100);
@@ -65,12 +80,16 @@ inline uint32_t correct_color(uint32_t rgb) {
   return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
 }
 
+// ── Grid layout parsing ───────────────────────────────────────────────
+
+// Result of parsing a button_order CSV string into grid cell positions
 struct OrderResult {
-  int positions[25] = {};
-  bool is_double[25] = {};
-  bool is_wide[25] = {};
+  int positions[25] = {};    // slot number at each grid position (1-based, 0=empty)
+  bool is_double[25] = {};   // slot uses double height (suffix "d" or "b")
+  bool is_wide[25] = {};     // slot uses double width (suffix "w" or "b")
 };
 
+// Parse "1,2d,3w,4b,..." into positions + double/wide flags
 inline void parse_order_string(const std::string &order_str, int num_slots, OrderResult &result) {
   memset(result.positions, 0, sizeof(result.positions));
   memset(result.is_double, 0, sizeof(result.is_double));
@@ -99,6 +118,7 @@ inline void parse_order_string(const std::string &order_str, int num_slots, Orde
   }
 }
 
+// Zero out grid cells that are covered by a neighbouring double/wide/big button
 inline void clear_spanned_cells(const OrderResult &order, int num_slots, int cols, OrderResult &result) {
   for (int p = 0; p < num_slots; p++) {
     result.positions[p] = order.positions[p];
@@ -120,6 +140,9 @@ inline void clear_spanned_cells(const OrderResult &order, int num_slots, int col
   }
 }
 
+// ── Button visuals ────────────────────────────────────────────────────
+
+// Apply on/off background colors to a button's checked/pressed/default states
 inline void apply_button_colors(lv_obj_t *btn, bool has_on, uint32_t on_val,
                                 bool has_off, uint32_t off_val) {
   if (has_on) {
@@ -134,6 +157,7 @@ inline void apply_button_colors(lv_obj_t *btn, bool has_on, uint32_t on_val,
   }
 }
 
+// Configure a button as a read-only sensor card (non-clickable, shows value + unit)
 inline void setup_sensor_card(BtnSlot &s, const ParsedCfg &p,
                               bool has_sensor_color, uint32_t sensor_val) {
   if (has_sensor_color) {
@@ -151,6 +175,7 @@ inline void setup_sensor_card(BtnSlot &s, const ParsedCfg &p,
   }
 }
 
+// Set icon and label on a toggle/push button based on its config
 inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
   if (!p.entity.empty()) {
     if (!p.label.empty()) {
@@ -191,6 +216,9 @@ inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
   }
 }
 
+// ── Home Assistant subscriptions ──────────────────────────────────────
+
+// Subscribe to a HA sensor entity and update an LVGL label with its value
 inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sensor_id) {
   esphome::api::global_api_server->subscribe_home_assistant_state(
     sensor_id, {},
@@ -208,6 +236,7 @@ inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sens
   );
 }
 
+// Subscribe to an entity's friendly_name attribute and use it as the button label
 inline void subscribe_friendly_name(lv_obj_t *text_lbl, const std::string &entity_id) {
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, std::string("friendly_name"),
@@ -217,6 +246,7 @@ inline void subscribe_friendly_name(lv_obj_t *text_lbl, const std::string &entit
   );
 }
 
+// Subscribe to a toggle entity's state; updates checked visual, icon swap, sensor overlay
 inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                    lv_obj_t *sensor_ctr,
                                    bool *slot_has_sensor, bool *slot_has_icon_on,
@@ -245,6 +275,9 @@ inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   );
 }
 
+// ── Home Assistant actions ────────────────────────────────────────────
+
+// Send homeassistant.toggle for a given entity_id
 inline void send_toggle_action(const std::string &entity_id) {
   esphome::api::HomeassistantActionRequest req;
   req.service = decltype(req.service)("homeassistant.toggle");
@@ -262,6 +295,7 @@ inline bool is_cover_entity(const std::string &entity_id) {
   return entity_id.size() > 6 && entity_id.compare(0, 6, "cover.") == 0;
 }
 
+// Send HA action for a slider change: toggle (value<0), brightness, or cover position
 inline void send_slider_action(const std::string &entity_id, int value) {
   esphome::api::HomeassistantActionRequest req;
   req.is_event = false;
@@ -303,6 +337,7 @@ inline void send_slider_action(const std::string &entity_id, int value) {
   esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
+// Context attached to each LVGL slider via user_data
 struct SliderCtx {
   std::string entity_id;
   lv_obj_t *fill;
@@ -311,6 +346,7 @@ struct SliderCtx {
   lv_coord_t radius;
 };
 
+// Resize the colored fill overlay to reflect the current slider percentage
 inline void slider_update_fill(lv_obj_t *fill, lv_obj_t *btn, int pct, bool horizontal, bool inverted, lv_coord_t r) {
   lv_coord_t bw = lv_obj_get_width(btn);
   lv_coord_t bh = lv_obj_get_height(btn);
@@ -326,6 +362,7 @@ inline void slider_update_fill(lv_obj_t *fill, lv_obj_t *btn, int pct, bool hori
   }
 }
 
+// Create an invisible LVGL slider with a colored fill overlay inside a button
 inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool horizontal) {
   lv_obj_set_style_pad_all(btn, 0,
     static_cast<lv_style_selector_t>(LV_PART_MAIN));
@@ -374,6 +411,7 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
   return slider;
 }
 
+// Full slider button setup: visual + event handlers + HA action on release
 inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_color) {
   setup_toggle_visual(s, p);
 
@@ -413,6 +451,7 @@ inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_colo
   }, LV_EVENT_RELEASED, nullptr);
 }
 
+// Subscribe to HA state for a slider entity (light brightness or cover position)
 inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                   lv_obj_t *slider,
                                   bool has_icon_on,
@@ -478,6 +517,9 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   }
 }
 
+// ── Subpage helpers ───────────────────────────────────────────────────
+
+// Button definition parsed from a subpage config (pipe+colon delimited)
 struct SubpageBtn {
   std::string entity;
   std::string label;
@@ -488,6 +530,7 @@ struct SubpageBtn {
   std::string type;
 };
 
+// Create a slider button inside a subpage screen (reuses main grid slider logic)
 inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_t *text_lbl,
                                        const SubpageBtn &sb, uint32_t on_color, lv_coord_t radius) {
   if (!sb.label.empty()) lv_label_set_text(text_lbl, sb.label.c_str());
@@ -545,6 +588,7 @@ inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_
   return sl;
 }
 
+// Parse "order|entity:label:icon:...|entity:label:..." into a vector of SubpageBtns
 inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
   std::vector<SubpageBtn> btns;
   if (sp_cfg.empty()) return btns;
@@ -582,6 +626,7 @@ inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
   return btns;
 }
 
+// Extract the order string (everything before the first pipe) from subpage config
 inline std::string get_subpage_order(const std::string &sp_cfg) {
   if (sp_cfg.empty()) return "";
   size_t pe = sp_cfg.find('|');
@@ -589,6 +634,7 @@ inline std::string get_subpage_order(const std::string &sp_cfg) {
   return sp_cfg.substr(0, pe);
 }
 
+// Subpage grid layout with support for a back button token ("B")
 struct SubpageOrder {
   int positions[25] = {};
   bool is_double[25] = {};
@@ -599,6 +645,7 @@ struct SubpageOrder {
   bool has_back_token = false;
 };
 
+// Parse subpage order CSV; "B"/"Bd"/"Bw"/"Bb" tokens mark the back button position
 inline void parse_subpage_order(const std::string &order_str, int num_slots, int num_btns,
                                 SubpageOrder &result) {
   if (order_str.empty()) return;
