@@ -33,7 +33,7 @@ packages:
   colors:          !include ../../common/config/colors.yaml
   button_order:    !include ../../common/config/button_order.yaml
   display_config:  !include ../../common/config/display.yaml
-  # Per-button entity/label/icon (6 slots — 2x3 grid)
+  # Per-button entity/label/icon (6 slots — 3x2 grid)
   btn_1:           !include { file: ../../common/config/button_template.yaml, vars: { num: "1" } }
   btn_2:           !include { file: ../../common/config/button_template.yaml, vars: { num: "2" } }
   btn_3:           !include { file: ../../common/config/button_template.yaml, vars: { num: "3" } }

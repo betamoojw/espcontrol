@@ -16,8 +16,8 @@
   },
   "guition-esp32-p4-jc4880p443": {
     "slots": 6,
-    "cols": 3,
-    "rows": 2,
+    "cols": 2,
+    "rows": 3,
     "dragMode": "displace",
     "dragAnimation": true,
     "screen": { "width": "66%", "aspect": "480/800" },

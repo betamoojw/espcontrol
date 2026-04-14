@@ -1,5 +1,5 @@
 # =============================================================================
-# SENSORS - Dynamic HA entity subscriptions (P4-4880 - 6 buttons, 3×2 grid)
+# SENSORS - Dynamic HA entity subscriptions (P4-4880 - 6 buttons, 2×3 grid)
 # =============================================================================
 # Uses shared C++ from button_grid.h and icons.h for parsing, icon lookup,
 # color handling, sensor cards, toggle visuals, and HA subscriptions.
@@ -44,7 +44,7 @@ esphome:
               { id(button_6_config), id(button_6), id(button_6_icon_label), id(button_6_text_label), id(button_6_sensor_container), id(button_6_sensor_label), id(button_6_unit_label) },
             };
             static constexpr int NUM_SLOTS = 6;
-            static constexpr int COLS = 3;
+            static constexpr int COLS = 2;
 
             OrderResult parsed, order;
             parse_order_string(id(button_order).state, NUM_SLOTS, parsed);
@@ -96,7 +96,7 @@ esphome:
         # Phase 2: HA subscriptions + subpage creation
         - lambda: |-
             constexpr int NUM_SLOTS = 6;
-            constexpr int COLS = 3;
+            constexpr int COLS = 2;
 
             static bool has_sensor[NUM_SLOTS] = {};
             static bool has_icon_on[NUM_SLOTS] = {};
@@ -194,7 +194,7 @@ esphome:
             }
 
             // --- Subpage creation ---
-            static lv_coord_t sp_col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+            static lv_coord_t sp_col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
             static lv_coord_t sp_row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
             const lv_font_t *sp_icon_fnt = lv_obj_get_style_text_font(slots[0].icon_lbl, LV_PART_MAIN);
 
