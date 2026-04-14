@@ -50,6 +50,11 @@ lvgl:
                   text_color: 0x888888
                   width: $content_width
                   text_align: center
+              # Hidden slider ensures LVGL compiles lv_slider for dynamic use
+              - slider:
+                  hidden: true
+                  width: 0
+                  height: 0
 
 esphome:
   on_boot:
