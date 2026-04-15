@@ -1171,6 +1171,10 @@
     els.setNightBrightness = nightSlider.range;
     els.setNightBrightnessVal = nightSlider.val;
 
+    config.appendChild(makeCollapsibleCard("Brightness", blBody, true));
+
+    var clockBody = document.createElement("div");
+
     var tzField = document.createElement("div");
     tzField.className = "sp-field";
     tzField.appendChild(fieldLabel("Timezone", "sp-set-timezone"));
@@ -1190,7 +1194,7 @@
       postSelect("Screen: Timezone", this.value);
     });
     tzField.appendChild(tzSelect);
-    blBody.appendChild(tzField);
+    clockBody.appendChild(tzField);
     els.setTimezone = tzSelect;
 
     var cfField = document.createElement("div");
@@ -1210,17 +1214,17 @@
       postSelect("Screen: Clock Format", this.value);
     });
     cfField.appendChild(cfSelect);
-    blBody.appendChild(cfField);
+    clockBody.appendChild(cfField);
     els.setClockFormat = cfSelect;
 
     var sunInfo = document.createElement("div");
     sunInfo.className = "sp-sun-info";
     sunInfo.id = "sp-sun-info";
-    blBody.appendChild(sunInfo);
+    clockBody.appendChild(sunInfo);
     els.sunInfo = sunInfo;
     updateSunInfo();
 
-    config.appendChild(makeCollapsibleCard("Brightness", blBody, true));
+    config.appendChild(makeCollapsibleCard("Clock", clockBody, true));
 
     var tempBody = document.createElement("div");
 
@@ -3394,12 +3398,12 @@
         }
       },
       "select-screen__timezone": function (val, d) {
-        state.timezone = d.value || d.option || val || state.timezone;
-        if (d.options && Array.isArray(d.options)) {
-          state.timezoneOptions = d.options;
+        state.timezone = d.value || val || state.timezone;
+        if (d.option && Array.isArray(d.option)) {
+          state.timezoneOptions = d.option;
           if (els.setTimezone) {
             els.setTimezone.innerHTML = "";
-            d.options.forEach(function (opt) {
+            d.option.forEach(function (opt) {
               var o = document.createElement("option");
               o.value = opt;
               o.textContent = opt;
@@ -3410,12 +3414,12 @@
         if (els.setTimezone) els.setTimezone.value = state.timezone;
       },
       "select-screen__clock_format": function (val, d) {
-        state.clockFormat = d.value || d.option || val || state.clockFormat;
-        if (d.options && Array.isArray(d.options)) {
-          state.clockFormatOptions = d.options;
+        state.clockFormat = d.value || val || state.clockFormat;
+        if (d.option && Array.isArray(d.option)) {
+          state.clockFormatOptions = d.option;
           if (els.setClockFormat) {
             els.setClockFormat.innerHTML = "";
-            d.options.forEach(function (opt) {
+            d.option.forEach(function (opt) {
               var o = document.createElement("option");
               o.value = opt;
               o.textContent = opt === "12h" ? "12-hour (AM/PM)" : "24-hour";
@@ -3446,10 +3450,10 @@
         if (els.updateFreqWrap) els.updateFreqWrap.style.display = state.autoUpdate ? "" : "none";
       },
       "select-firmware__update_frequency": function (val, d) {
-        state.updateFrequency = d.value || d.option || val || state.updateFrequency;
+        state.updateFrequency = d.value || val || state.updateFrequency;
         if (els.setUpdateFreq) els.setUpdateFreq.value = state.updateFrequency;
-        if (d.options && Array.isArray(d.options)) {
-          state.updateFreqOptions = d.options;
+        if (d.option && Array.isArray(d.option)) {
+          state.updateFreqOptions = d.option;
         }
       },
     };
