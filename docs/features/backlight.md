@@ -16,10 +16,10 @@ Sunrise and sunset times are calculated on-device from your selected timezone us
 
 Configured in the **Brightness** section of the **Settings** tab in [Setup](/features/setup).
 
-- **Timezone** — determines sunrise/sunset for your location. The only required setting.
 - **Daytime brightness** — screen brightness during the day (10%–100%, default 100%).
 - **Nighttime brightness** — screen brightness at night (10%–100%, default 75%).
-- **Sunrise / Sunset** — read-only reference values, updated daily.
+
+Sunrise and sunset times are derived from the timezone set in the [Clock](/features/clock) settings.
 
 ## Screensaver
 

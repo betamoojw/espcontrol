@@ -16,7 +16,7 @@ select:
     icon: "mdi:map-clock"
     optimistic: true
     restore_value: true
-    initial_option: "America/New_York (GMT-5)"
+    initial_option: "UTC (GMT+0)"
     options:
       - "Pacific/Midway (GMT-11)"
       - "Pacific/Pago_Pago (GMT-11)"
@@ -161,7 +161,7 @@ select:
     icon: "mdi:clock-outline"
     optimistic: true
     restore_value: true
-    initial_option: "12h"
+    initial_option: "24h"
     options:
       - "12h"
       - "24h"
