@@ -154,6 +154,7 @@
     "#sp-app{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
     "color:var(--text);max-width:960px;margin:0 auto;-webkit-font-smoothing:antialiased;" +
     "font-optical-sizing:auto}" +
+    "body{background:var(--bg);margin:0}" +
     "esp-app{display:none !important}" +
 
     ".sp-header{display:flex;align-items:center;background:var(--bg);" +
@@ -226,16 +227,17 @@
     (CFG.dragAnimation ? ".sp-btn.sp-dragging{opacity:.4;transform:scale(.95)}" +
     ".sp-empty-cell.sp-drop-placeholder{border-color:rgba(92,156,245,.5)}" : "") +
 
-    ".sp-hint{text-align:center;font-size:.75rem;opacity:.4;padding:6px 0 12px}" +
+    ".sp-hint{text-align:center;font-size:.7rem;color:var(--text3);padding:8px 0 12px}" +
 
     ".sp-config{padding:var(--gap) var(--gap) var(--gap)}" +
 
-    ".sp-settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);" +
-    "z-index:100;align-items:center;justify-content:center}" +
+    ".sp-settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);" +
+    "z-index:100;align-items:center;justify-content:center;" +
+    "backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}" +
     ".sp-settings-overlay.sp-visible{display:flex}" +
     ".sp-settings-modal{position:relative;background:var(--bg);border:1px solid var(--border);" +
     "border-radius:var(--radius);width:90%;max-width:420px;max-height:80vh;" +
-    "overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);margin:40px}" +
+    "overflow-y:auto;box-shadow:var(--shadow-3);margin:40px}" +
     "@media(max-width:600px){.sp-settings-modal{width:100%;max-width:none;max-height:none;" +
     "height:100%;margin:0;border-radius:0;border:none}}" +
     ".sp-settings-close{position:absolute;top:8px;right:12px;background:none;border:none;" +
@@ -243,9 +245,9 @@
     ".sp-settings-close:hover{color:var(--text)}" +
 
     ".sp-section-title{font-size:.8rem;font-weight:600;color:var(--text2);" +
-    "margin:var(--gap) 0 8px;text-transform:uppercase;letter-spacing:.5px}" +
-    ".sp-settings-modal .sp-section-title{font-size:1.1rem;color:var(--text);" +
-    "margin:0 0 20px;letter-spacing:.3px;text-transform:none}" +
+    "margin:var(--gap) 0 8px;letter-spacing:-.01em}" +
+    ".sp-settings-modal .sp-section-title{font-size:1.05rem;color:var(--text);" +
+    "margin:0 0 20px;letter-spacing:-.01em}" +
     ".sp-settings-modal .sp-panel{background:none;border:none;padding:0;margin:0}" +
 
     ".card{background:var(--surface);border:1px solid var(--border);" +
@@ -385,29 +387,30 @@
 
     ".sp-log-toolbar{display:flex;justify-content:flex-end;padding:12px var(--gap) 0}" +
     ".sp-log-clear{background:var(--surface2);color:var(--text);border:1px solid var(--border);" +
-    "border-radius:var(--action-r);padding:8px 14px;font-size:.8rem;cursor:pointer;font-family:inherit}" +
-    ".sp-log-clear:hover{background:var(--border)}" +
-    ".sp-log-output{margin:8px var(--gap) var(--gap);padding:12px;background:#0d0d0d;" +
-    "border:1px solid var(--border);border-radius:6px;" +
-    "font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;" +
-    "font-size:.75rem;line-height:1.5;color:#b0b0b0;overflow-x:auto;overflow-y:auto;" +
+    "border-radius:8px;padding:8px 14px;font-size:.8rem;font-weight:500;cursor:pointer;" +
+    "font-family:inherit;transition:all .25s}" +
+    ".sp-log-clear:hover{background:var(--border);border-color:#4a4d54}" +
+    ".sp-log-output{margin:8px var(--gap) var(--gap);padding:16px;background:var(--surface);" +
+    "border:1px solid var(--border);border-radius:var(--radius);" +
+    "font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;" +
+    "font-size:.75rem;line-height:1.7;color:var(--text2);overflow-x:auto;overflow-y:auto;" +
     "max-height:70vh;white-space:pre;word-break:break-all}" +
-    ".sp-log-line{padding:1px 0;border-left:3px solid transparent;padding-left:6px}" +
-    ".sp-log-error{color:#ef5350;border-left-color:#ef5350;background:rgba(239,83,80,.08)}" +
-    ".sp-log-warn{color:#fdd835;border-left-color:#fdd835;background:rgba(255,167,38,.06)}" +
-    ".sp-log-info{color:#4caf50}" +
-    ".sp-log-config{color:#ce93d8}" +
-    ".sp-log-debug{color:#26c6da}" +
-    ".sp-log-verbose{color:#b0b0b0}" +
+    ".sp-log-line{padding:1px 0;border-left:3px solid transparent;padding-left:8px}" +
+    ".sp-log-error{color:#f66f81;border-left-color:#f14158;background:rgba(244,63,94,.08)}" +
+    ".sp-log-warn{color:#f9b44e;border-left-color:#da8b17;background:rgba(234,179,8,.06)}" +
+    ".sp-log-info{color:#3dd68c}" +
+    ".sp-log-config{color:#c8abfa}" +
+    ".sp-log-debug{color:#5c73e7}" +
+    ".sp-log-verbose{color:var(--text2)}" +
 
-    ".sp-empty{text-align:center;padding:24px;color:#666;font-size:.85rem}" +
+    ".sp-empty{text-align:center;padding:24px;color:var(--text3);font-size:.85rem}" +
 
     ".sp-ctx-menu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--border);" +
-    "border-radius:var(--radius);padding:4px 0;min-width:160px;box-shadow:0 4px 16px rgba(0,0,0,.5);" +
-    "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}" +
+    "border-radius:var(--radius);padding:4px 0;min-width:160px;box-shadow:var(--shadow-3);" +
+    "font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}" +
     ".sp-ctx-item{display:flex;align-items:center;gap:10px;padding:8px 14px;" +
-    "cursor:pointer;font-size:.85rem;color:var(--text);transition:background .1s;white-space:nowrap}" +
-    ".sp-ctx-item:hover{background:#3a3a3a}" +
+    "cursor:pointer;font-size:.8rem;color:var(--text);transition:background .15s;white-space:nowrap}" +
+    ".sp-ctx-item:hover{background:var(--accent-soft)}" +
     ".sp-ctx-item .mdi{font-size:16px;width:18px;text-align:center;color:var(--text2)}" +
     ".sp-ctx-item.sp-ctx-danger{color:var(--danger)}" +
     ".sp-ctx-item.sp-ctx-danger .mdi{color:var(--danger)}" +
@@ -416,7 +419,7 @@
     ".sp-ctx-sub::after{content:'\\F0142';font-family:'Material Design Icons';position:absolute;right:10px;font-size:14px;opacity:.5}" +
     ".sp-ctx-submenu{display:none;position:absolute;top:-4px;left:100%;background:var(--surface);" +
     "border:1px solid var(--border);border-radius:var(--radius);padding:4px 0;min-width:120px;" +
-    "box-shadow:0 4px 16px rgba(0,0,0,.5);z-index:201}" +
+    "box-shadow:var(--shadow-3);z-index:201}" +
     ".sp-ctx-sub:hover>.sp-ctx-submenu{display:block}" +
     ".sp-ctx-check{font-size:14px;width:18px;text-align:center;color:var(--accent)}" +
 
@@ -468,7 +471,28 @@
     "cursor:pointer;padding:2px 0 2px 4px;border-radius:4px;transition:opacity .15s}" +
     ".sp-subpage-badge:hover{opacity:1}" +
     ".sp-type-badge{font-size:var(--btn-label);line-height:1.2;opacity:.35;flex-shrink:0;" +
-    "padding:2px 0 2px 4px;pointer-events:none}";
+    "padding:2px 0 2px 4px;pointer-events:none}" +
+
+    "@media(max-width:768px){" +
+    ":root{--gap:12px}" +
+    "#sp-app{max-width:100%}" +
+    ".sp-header{padding:0 12px;height:48px}" +
+    ".sp-brand{font-size:.875rem}" +
+    ".sp-tab{padding:0 12px;font-size:.8rem}" +
+    ".card{padding:16px}" +
+    ".card-header{margin:-16px -16px 0 -16px;padding:16px 16px 0 16px}" +
+    ".card-body{padding-top:14px}" +
+    ".sp-config{padding:var(--gap)}" +
+    "}" +
+
+    "@media(max-width:480px){" +
+    ":root{--gap:10px}" +
+    ".sp-header{padding:0 10px}" +
+    ".sp-tab{padding:0 10px;font-size:.75rem}" +
+    ".sp-color-row{flex-wrap:wrap}" +
+    ".sp-backup-btns{flex-direction:column}" +
+    ".sp-fw-row{flex-direction:column;align-items:flex-start;gap:12px}" +
+    "}";
 
   // ── State ──────────────────────────────────────────────────────────────
 
@@ -1320,14 +1344,26 @@
     });
     timerPanel.appendChild(timeoutSelect);
 
-    var clockToggle = toggleRow("Clock", "sp-set-clock-ss", state.clockScreensaverOn);
-    timerPanel.appendChild(clockToggle.row);
-    clockToggle.input.addEventListener("change", function () {
-      state.clockScreensaverOn = this.checked;
-      postSwitch("Screen Saver: Clock", this.checked);
-      clockBrightnessField.style.display = this.checked ? "" : "none";
+    timerPanel.appendChild(fieldLabel("Then"));
+    var clockSelect = document.createElement("select");
+    clockSelect.className = "sp-select";
+    clockSelect.id = "sp-set-clock-mode";
+    var clockOff = document.createElement("option");
+    clockOff.value = "off";
+    clockOff.textContent = "Display Off";
+    var clockOn = document.createElement("option");
+    clockOn.value = "clock";
+    clockOn.textContent = "Clock";
+    clockSelect.appendChild(clockOff);
+    clockSelect.appendChild(clockOn);
+    clockSelect.value = state.clockScreensaverOn ? "clock" : "off";
+    clockSelect.addEventListener("change", function () {
+      state.clockScreensaverOn = this.value === "clock";
+      postSwitch("Screen Saver: Clock", state.clockScreensaverOn);
+      clockBrightnessField.style.display = state.clockScreensaverOn ? "" : "none";
     });
-    els.setClockToggle = clockToggle.input;
+    timerPanel.appendChild(clockSelect);
+    els.setClockSelect = clockSelect;
 
     var clockBrightnessField = document.createElement("div");
     clockBrightnessField.style.display = state.clockScreensaverOn ? "" : "none";
@@ -3312,7 +3348,7 @@
           els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
           syncInput(els.setOutdoorEntity, state.outdoorEntity);
           syncInput(els.setPresence, state.presenceEntity);
-          if (els.setClockToggle) els.setClockToggle.checked = state.clockScreensaverOn;
+          if (els.setClockSelect) els.setClockSelect.value = state.clockScreensaverOn ? "clock" : "off";
           if (els.setClockBrightnessField) els.setClockBrightnessField.style.display = state.clockScreensaverOn ? "" : "none";
           if (els.setClockBrightness) {
             els.setClockBrightness.value = state.clockBrightness;
@@ -3459,7 +3495,7 @@
       },
       "switch-screen_saver__clock": function (val, d) {
         state.clockScreensaverOn = d.value === true || val === "ON";
-        if (els.setClockToggle) els.setClockToggle.checked = state.clockScreensaverOn;
+        if (els.setClockSelect) els.setClockSelect.value = state.clockScreensaverOn ? "clock" : "off";
         if (els.setClockBrightnessField) els.setClockBrightnessField.style.display = state.clockScreensaverOn ? "" : "none";
       },
       "number-screen_saver__clock_brightness": function (val) {
