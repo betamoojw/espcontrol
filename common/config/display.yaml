@@ -46,6 +46,18 @@ switch:
     entity_category: config
     web_server:
       sorting_group_id: sg_screensaver
+    on_turn_on:
+      - if:
+          condition:
+            lambda: 'return !id(display_asleep) && lv_scr_act() == id(main_page)->obj;'
+          then:
+            - script.execute: screensaver_idle_check
+    on_turn_off:
+      - if:
+          condition:
+            lambda: 'return !id(display_asleep) && lv_scr_act() == id(main_page)->obj;'
+          then:
+            - script.execute: screensaver_idle_check
 
 text:
   - platform: template
@@ -130,6 +142,13 @@ number:
     icon: "mdi:timer-outline"
     web_server:
       sorting_group_id: sg_screensaver
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return !id(display_asleep) && lv_scr_act() == id(main_page)->obj;'
+            then:
+              - script.execute: screensaver_idle_check
 
   # Home screen return timeout (0 = disabled)
   - platform: template

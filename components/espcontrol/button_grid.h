@@ -1223,7 +1223,8 @@ inline void grid_phase3(
     lv_obj_t *temp_label,
     const std::string &presence_entity,
     bool *presence_detected_ptr,
-    std::function<void()> wake_callback) {
+    std::function<void()> wake_callback,
+    std::function<void()> sleep_callback) {
   ESP_LOGI("sensors", "Phase 3: temp/presence subscriptions start (%lu ms)", esphome::millis());
 
   if (indoor_on && outdoor_on) {
@@ -1280,12 +1281,14 @@ inline void grid_phase3(
     esphome::api::global_api_server->subscribe_home_assistant_state(
       presence_entity, {},
       std::function<void(const std::string &)>(
-        [presence_detected_ptr, wake_callback](const std::string &state) {
-          bool detected = (state == "on");
-          *presence_detected_ptr = detected;
-          if (detected) {
+        [presence_detected_ptr, wake_callback, sleep_callback](const std::string &state) {
+          if (state == "on") {
+            *presence_detected_ptr = true;
             lv_disp_trig_activity(NULL);
             wake_callback();
+          } else if (state == "off") {
+            *presence_detected_ptr = false;
+            sleep_callback();
           }
         })
     );

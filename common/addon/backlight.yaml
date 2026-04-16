@@ -37,18 +37,40 @@ script:
           then:
             - script.execute: screensaver_idle_check
           else:
-            - globals.set:
-                id: display_asleep
-                value: 'true'
-            - if:
-                condition:
-                  lambda: 'return id(clock_screensaver_enabled).state;'
-                then:
-                  - script.execute: show_clock_view
-                else:
-                  - light.turn_off: display_backlight
-                  - lvgl.pause:
-                      show_snow: true
+            - script.execute: screensaver_sleep_timer
+
+  # Timer mode honours the clock/display-off setting.
+  - id: screensaver_sleep_timer
+    mode: restart
+    then:
+      - globals.set:
+          id: display_asleep
+          value: 'true'
+      - if:
+          condition:
+            lambda: 'return id(clock_screensaver_enabled).state;'
+          then:
+            - script.execute: show_clock_view
+          else:
+            - script.execute: screensaver_sleep_display_off
+
+  # Sensor mode always turns the display off and leaves LVGL snow underneath.
+  - id: screensaver_sleep_sensor
+    mode: restart
+    then:
+      - script.stop: screensaver_idle_check
+      - script.execute: screensaver_sleep_display_off
+
+  - id: screensaver_sleep_display_off
+    mode: restart
+    then:
+      - globals.set:
+          id: display_asleep
+          value: 'true'
+      - script.execute: hide_clock_view
+      - light.turn_off: display_backlight
+      - lvgl.pause:
+          show_snow: true
 
   # Setup screen burn-in protection
   - id: setup_screen_dim
