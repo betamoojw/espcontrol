@@ -83,6 +83,32 @@ inline bool is_text_sensor_card(const ParsedCfg &p) {
   return is_text_sensor_card(p.type, p.precision);
 }
 
+inline std::string sentence_cap_text(const std::string &state) {
+  std::string out;
+  out.reserve(state.size());
+  bool cap_next = true;
+  bool last_space = false;
+  for (char ch : state) {
+    unsigned char c = static_cast<unsigned char>(ch);
+    if (ch == '_' || ch == '-' || std::isspace(c)) {
+      if (!out.empty() && !last_space) {
+        out.push_back(' ');
+        last_space = true;
+      }
+      continue;
+    }
+    if (std::isalpha(c)) {
+      out.push_back(static_cast<char>(cap_next ? std::toupper(c) : std::tolower(c)));
+      cap_next = false;
+    } else {
+      out.push_back(ch);
+    }
+    last_space = false;
+  }
+  if (!out.empty() && out.back() == ' ') out.pop_back();
+  return out;
+}
+
 inline const char* weather_icon_for_state(const std::string &state) {
   if (state == "sunny") return find_icon("Weather Sunny");
   if (state == "clear-night") return find_icon("Weather Night");
@@ -331,7 +357,8 @@ inline void subscribe_text_sensor_value(lv_obj_t *text_lbl, const std::string &s
   esphome::api::global_api_server->subscribe_home_assistant_state(
     sensor_id, {},
     std::function<void(const std::string &)>([text_lbl](const std::string &state) {
-      lv_label_set_text(text_lbl, state.c_str());
+      std::string text = sentence_cap_text(state);
+      lv_label_set_text(text_lbl, text.c_str());
     })
   );
 }

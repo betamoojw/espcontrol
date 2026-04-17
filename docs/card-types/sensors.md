@@ -37,7 +37,7 @@ For **Text** mode:
 - Numeric mode displays the current value in large text, with the unit beside it and the label underneath.
 - Numeric mode uses the **tertiary** colour from [Appearance](/features/appearance), so it remains visually distinct from toggles and buttons.
 - Text mode uses the same tertiary colour as Numeric mode, while keeping the normal toggle-style icon and label layout.
-- Text values are shown as-is. Numeric-looking text in Text mode is not rounded, and no unit is added.
+- Text mode formats states in sentence case. For example, `not_home` displays as `Not home`.
 
 ## Example sensors
 
