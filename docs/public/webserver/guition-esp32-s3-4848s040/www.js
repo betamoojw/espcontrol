@@ -29,6 +29,9 @@
     "rows": 3,
     "dragMode": "displace",
     "dragAnimation": true,
+    "features": {
+      "screenRotation": true
+    },
     "screen": {
       "width": "55%",
       "aspect": "1/1"
@@ -1079,6 +1082,8 @@
     timezoneOptions: [],
     clockFormat: "24h",
     clockFormatOptions: ["12h", "24h"],
+    screenRotation: "0",
+    screenRotationOptions: ["0", "90", "180", "270"],
     sunrise: "",
     sunset: "",
     firmwareVersion: "",
@@ -1102,6 +1107,11 @@
     if (state.screensaverMode === "sensor") return "sensor";
     if (state.screensaverMode === "timer") return "timer";
     return state.presenceEntity ? "sensor" : "timer";
+  }
+
+  function normalizeScreenRotation(value) {
+    value = String(value == null ? "" : value);
+    return value === "90" || value === "180" || value === "270" ? value : "0";
   }
 
   var els = {};
@@ -1858,6 +1868,31 @@
     els.setClockFormat = cfSelect;
 
     config.appendChild(makeCollapsibleCard("Clock", clockBody, true));
+
+    if (CFG.features && CFG.features.screenRotation) {
+      var rotationBody = document.createElement("div");
+      var rotField = document.createElement("div");
+      rotField.className = "sp-field";
+      rotField.appendChild(fieldLabel("Rotation", "sp-set-screen-rotation"));
+      var rotSelect = document.createElement("select");
+      rotSelect.className = "sp-select";
+      rotSelect.id = "sp-set-screen-rotation";
+      state.screenRotationOptions.forEach(function (opt) {
+        var o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt + " deg";
+        rotSelect.appendChild(o);
+      });
+      rotSelect.value = state.screenRotation;
+      rotSelect.addEventListener("change", function () {
+        state.screenRotation = normalizeScreenRotation(this.value);
+        postSelect("Screen: Rotation", this.value);
+      });
+      rotField.appendChild(rotSelect);
+      rotationBody.appendChild(rotField);
+      config.appendChild(makeCollapsibleCard("Screen", rotationBody, true));
+      els.setScreenRotation = rotSelect;
+    }
 
     var tempBody = document.createElement("div");
 
@@ -3763,6 +3798,7 @@
         clock_brightness: state.clockBrightness,
         screensaver_timeout: state.screensaverTimeout,
         home_screen_timeout: state.homeScreenTimeout,
+        screen_rotation: state.screenRotation,
       },
     };
 
@@ -3971,6 +4007,8 @@
           postNumber("Screen Saver: Clock Brightness", s.clock_brightness != null ? s.clock_brightness : 35);
           postNumber("Screensaver Timeout", s.screensaver_timeout || 300);
           postNumber("Home Screen Timeout", s.home_screen_timeout != null ? s.home_screen_timeout : 60);
+          var importedScreenRotation = normalizeScreenRotation(s.screen_rotation);
+          if (CFG.features && CFG.features.screenRotation) postSelect("Screen: Rotation", importedScreenRotation);
 
           state._indoorOn = !!s.indoor_temp_enable;
           state._outdoorOn = !!s.outdoor_temp_enable;
@@ -3983,6 +4021,7 @@
           state.clockBrightness = s.clock_brightness != null ? s.clock_brightness : 35;
           state.screensaverTimeout = s.screensaver_timeout || 300;
           state.homeScreenTimeout = s.home_screen_timeout != null ? s.home_screen_timeout : 60;
+          state.screenRotation = importedScreenRotation;
 
           els.setIndoorToggle.checked = state._indoorOn;
           els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");
@@ -3999,6 +4038,7 @@
           }
           if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
           if (els.setHSTimeout) els.setHSTimeout.value = String(state.homeScreenTimeout);
+          if (els.setScreenRotation) els.setScreenRotation.value = state.screenRotation;
           if (els.setSsMode) els.setSsMode(getActiveScreensaverMode());
           updateTempPreview();
 
@@ -4209,6 +4249,22 @@
         }
         if (els.setClockFormat) els.setClockFormat.value = state.clockFormat;
         updateClock();
+      },
+      "select-screen__rotation": function (val, d) {
+        state.screenRotation = normalizeScreenRotation(d.value || val || state.screenRotation);
+        if (d.option && Array.isArray(d.option)) {
+          state.screenRotationOptions = d.option;
+          if (els.setScreenRotation) {
+            els.setScreenRotation.innerHTML = "";
+            d.option.forEach(function (opt) {
+              var o = document.createElement("option");
+              o.value = opt;
+              o.textContent = opt + " deg";
+              els.setScreenRotation.appendChild(o);
+            });
+          }
+        }
+        if (els.setScreenRotation) els.setScreenRotation.value = state.screenRotation;
       },
       "text_sensor-screen__sunrise": function (val) {
         state.sunrise = val;
