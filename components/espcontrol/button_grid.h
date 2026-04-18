@@ -980,11 +980,8 @@ inline void grid_phase2(
 
   static bool sp_child_was_on[25 * 25] = {};
   static std::string sp_entity_ids[25 * 25];
-  static std::string sp_push_labels[25 * 25];
   static int sp_alloc_idx = 0;
-  static int sp_push_label_idx = 0;
   sp_alloc_idx = 0;
-  sp_push_label_idx = 0;
 
   bool has_on, has_off, has_sensor_color;
   uint32_t on_val = parse_hex_color(on_hex, has_on);
@@ -1261,8 +1258,9 @@ inline void grid_phase2(
         } else {
           lv_label_set_text(stl, "Push");
         }
-        int label_idx = sp_push_label_idx++;
-        sp_push_labels[label_idx] = sb.label.empty() ? "Push" : sb.label;
+        std::string push_label = sb.label.empty() ? "Push" : sb.label;
+        // Intentionally leaked -- lives for the lifetime of the display.
+        std::string *label = new std::string(push_label);
         lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
           std::string *label = (std::string *)lv_event_get_user_data(e);
           esphome::api::HomeassistantActionRequest req;
@@ -1273,7 +1271,7 @@ inline void grid_phase2(
           kv.key = decltype(kv.key)("label");
           kv.value = decltype(kv.value)(label->c_str());
           esphome::api::global_api_server->send_homeassistant_action(req);
-        }, LV_EVENT_CLICKED, &sp_push_labels[label_idx]);
+        }, LV_EVENT_CLICKED, label);
 
       } else if ((sb.type == "slider" || sb.type == "cover") && !sb.entity.empty()) {
         lv_obj_t *sl = setup_subpage_slider(sb_btn, sil, stl, sb, has_on ? on_val : DEFAULT_SLIDER_COLOR, sp_radius);
