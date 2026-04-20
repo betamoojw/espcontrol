@@ -63,6 +63,8 @@ esphome:
             #define BTN_SLOT(n) { button_##n##_config, button_##n, button_##n##_icon_label, button_##n##_text_label, button_##n##_sensor_container, button_##n##_sensor_label, button_##n##_unit_label }
             #define SP_CFG(n) subpage_##n##_config
             #define SP_EXT(n) subpage_##n##_config_ext
+            #define SP_EXT2(n) subpage_##n##_config_ext_2
+            #define SP_EXT3(n) subpage_##n##_config_ext_3
             BtnSlot slots[] = {
               BTN_SLOT(1),
               BTN_SLOT(2),
@@ -99,16 +101,32 @@ esphome:
               SP_EXT(13), SP_EXT(14), SP_EXT(15), SP_EXT(16),
               SP_EXT(17), SP_EXT(18), SP_EXT(19), SP_EXT(20),
             };
+            esphome::text::Text *sp_ext2[] = {
+              SP_EXT2(1), SP_EXT2(2), SP_EXT2(3), SP_EXT2(4),
+              SP_EXT2(5), SP_EXT2(6), SP_EXT2(7), SP_EXT2(8),
+              SP_EXT2(9), SP_EXT2(10), SP_EXT2(11), SP_EXT2(12),
+              SP_EXT2(13), SP_EXT2(14), SP_EXT2(15), SP_EXT2(16),
+              SP_EXT2(17), SP_EXT2(18), SP_EXT2(19), SP_EXT2(20),
+            };
+            esphome::text::Text *sp_ext3[] = {
+              SP_EXT3(1), SP_EXT3(2), SP_EXT3(3), SP_EXT3(4),
+              SP_EXT3(5), SP_EXT3(6), SP_EXT3(7), SP_EXT3(8),
+              SP_EXT3(9), SP_EXT3(10), SP_EXT3(11), SP_EXT3(12),
+              SP_EXT3(13), SP_EXT3(14), SP_EXT3(15), SP_EXT3(16),
+              SP_EXT3(17), SP_EXT3(18), SP_EXT3(19), SP_EXT3(20),
+            };
             #undef BTN_SLOT
             #undef SP_CFG
             #undef SP_EXT
+            #undef SP_EXT2
+            #undef SP_EXT3
             GridConfig cfg = {};
             cfg.num_slots = 20;
             cfg.cols = 5;
             cfg.color_correction = true;
             cfg.wrap_tall_labels = true;
             cfg.sp_sensor_font = id(statistics_font_lt)->get_lv_font();
-            grid_phase2(slots, cfg, sp_cfgs, sp_ext,
+            grid_phase2(slots, cfg, sp_cfgs, sp_ext, sp_ext2, sp_ext3,
               id(button_order).state,
               id(button_on_color).state,
               id(button_off_color).state,

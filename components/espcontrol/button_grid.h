@@ -710,6 +710,53 @@ struct SubpageBtn {
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
+inline std::vector<std::string> split_subpage_fields(const std::string &value, char delim) {
+  std::vector<std::string> out;
+  size_t start = 0;
+  while (start <= value.length()) {
+    size_t end = value.find(delim, start);
+    if (end == std::string::npos) end = value.length();
+    out.push_back(value.substr(start, end - start));
+    start = end + 1;
+  }
+  return out;
+}
+
+inline std::string compact_subpage_type(const std::string &code) {
+  if (code == "S") return "sensor";
+  if (code == "W") return "weather";
+  if (code == "L") return "slider";
+  if (code == "C") return "cover";
+  if (code == "P") return "push";
+  if (code == "G") return "subpage";
+  return code;
+}
+
+inline int hex_digit(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  return -1;
+}
+
+inline std::string decode_compact_subpage_field(const std::string &value) {
+  std::string out;
+  out.reserve(value.size());
+  for (size_t i = 0; i < value.size(); i++) {
+    if (value[i] == '%' && i + 2 < value.size()) {
+      int hi = hex_digit(value[i + 1]);
+      int lo = hex_digit(value[i + 2]);
+      if (hi >= 0 && lo >= 0) {
+        out.push_back(static_cast<char>((hi << 4) | lo));
+        i += 2;
+        continue;
+      }
+    }
+    out.push_back(value[i]);
+  }
+  return out;
+}
+
 // Create a slider button inside a subpage screen (reuses main grid slider logic)
 inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_t *text_lbl,
                                        const SubpageBtn &sb, uint32_t on_color, lv_coord_t radius) {
@@ -773,25 +820,27 @@ inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
   std::vector<SubpageBtn> btns;
   if (sp_cfg.empty()) return btns;
 
-  std::vector<std::string> pipes;
-  size_t ps = 0;
-  while (ps <= sp_cfg.length()) {
-    size_t pe = sp_cfg.find('|', ps);
-    if (pe == std::string::npos) pe = sp_cfg.length();
-    pipes.push_back(sp_cfg.substr(ps, pe - ps));
-    ps = pe + 1;
-  }
+  bool compact = sp_cfg[0] == '~';
+  std::vector<std::string> pipes = split_subpage_fields(compact ? sp_cfg.substr(1) : sp_cfg, '|');
   if (pipes.size() < 2) return btns;
 
   for (size_t pi = 1; pi < pipes.size(); pi++) {
-    std::vector<std::string> flds;
-    size_t fs = 0;
-    while (fs <= pipes[pi].length()) {
-      size_t fe = pipes[pi].find(':', fs);
-      if (fe == std::string::npos) fe = pipes[pi].length();
-      flds.push_back(pipes[pi].substr(fs, fe - fs));
-      fs = fe + 1;
+    if (compact) {
+      std::vector<std::string> flds = split_subpage_fields(pipes[pi], ',');
+      std::string tp = flds.size() > 0 ? compact_subpage_type(flds[0]) : "";
+      std::string e = flds.size() > 1 ? decode_compact_subpage_field(flds[1]) : "";
+      std::string l = flds.size() > 2 ? decode_compact_subpage_field(flds[2]) : "";
+      std::string ic = flds.size() > 3 ? decode_compact_subpage_field(flds[3]) : "Auto";
+      if (ic.empty()) ic = "Auto";
+      std::string io = flds.size() > 4 ? decode_compact_subpage_field(flds[4]) : "Auto";
+      if (io.empty()) io = "Auto";
+      std::string sn = flds.size() > 5 ? decode_compact_subpage_field(flds[5]) : "";
+      std::string un = flds.size() > 6 ? decode_compact_subpage_field(flds[6]) : "";
+      std::string pr = flds.size() > 7 ? decode_compact_subpage_field(flds[7]) : "";
+      btns.push_back({e, l, ic, io, sn, un, tp, pr});
+      continue;
     }
+    std::vector<std::string> flds = split_subpage_fields(pipes[pi], ':');
     std::string e = flds.size() > 0 ? flds[0] : "";
     std::string l = flds.size() > 1 ? flds[1] : "";
     std::string ic = flds.size() > 2 ? flds[2] : "Auto";
@@ -810,9 +859,10 @@ inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
 // Extract the order string (everything before the first pipe) from subpage config
 inline std::string get_subpage_order(const std::string &sp_cfg) {
   if (sp_cfg.empty()) return "";
-  size_t pe = sp_cfg.find('|');
-  if (pe == std::string::npos) return sp_cfg;
-  return sp_cfg.substr(0, pe);
+  size_t start = sp_cfg[0] == '~' ? 1 : 0;
+  size_t pe = sp_cfg.find('|', start);
+  if (pe == std::string::npos) return sp_cfg.substr(start);
+  return sp_cfg.substr(start, pe - start);
 }
 
 // Subpage grid layout with support for a back button token ("B")
@@ -965,6 +1015,8 @@ inline void grid_phase2(
     BtnSlot *slots, const GridConfig &cfg,
     esphome::text::Text **sp_configs,
     esphome::text::Text **sp_ext_configs,
+    esphome::text::Text **sp_ext2_configs,
+    esphome::text::Text **sp_ext3_configs,
     const std::string &order_str,
     const std::string &on_hex, const std::string &off_hex,
     const std::string &sensor_hex,
@@ -1113,7 +1165,8 @@ inline void grid_phase2(
         ? "\U000F024B" : find_icon(p.icon.c_str());
     }
 
-    std::string sp_cfg = sp_configs[si]->state + sp_ext_configs[si]->state;
+    std::string sp_cfg = sp_configs[si]->state + sp_ext_configs[si]->state +
+      sp_ext2_configs[si]->state + sp_ext3_configs[si]->state;
     if (sp_cfg.empty()) continue;
 
     auto sp_btns = parse_subpage_config(sp_cfg);

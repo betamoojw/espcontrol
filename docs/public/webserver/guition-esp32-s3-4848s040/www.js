@@ -1113,6 +1113,7 @@
     updateFreqOptions: ["Hourly", "Daily", "Weekly", "Monthly"],
     subpages: {},
     subpageRaw: {},
+    subpageSavePending: {},
     editingSubpage: null,
     subpageSelectedSlots: [],
     subpageLastClicked: -1,
@@ -1463,15 +1464,28 @@
   function saveSubpageEntity(slot) {
     var sp = state.subpages[slot];
     var full = sp ? serializeSubpageConfig(sp) : "";
-    var main = full, ext = "";
-    if (full.length > 255) {
-      var splitAt = full.lastIndexOf("|", 255);
+    var chunks = ["", "", "", ""];
+    var rest = full;
+    for (var ci = 0; ci < chunks.length && rest; ci++) {
+      if (rest.length <= 255) {
+        chunks[ci] = rest;
+        rest = "";
+        break;
+      }
+      var splitAt = rest.lastIndexOf("|", 255);
       if (splitAt <= 0) splitAt = 255;
-      main = full.substring(0, splitAt);
-      ext = full.substring(splitAt);
+      chunks[ci] = rest.substring(0, splitAt);
+      rest = rest.substring(splitAt);
     }
-    postText("Subpage " + slot + " Config", main);
-    postText("Subpage " + slot + " Config Ext", ext);
+    if (rest) {
+      showBanner("Subpage is too large to save. Shorten labels or entity IDs.", "error");
+      return;
+    }
+    state.subpageSavePending[slot] = full;
+    postText("Subpage " + slot + " Config", chunks[0]);
+    postText("Subpage " + slot + " Config Ext", chunks[1]);
+    postText("Subpage " + slot + " Config Ext 2", chunks[2]);
+    postText("Subpage " + slot + " Config Ext 3", chunks[3]);
   }
 
   function postSelect(name, option) {
@@ -1541,6 +1555,7 @@
   }
 
   function parseSubpageConfig(str) {
+    if (str && str.charAt(0) === "~") return parseCompactSubpageConfig(str);
     if (!str || !str.trim()) return { order: [], buttons: [] };
     var parts = str.split("|");
     var order = [];
@@ -1568,7 +1583,78 @@
     return { order: order, buttons: buttons };
   }
 
+  function subpageTypeCode(type) {
+    var map = {
+      sensor: "S",
+      weather: "W",
+      slider: "L",
+      cover: "C",
+      push: "P",
+      subpage: "G",
+    };
+    return map[type || ""] || (type || "");
+  }
+
+  function subpageTypeFromCode(code) {
+    var map = {
+      S: "sensor",
+      W: "weather",
+      L: "slider",
+      C: "cover",
+      P: "push",
+      G: "subpage",
+    };
+    return map[code || ""] || (code || "");
+  }
+
+  function encodeSubpageField(value) {
+    return String(value || "")
+      .replace(/%/g, "%25")
+      .replace(/\|/g, "%7C")
+      .replace(/,/g, "%2C");
+  }
+
+  function decodeSubpageField(value) {
+    return String(value || "")
+      .replace(/%2C/gi, ",")
+      .replace(/%7C/gi, "|")
+      .replace(/%25/g, "%");
+  }
+
+  function parseCompactSubpageConfig(str) {
+    if (!str || str.length < 2) return { order: [], buttons: [] };
+    var parts = str.substring(1).split("|");
+    var order = [];
+    if (parts[0]) {
+      var op = parts[0].split(",");
+      for (var i = 0; i < op.length; i++) order.push(op[i].trim());
+    }
+    var buttons = [];
+    for (var i = 1; i < parts.length; i++) {
+      var f = parts[i].split(",");
+      buttons.push(normalizeButtonConfig({
+        type: subpageTypeFromCode(f[0] || ""),
+        entity: decodeSubpageField(f[1]),
+        label: decodeSubpageField(f[2]),
+        icon: decodeSubpageField(f[3]) || "Auto",
+        icon_on: decodeSubpageField(f[4]) || "Auto",
+        sensor: decodeSubpageField(f[5]),
+        unit: decodeSubpageField(f[6]),
+        precision: decodeSubpageField(f[7]),
+      }));
+    }
+    return { order: order, buttons: buttons };
+  }
+
   function serializeSubpageConfig(sp) {
+    var legacy = serializeLegacySubpageConfig(sp);
+    var compact = serializeCompactSubpageConfig(sp);
+    if (!compact) return legacy;
+    if (!legacy) return compact;
+    return compact.length < legacy.length ? compact : legacy;
+  }
+
+  function serializeLegacySubpageConfig(sp) {
     if (!sp || !sp.buttons || sp.buttons.length === 0) return "";
     var out = sp.order.join(",");
     for (var i = 0; i < sp.buttons.length; i++) {
@@ -1583,9 +1669,51 @@
     return out;
   }
 
+  function serializeCompactSubpageConfig(sp) {
+    if (!sp || !sp.buttons || sp.buttons.length === 0) return "";
+    var out = "~" + sp.order.join(",");
+    for (var i = 0; i < sp.buttons.length; i++) {
+      var b = sp.buttons[i];
+      var fields = [
+        subpageTypeCode(b.type || ""),
+        encodeSubpageField(b.entity),
+        encodeSubpageField(b.label),
+        b.icon && b.icon !== "Auto" ? encodeSubpageField(b.icon) : "",
+        b.icon_on && b.icon_on !== "Auto" ? encodeSubpageField(b.icon_on) : "",
+        encodeSubpageField(b.sensor),
+        encodeSubpageField(b.unit),
+        encodeSubpageField(b.precision),
+      ];
+      while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
+      out += "|" + fields.join(",");
+    }
+    return out;
+  }
+
   function applySubpageRaw(slot) {
     var raw = state.subpageRaw[slot];
-    var combined = (raw ? raw.main : "") + (raw ? raw.ext : "");
+    var combined = (raw ? raw.main : "") + (raw ? raw.ext : "") +
+      (raw ? raw.ext2 : "") + (raw ? raw.ext3 : "");
+    var pending = state.subpageSavePending[slot];
+    if (pending) {
+      if (combined !== pending) {
+        if (state.editingSubpage === slot) scheduleRender();
+        return;
+      }
+      delete state.subpageSavePending[slot];
+    }
+    var local = state.subpages[slot];
+    var localHasData = local && (
+      (local.buttons && local.buttons.length > 0) ||
+      (local.order && local.order.length > 0)
+    );
+    if (state.editingSubpage === slot && localHasData) {
+      var localSerialized = serializeSubpageConfig(local);
+      if (combined !== localSerialized) {
+        scheduleRender();
+        return;
+      }
+    }
     if (combined) {
       var sp = parseSubpageConfig(combined);
       sp.sizes = sp.sizes || {};
@@ -2671,12 +2799,29 @@
     }
 
     function bindField(input, field, rerender) {
-      input.addEventListener("blur", function () {
-        b[field] = this.value;
-        saveField(field, this.value);
+      var lastSaved = input.value;
+      function syncValue() {
+        b[field] = input.value;
+      }
+      function persistValue() {
+        syncValue();
+        if (input.value === lastSaved) return;
+        lastSaved = input.value;
+        saveField(field, input.value);
+        if (rerender) renderPreview();
+      }
+      input.addEventListener("input", function () {
+        syncValue();
         if (rerender) renderPreview();
       });
-      input.addEventListener("keydown", function (e) { if (e.key === "Enter") this.blur(); });
+      input.addEventListener("change", persistValue);
+      input.addEventListener("blur", persistValue);
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          persistValue();
+          this.blur();
+        }
+      });
     }
 
     function makeIconPicker(pickerId, inputId, currentVal, onSelect) {
@@ -4506,7 +4651,7 @@
         fn: function (m, val) {
           var slot = parseInt(m[1], 10);
           if (slot < 1 || slot > NUM_SLOTS) return;
-          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "" };
+          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "", ext2: "", ext3: "" };
           state.subpageRaw[slot].main = val || "";
           applySubpageRaw(slot);
         },
@@ -4516,8 +4661,28 @@
         fn: function (m, val) {
           var slot = parseInt(m[1], 10);
           if (slot < 1 || slot > NUM_SLOTS) return;
-          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "" };
+          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "", ext2: "", ext3: "" };
           state.subpageRaw[slot].ext = val || "";
+          applySubpageRaw(slot);
+        },
+      },
+      {
+        re: /^text-subpage_(\d+)_config_ext_2$/,
+        fn: function (m, val) {
+          var slot = parseInt(m[1], 10);
+          if (slot < 1 || slot > NUM_SLOTS) return;
+          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "", ext2: "", ext3: "" };
+          state.subpageRaw[slot].ext2 = val || "";
+          applySubpageRaw(slot);
+        },
+      },
+      {
+        re: /^text-subpage_(\d+)_config_ext_3$/,
+        fn: function (m, val) {
+          var slot = parseInt(m[1], 10);
+          if (slot < 1 || slot > NUM_SLOTS) return;
+          if (!state.subpageRaw[slot]) state.subpageRaw[slot] = { main: "", ext: "", ext2: "", ext3: "" };
+          state.subpageRaw[slot].ext3 = val || "";
           applySubpageRaw(slot);
         },
       },

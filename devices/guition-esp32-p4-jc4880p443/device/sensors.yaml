@@ -58,12 +58,20 @@ esphome:
               id(subpage_1_config_ext), id(subpage_2_config_ext), id(subpage_3_config_ext),
               id(subpage_4_config_ext), id(subpage_5_config_ext), id(subpage_6_config_ext),
             };
+            esphome::text::Text *sp_ext2[] = {
+              id(subpage_1_config_ext_2), id(subpage_2_config_ext_2), id(subpage_3_config_ext_2),
+              id(subpage_4_config_ext_2), id(subpage_5_config_ext_2), id(subpage_6_config_ext_2),
+            };
+            esphome::text::Text *sp_ext3[] = {
+              id(subpage_1_config_ext_3), id(subpage_2_config_ext_3), id(subpage_3_config_ext_3),
+              id(subpage_4_config_ext_3), id(subpage_5_config_ext_3), id(subpage_6_config_ext_3),
+            };
             GridConfig cfg = {};
             cfg.num_slots = 6;
             cfg.cols = 2;
             cfg.color_correction = true;
             cfg.sp_sensor_font = id(statistics_font_lg)->get_lv_font();
-            grid_phase2(slots, cfg, sp_cfgs, sp_ext,
+            grid_phase2(slots, cfg, sp_cfgs, sp_ext, sp_ext2, sp_ext3,
               id(button_order).state,
               id(button_on_color).state,
               id(button_off_color).state,
