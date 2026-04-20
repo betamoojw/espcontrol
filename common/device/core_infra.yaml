@@ -13,6 +13,7 @@ api:
 logger:
   logs:
     light: WARN
+    script: INFO
 
 http_request:
   id: http_req
