@@ -41,7 +41,14 @@ web_server:
       sorting_weight: 40
 
 button:
-  - platform: restart
+  - platform: template
     name: "Apply Configuration"
     icon: mdi:restart
     entity_category: config
+    on_press:
+      then:
+        # Flush web UI settings before rebooting; ESPHome normally batches
+        # preference writes, so an immediate restart can otherwise lose them.
+        - lambda: |-
+            global_preferences->sync();
+            App.safe_reboot();
