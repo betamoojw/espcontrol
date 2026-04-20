@@ -166,6 +166,7 @@ select:
   - platform: template
     name: "Screen: Rotation"
     internal: true
+    disabled_by_default: true
     id: screen_rotation_select
     entity_category: config
     icon: "mdi:screen-rotation"

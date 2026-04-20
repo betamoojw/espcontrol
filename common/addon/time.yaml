@@ -19,6 +19,7 @@ select:
   - platform: template
     name: "Screen: Timezone"
     internal: true
+    disabled_by_default: true
     id: timezone_select
     entity_category: config
     icon: "mdi:map-clock"
@@ -168,6 +169,7 @@ select:
   - platform: template
     name: "Screen: Clock Format"
     internal: true
+    disabled_by_default: true
     id: clock_format_select
     entity_category: config
     icon: "mdi:clock-outline"
