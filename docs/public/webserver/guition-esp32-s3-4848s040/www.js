@@ -2836,11 +2836,13 @@
       (els.previewMain && els.previewMain.contains(target)) ||
       (els.selectionBar && els.selectionBar.contains(target)) ||
       (els.settingsOverlay && els.settingsOverlay.contains(target)) ||
-      (ctxMenu && ctxMenu.contains(target))
+      (ctxMenu && ctxMenu.contains(target)) ||
+      (target.closest && target.closest(".sp-ctx-menu"))
     );
   }
 
   function handleDocumentSelectionMouseDown(e) {
+    if (e.button !== 0) return;
     if (isSelectionControlTarget(e.target)) return;
     clearCardSelection();
   }
@@ -4077,6 +4079,7 @@
     item.innerHTML = '<span class="mdi mdi-' + icon + '"></span>' + escHtml(text);
     item.addEventListener("mousedown", function (ev) {
       ev.preventDefault();
+      ev.stopPropagation();
       hideContextMenu();
       handler();
     });
