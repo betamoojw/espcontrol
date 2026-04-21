@@ -1100,7 +1100,9 @@
     screensaverMode: "disabled",
     _screensaverModeReceived: false,
     clockScreensaverOn: true,
-    clockBrightness: 35,
+    clockBrightnessDay: 35,
+    clockBrightnessNight: 35,
+    clockBrightnessSplitReceived: false,
     screensaverTimeout: 300,
     screensaverTimeoutMin: 60,
     screensaverTimeoutMax: 3600,
@@ -1191,6 +1193,14 @@
     var n = parseFloat(value);
     if (!isFinite(n) || n <= 0) return 10;
     if (n < 10) return 10;
+    if (n > 100) return 100;
+    return Math.round(n);
+  }
+
+  function normalizeClockBrightness(value, fallback) {
+    var n = parseFloat(value);
+    if (!isFinite(n) || n <= 0) return fallback;
+    if (n < 1) return 1;
     if (n > 100) return 100;
     return Math.round(n);
   }
@@ -1726,6 +1736,20 @@
       return;
     }
     postNumberWithObjectIds("Screensaver Timeout", ["screensaver_timeout"], value);
+  }
+
+  function postClockBrightnessDay(value) {
+    postNumberWithObjectIds("Screen Saver: Daytime Clock Brightness", [
+      "screen_saver__daytime_clock_brightness",
+      "screen_saver__clock_brightness",
+    ], value);
+  }
+
+  function postClockBrightnessNight(value) {
+    postNumberWithObjectIds("Screen Saver: Nighttime Clock Brightness", [
+      "screen_saver__nighttime_clock_brightness",
+      "screen_saver__clock_brightness",
+    ], value);
   }
 
   function postSwitchWithObjectId(name, objectId, on, errorMessage) {
@@ -2604,8 +2628,10 @@
     timerPanel.appendChild(timerClockControls.brightnessField);
     els.setClockSelect = timerClockControls.clockSelect;
     els.setClockField = timerClockControls.clockField;
-    els.setClockBrightness = timerClockControls.clockBrightness;
-    els.setClockBrightnessVal = timerClockControls.clockBrightnessVal;
+    els.setClockBrightnessDay = timerClockControls.clockBrightnessDay;
+    els.setClockBrightnessDayVal = timerClockControls.clockBrightnessDayVal;
+    els.setClockBrightnessNight = timerClockControls.clockBrightnessNight;
+    els.setClockBrightnessNightVal = timerClockControls.clockBrightnessNightVal;
     els.setClockBrightnessField = timerClockControls.brightnessField;
 
     ssBody.appendChild(timerPanel);
@@ -2627,8 +2653,10 @@
     els.setPresence = presInp;
     els.setSensorClockSelect = sensorClockControls.clockSelect;
     els.setSensorClockField = sensorClockControls.clockField;
-    els.setSensorClockBrightness = sensorClockControls.clockBrightness;
-    els.setSensorClockBrightnessVal = sensorClockControls.clockBrightnessVal;
+    els.setSensorClockBrightnessDay = sensorClockControls.clockBrightnessDay;
+    els.setSensorClockBrightnessDayVal = sensorClockControls.clockBrightnessDayVal;
+    els.setSensorClockBrightnessNight = sensorClockControls.clockBrightnessNight;
+    els.setSensorClockBrightnessNightVal = sensorClockControls.clockBrightnessNightVal;
     els.setSensorClockBrightnessField = sensorClockControls.brightnessField;
     syncClockScreensaverControls();
 
@@ -2958,20 +2986,29 @@
 
   function syncClockScreensaverControls() {
     var mode = state.clockScreensaverOn ? "clock" : "off";
-    var brightness = Math.round(state.clockBrightness) + "%";
+    var dayBrightness = Math.round(state.clockBrightnessDay) + "%";
+    var nightBrightness = Math.round(state.clockBrightnessNight) + "%";
     var display = state.clockScreensaverOn ? "" : "none";
 
     if (els.setClockSelect) els.setClockSelect.value = mode;
     if (els.setSensorClockSelect) els.setSensorClockSelect.value = mode;
     syncOptionalClockBrightness(els.setClockBrightnessField, els.setClockField, display);
     syncOptionalClockBrightness(els.setSensorClockBrightnessField, els.setSensorClockField, display);
-    if (els.setClockBrightness) {
-      els.setClockBrightness.value = state.clockBrightness;
-      els.setClockBrightnessVal.textContent = brightness;
+    if (els.setClockBrightnessDay) {
+      els.setClockBrightnessDay.value = state.clockBrightnessDay;
+      els.setClockBrightnessDayVal.textContent = dayBrightness;
     }
-    if (els.setSensorClockBrightness) {
-      els.setSensorClockBrightness.value = state.clockBrightness;
-      els.setSensorClockBrightnessVal.textContent = brightness;
+    if (els.setClockBrightnessNight) {
+      els.setClockBrightnessNight.value = state.clockBrightnessNight;
+      els.setClockBrightnessNightVal.textContent = nightBrightness;
+    }
+    if (els.setSensorClockBrightnessDay) {
+      els.setSensorClockBrightnessDay.value = state.clockBrightnessDay;
+      els.setSensorClockBrightnessDayVal.textContent = dayBrightness;
+    }
+    if (els.setSensorClockBrightnessNight) {
+      els.setSensorClockBrightnessNight.value = state.clockBrightnessNight;
+      els.setSensorClockBrightnessNightVal.textContent = nightBrightness;
     }
   }
 
@@ -3005,21 +3042,31 @@
 
     var clockBrightnessField = document.createElement("div");
     clockBrightnessField.style.display = state.clockScreensaverOn ? "" : "none";
-    var clockSlider = createRangeSlider("Clock Brightness", state.clockBrightness, "Screen Saver: Clock Brightness");
-    clockSlider.range.min = "1";
-    clockSlider.range.step = "1";
-    clockSlider.range.addEventListener("input", function () {
-      state.clockBrightness = parseFloat(this.value) || 35;
+    var daySlider = createRangeSlider("Daytime Clock Brightness", state.clockBrightnessDay, postClockBrightnessDay);
+    daySlider.range.min = "1";
+    daySlider.range.step = "1";
+    daySlider.range.addEventListener("input", function () {
+      state.clockBrightnessDay = normalizeClockBrightness(this.value, 35);
       syncClockScreensaverControls();
     });
-    clockBrightnessField.appendChild(clockSlider.wrap);
+    clockBrightnessField.appendChild(daySlider.wrap);
+    var nightSlider = createRangeSlider("Nighttime Clock Brightness", state.clockBrightnessNight, postClockBrightnessNight);
+    nightSlider.range.min = "1";
+    nightSlider.range.step = "1";
+    nightSlider.range.addEventListener("input", function () {
+      state.clockBrightnessNight = normalizeClockBrightness(this.value, state.clockBrightnessDay);
+      syncClockScreensaverControls();
+    });
+    clockBrightnessField.appendChild(nightSlider.wrap);
 
     return {
       clockField: clockField,
       clockSelect: clockSelect,
       brightnessField: clockBrightnessField,
-      clockBrightness: clockSlider.range,
-      clockBrightnessVal: clockSlider.val,
+      clockBrightnessDay: daySlider.range,
+      clockBrightnessDayVal: daySlider.val,
+      clockBrightnessNight: nightSlider.range,
+      clockBrightnessNightVal: nightSlider.val,
     };
   }
 
@@ -4906,7 +4953,9 @@
         screensaver_mode: getActiveScreensaverMode(),
         presence_sensor_entity: state.presenceEntity,
         clock_screensaver: state.clockScreensaverOn,
-        clock_brightness: state.clockBrightness,
+        clock_brightness: state.clockBrightnessDay,
+        clock_brightness_day: state.clockBrightnessDay,
+        clock_brightness_night: state.clockBrightnessNight,
         screensaver_timeout: state.screensaverTimeout,
         home_screen_timeout: state.homeScreenTimeout,
         screen_rotation: state.screenRotation,
@@ -5127,8 +5176,15 @@
           }
           postText("Screensaver Mode", importedScreensaverMode);
           postText("Presence Sensor Entity", s.presence_sensor_entity || "");
+          var importedClockBrightnessDay = normalizeClockBrightness(
+            s.clock_brightness_day != null ? s.clock_brightness_day : s.clock_brightness,
+            35);
+          var importedClockBrightnessNight = normalizeClockBrightness(
+            s.clock_brightness_night != null ? s.clock_brightness_night : s.clock_brightness,
+            importedClockBrightnessDay);
           postSwitch("Screen Saver: Clock", s.clock_screensaver != null ? !!s.clock_screensaver : true);
-          postNumber("Screen Saver: Clock Brightness", s.clock_brightness != null ? s.clock_brightness : 35);
+          postClockBrightnessDay(importedClockBrightnessDay);
+          postClockBrightnessNight(importedClockBrightnessNight);
           postScreensaverTimeout(s.screensaver_timeout || 300);
           postNumber("Home Screen Timeout", s.home_screen_timeout != null ? s.home_screen_timeout : 60);
           var importedScreenRotation = normalizeScreenRotation(s.screen_rotation);
@@ -5142,7 +5198,8 @@
           state._screensaverModeReceived = true;
           state.presenceEntity = s.presence_sensor_entity || "";
           state.clockScreensaverOn = s.clock_screensaver != null ? !!s.clock_screensaver : true;
-          state.clockBrightness = s.clock_brightness != null ? s.clock_brightness : 35;
+          state.clockBrightnessDay = importedClockBrightnessDay;
+          state.clockBrightnessNight = importedClockBrightnessNight;
           state.screensaverTimeout = s.screensaver_timeout || 300;
           state.homeScreenTimeout = s.home_screen_timeout != null ? s.home_screen_timeout : 60;
           state.screenRotation = importedScreenRotation;
@@ -5332,7 +5389,20 @@
         syncClockScreensaverControls();
       },
       "number-screen_saver__clock_brightness": function (val) {
-        state.clockBrightness = parseFloat(val) || 35;
+        if (state.clockBrightnessSplitReceived) return;
+        var brightness = normalizeClockBrightness(val, 35);
+        state.clockBrightnessDay = brightness;
+        state.clockBrightnessNight = brightness;
+        syncClockScreensaverControls();
+      },
+      "number-screen_saver__daytime_clock_brightness": function (val) {
+        state.clockBrightnessSplitReceived = true;
+        state.clockBrightnessDay = normalizeClockBrightness(val, 35);
+        syncClockScreensaverControls();
+      },
+      "number-screen_saver__nighttime_clock_brightness": function (val) {
+        state.clockBrightnessSplitReceived = true;
+        state.clockBrightnessNight = normalizeClockBrightness(val, state.clockBrightnessDay);
         syncClockScreensaverControls();
       },
       "text-presence_sensor_entity": function (val) {

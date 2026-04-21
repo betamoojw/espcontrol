@@ -34,6 +34,8 @@ When the screensaver activates, you can choose what happens:
 - **Clock** — shows a large drifting clock at reduced brightness (the default). The clock repositions itself periodically to prevent burn-in.
 - **Display Off** — switches to a black screen and turns the backlight off completely.
 
+When Clock is selected, you can set separate **daytime clock brightness** and **nighttime clock brightness** values. These use the same sunrise and sunset calculation as the main screen brightness.
+
 ## Sensor
 
 Instead of a timer, the screensaver is controlled by a motion or presence sensor (like a mmWave sensor mounted nearby). When someone is in the room, the screen stays on. When nobody is detected, the screen goes to sleep — and wakes up again when someone walks past.

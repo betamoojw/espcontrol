@@ -134,6 +134,54 @@ text:
 
 number:
   - platform: template
+    name: "Screen Saver: Daytime Clock Brightness"
+    internal: true
+    id: clock_brightness_day
+    min_value: 1
+    max_value: 100
+    step: 1
+    initial_value: 35
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "%"
+    entity_category: config
+    icon: "mdi:brightness-7"
+    web_server:
+      sorting_group_id: sg_screensaver
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(is_clock_showing);'
+            then:
+              - script.execute: clock_screensaver_refresh_brightness
+
+  - platform: template
+    name: "Screen Saver: Nighttime Clock Brightness"
+    internal: true
+    id: clock_brightness_night
+    min_value: 1
+    max_value: 100
+    step: 1
+    initial_value: 35
+    restore_value: true
+    optimistic: true
+    unit_of_measurement: "%"
+    entity_category: config
+    icon: "mdi:brightness-4"
+    web_server:
+      sorting_group_id: sg_screensaver
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(is_clock_showing);'
+            then:
+              - script.execute: clock_screensaver_refresh_brightness
+
+  # Legacy setting kept so existing panels can migrate their saved single
+  # clock brightness into the new day/night settings once after update.
+  - platform: template
     name: "Screen Saver: Clock Brightness"
     internal: true
     id: clock_brightness
@@ -146,8 +194,6 @@ number:
     unit_of_measurement: "%"
     entity_category: config
     icon: "mdi:clock-outline"
-    web_server:
-      sorting_group_id: sg_screensaver
 
   # Screensaver idle timeout
   - platform: template
