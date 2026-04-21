@@ -913,6 +913,7 @@
     "border:none;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .25s;font-family:inherit}" +
     ".sp-segment button:hover{color:var(--text)}" +
     ".sp-segment button.active{background:var(--accent);color:#fff}" +
+    ".sp-screensaver-mode{margin-bottom:24px}" +
 
     ".sp-cond-field{padding:0 0 4px;display:none}" +
     ".sp-cond-field.sp-visible{display:block}" +
@@ -2450,7 +2451,7 @@
 
     ssBody.appendChild(fieldLabel("Mode"));
     var segment = document.createElement("div");
-    segment.className = "sp-segment";
+    segment.className = "sp-segment sp-screensaver-mode";
     var disabledBtn = document.createElement("button");
     disabledBtn.textContent = "Disabled";
     disabledBtn.type = "button";
@@ -2870,7 +2871,7 @@
 
   function syncOptionalClockBrightness(field, previousField, display) {
     if (field) field.style.display = display;
-    if (previousField) previousField.style.marginBottom = display === "none" ? "0" : "";
+    if (previousField) previousField.style.marginBottom = display === "none" ? "20px" : "";
   }
 
   function createScreensaverThenControls(selectId) {
