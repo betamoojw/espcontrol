@@ -25,6 +25,8 @@ The screensaver turns on after the panel hasn't been touched for a set amount of
 - 10, 15, 20, 30, or 45 minutes
 - 1 hour
 
+If the 10 or 30 second choices are not shown, update the panel firmware first. The web page checks what range the installed firmware supports before showing the shorter timer values.
+
 ### Clock or Display Off
 
 When the screensaver activates, you can choose what happens:

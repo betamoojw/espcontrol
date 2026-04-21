@@ -1100,6 +1100,8 @@
     clockScreensaverOn: true,
     clockBrightness: 35,
     screensaverTimeout: 300,
+    screensaverTimeoutMin: 60,
+    screensaverTimeoutMax: 3600,
     homeScreenTimeout: 60,
     brightnessDayVal: 100,
     brightnessNightVal: 75,
@@ -1190,6 +1192,57 @@
       return minutes + " minute" + (minutes === 1 ? "" : "s");
     }
     return seconds + " seconds";
+  }
+
+  var SCREENSAVER_TIMEOUT_OPTIONS = [
+    { label: "10 seconds", value: 10 },
+    { label: "30 seconds", value: 30 },
+    { label: "1 minute", value: 60 },
+    { label: "5 minutes", value: 300 },
+    { label: "10 minutes", value: 600 },
+    { label: "15 minutes", value: 900 },
+    { label: "20 minutes", value: 1200 },
+    { label: "30 minutes", value: 1800 },
+    { label: "45 minutes", value: 2700 },
+    { label: "1 hour", value: 3600 },
+  ];
+
+  function readNumberMeta(d, keys, fallback) {
+    for (var i = 0; i < keys.length; i++) {
+      if (d[keys[i]] == null) continue;
+      var n = parseFloat(d[keys[i]]);
+      if (isFinite(n)) return n;
+    }
+    return fallback;
+  }
+
+  function syncScreensaverTimeoutLimits(d) {
+    state.screensaverTimeoutMin = readNumberMeta(d, ["min", "min_value"], state.screensaverTimeoutMin);
+    state.screensaverTimeoutMax = readNumberMeta(d, ["max", "max_value"], state.screensaverTimeoutMax);
+  }
+
+  function screensaverTimeoutSupported(value) {
+    var n = parseFloat(value);
+    if (!isFinite(n)) return false;
+    return n >= state.screensaverTimeoutMin && n <= state.screensaverTimeoutMax;
+  }
+
+  function syncScreensaverTimeoutUi() {
+    var select = els.setSSTimeout;
+    if (!select) return;
+    var current = String(state.screensaverTimeout);
+    select.innerHTML = "";
+    SCREENSAVER_TIMEOUT_OPTIONS.forEach(function (opt) {
+      if (!screensaverTimeoutSupported(opt.value)) return;
+      var o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.label;
+      select.appendChild(o);
+    });
+    if (screensaverTimeoutSupported(state.screensaverTimeout)) {
+      setSelectValue(select, state.screensaverTimeout, formatDuration(state.screensaverTimeout));
+      select.value = current;
+    }
   }
 
   function setSelectValue(select, value, label) {
@@ -1648,6 +1701,15 @@
 
   function postNumberWithObjectIds(name, objectIds, value, errorMessage) {
     postWithObjectIds("number", name, objectIds, "set?value=" + encodeURIComponent(value), errorMessage);
+  }
+
+  function postScreensaverTimeout(value) {
+    if (!screensaverTimeoutSupported(value)) {
+      showBanner("Update the device firmware before using shorter screensaver timers.", "error");
+      syncScreensaverTimeoutUi();
+      return;
+    }
+    postNumberWithObjectIds("Screensaver Timeout", ["screensaver_timeout"], value);
   }
 
   function postSwitchWithObjectId(name, objectId, on, errorMessage) {
@@ -2491,27 +2553,8 @@
     var timeoutSelect = document.createElement("select");
     timeoutSelect.className = "sp-select";
     timeoutSelect.id = "sp-set-ss-timeout";
-    var timeoutOptions = [
-      { label: "10 seconds", value: 10 },
-      { label: "30 seconds", value: 30 },
-      { label: "1 minute", value: 60 },
-      { label: "5 minutes", value: 300 },
-      { label: "10 minutes", value: 600 },
-      { label: "15 minutes", value: 900 },
-      { label: "20 minutes", value: 1200 },
-      { label: "30 minutes", value: 1800 },
-      { label: "45 minutes", value: 2700 },
-      { label: "1 hour", value: 3600 },
-    ];
-    timeoutOptions.forEach(function (opt) {
-      var o = document.createElement("option");
-      o.value = opt.value;
-      o.textContent = opt.label;
-      if (opt.value === state.screensaverTimeout) o.selected = true;
-      timeoutSelect.appendChild(o);
-    });
     timeoutSelect.addEventListener("change", function () {
-      postNumber("Screensaver Timeout", this.value);
+      postScreensaverTimeout(this.value);
     });
     timeoutField.appendChild(timeoutSelect);
     timerPanel.appendChild(timeoutField);
@@ -2527,6 +2570,7 @@
 
     ssBody.appendChild(timerPanel);
     els.setSSTimeout = timeoutSelect;
+    syncScreensaverTimeoutUi();
 
     var sensorPanel = document.createElement("div");
     var presenceField = document.createElement("div");
@@ -5041,7 +5085,7 @@
           postText("Presence Sensor Entity", s.presence_sensor_entity || "");
           postSwitch("Screen Saver: Clock", s.clock_screensaver != null ? !!s.clock_screensaver : true);
           postNumber("Screen Saver: Clock Brightness", s.clock_brightness != null ? s.clock_brightness : 35);
-          postNumber("Screensaver Timeout", s.screensaver_timeout || 300);
+          postScreensaverTimeout(s.screensaver_timeout || 300);
           postNumber("Home Screen Timeout", s.home_screen_timeout != null ? s.home_screen_timeout : 60);
           var importedScreenRotation = normalizeScreenRotation(s.screen_rotation);
           if (CFG.features && CFG.features.screenRotation) postSelect("Screen: Rotation", importedScreenRotation);
@@ -5064,7 +5108,7 @@
           syncInput(els.setOutdoorEntity, state.outdoorEntity);
           syncInput(els.setPresence, state.presenceEntity);
           syncClockScreensaverControls();
-          if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
+          syncScreensaverTimeoutUi();
           syncIdleUi();
           if (els.setScreenRotation) els.setScreenRotation.value = state.screenRotation;
           if (els.setSsMode) els.setSsMode(getActiveScreensaverMode());
@@ -5225,8 +5269,9 @@
         syncInput(els.setOutdoorEntity, val);
       },
       "number-screensaver_timeout": function (val) {
+        syncScreensaverTimeoutLimits(d);
         state.screensaverTimeout = parseFloat(val) || 300;
-        if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
+        syncScreensaverTimeoutUi();
       },
       "number-home_screen_timeout": function (val) {
         state.homeScreenTimeout = parseFloat(val) || 0;
