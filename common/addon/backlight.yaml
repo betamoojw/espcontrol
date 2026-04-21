@@ -203,6 +203,9 @@ script:
   - id: screensaver_wake
     mode: restart
     then:
+      - script.stop: screen_schedule_sleep
+      - script.stop: backlight_sleep_display_off
+      - script.stop: backlight_schedule_display_off
       - lambda: |-
           id(backlight_manual_off) = false;
           if (id(schedule_enabled).state) {
@@ -232,7 +235,7 @@ script:
             - script.stop: screen_schedule_wake_timeout_check
       - if:
           condition:
-            lambda: 'return id(display_asleep);'
+            lambda: 'return id(display_asleep) || id(screen_schedule_asleep) || id(screensaver_display_off_active);'
           then:
             - script.stop: screensaver_idle_check
             - globals.set:
