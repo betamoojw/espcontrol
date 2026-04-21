@@ -2231,7 +2231,8 @@
     scheduleBadge.textContent = "Active";
     els.setScheduleBadge = scheduleBadge;
     syncScreenScheduleUi();
-    config.appendChild(makeCollapsibleCard("Screen schedule", scheduleBody, true, scheduleBadge));
+    var scheduleCard = makeCollapsibleCard("Night Schedule", scheduleBody, true, scheduleBadge);
+    config.appendChild(scheduleCard);
 
     var clockBody = document.createElement("div");
 
@@ -2446,7 +2447,7 @@
     els.setSsMode = setSsMode;
     setSsMode(ssMode);
 
-    config.appendChild(makeCollapsibleCard("Screensaver", ssBody, true));
+    config.insertBefore(makeCollapsibleCard("Screensaver", ssBody, true), scheduleCard);
 
     var idleBody = document.createElement("div");
     idleBody.appendChild(fieldLabel("Return to home after"));
