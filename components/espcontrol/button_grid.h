@@ -1430,7 +1430,8 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                   lv_obj_t *slider,
                                   bool has_icon_on,
                                   const char *icon_off, const char *icon_on,
-                                  const std::string &entity_id) {
+                                  const std::string &entity_id,
+                                  TransientStatusLabel *status_label = nullptr) {
   SliderCtx *sctx = (SliderCtx *)lv_obj_get_user_data(slider);
   lv_obj_t *fill = sctx ? sctx->fill : nullptr;
   bool horiz = sctx ? sctx->horizontal : false;
@@ -1440,7 +1441,7 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     std::function<void(const std::string &)>(
-      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on, is_cover](const std::string &state) {
+      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on, is_cover, status_label](const std::string &state) {
         bool on = is_entity_on(state);
         if (!on) {
           lv_slider_set_value(slider, 0, LV_ANIM_OFF);
@@ -1451,6 +1452,10 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
             lv_label_set_text(icon_lbl, state == "closed" ? icon_on : icon_off);
           else
             lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
+        }
+        if (is_cover) {
+          transient_status_label_show_if_changed(
+            status_label, garage_state_label(state), garage_state_releases_label(state));
         }
       })
   );
@@ -1541,8 +1546,16 @@ inline std::string decode_compact_subpage_field(const std::string &value) {
 // Create a slider button inside a subpage screen (reuses main grid slider logic)
 inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_t *text_lbl,
                                        const SubpageBtn &sb, uint32_t on_color, lv_coord_t radius) {
-  if (!sb.label.empty()) lv_label_set_text(text_lbl, sb.label.c_str());
-  else subscribe_friendly_name(text_lbl, sb.entity);
+  TransientStatusLabel *status_label = nullptr;
+  if (sb.type == "cover") {
+    status_label = create_transient_status_label(
+      text_lbl, sb.label.empty() ? "Cover" : sb.label);
+    if (sb.label.empty())
+      subscribe_friendly_name(status_label, sb.entity);
+  } else {
+    if (!sb.label.empty()) lv_label_set_text(text_lbl, sb.label.c_str());
+    else subscribe_friendly_name(text_lbl, sb.entity);
+  }
 
   bool horiz = sb.type == "slider" && sb.sensor == "h";
   lv_obj_t *sl = setup_slider_widget(btn, on_color, horiz);
@@ -1582,7 +1595,7 @@ inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_
   bool has_icon_on = slider_has_alt_icon(sb.type, sb.icon_on);
   const char *sl_icon_on = has_icon_on ? slider_icon_on(sb.type, sb.icon_on) : nullptr;
   const char *sl_icon_off = has_icon_on ? slider_icon_off(sb.type, sb.entity, sb.icon) : nullptr;
-  subscribe_slider_state(btn, icon_lbl, sl, has_icon_on, sl_icon_off, sl_icon_on, sb.entity);
+  subscribe_slider_state(btn, icon_lbl, sl, has_icon_on, sl_icon_off, sl_icon_on, sb.entity, status_label);
 
   // Intentionally leaked -- lives for the lifetime of the display
   std::string *eid = new std::string(sb.entity);
@@ -1972,10 +1985,19 @@ inline void grid_phase2(
       bool sl_has_icon_on = slider_has_alt_icon(p.type, p.icon_on);
       const char *sl_icon_on_cp = sl_has_icon_on ? slider_icon_on(p.type, p.icon_on) : nullptr;
       const char *sl_icon_off_cp = sl_has_icon_on ? slider_icon_off(p.type, p.entity, p.icon) : nullptr;
+      TransientStatusLabel *status_label = nullptr;
+      if (p.type == "cover") {
+        status_label = create_transient_status_label(
+          s.text_lbl, p.label.empty() ? "Cover" : p.label);
+      }
       subscribe_slider_state(s.btn, s.icon_lbl, slider,
-        sl_has_icon_on, sl_icon_off_cp, sl_icon_on_cp, p.entity);
-      if (p.label.empty())
-        subscribe_friendly_name(s.text_lbl, p.entity);
+        sl_has_icon_on, sl_icon_off_cp, sl_icon_on_cp, p.entity, status_label);
+      if (p.label.empty()) {
+        if (status_label)
+          subscribe_friendly_name(status_label, p.entity);
+        else
+          subscribe_friendly_name(s.text_lbl, p.entity);
+      }
       continue;
     }
 

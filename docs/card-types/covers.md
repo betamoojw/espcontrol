@@ -28,6 +28,7 @@ A cover card lets you control a Home Assistant cover entity — blinds, shutters
 - **Drag** the slider to set the cover position from 0 (closed) to 100 (fully open). Releasing the slider sends the new position to Home Assistant via `cover.set_cover_position`.
 - The **fill bar** is always vertical and represents how much the cover is closed — a fully closed cover shows a full bar, and a fully open cover shows an empty bar. This inverted fill matches blinds or shutters blocking a window.
 - The fill bar updates in real time as the cover moves, tracking the `current_position` attribute from Home Assistant.
+- The label behaves like toggle mode: it normally shows the configured label, briefly shows the cover state when it changes, then returns to the label.
 
 ### Toggle Interaction
 
