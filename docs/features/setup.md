@@ -22,8 +22,8 @@ Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A
 
 ![Toggle card showing a Heater icon](/images/card-toggle.png)
 
-1. **Choose a type** — **[Trigger](/card-types/buttons)** to start Home Assistant automations with a single tap, **[Cover](/card-types/covers)** to control blinds and shutters, **[Date](/card-types/calendar)** to show today's date, **[Sensor](/card-types/sensors)** to display a live numeric reading or text state, **[Slider](/card-types/sliders)** to control light brightness, **Subpage** to create a folder of extra cards, **Toggle** (the default) to control a device, or **[Weather](/card-types/weather)** to show the current weather condition.
-2. **Pick the device** you want to control by entering its Home Assistant entity name (for example, `light.living_room` or `switch.garden_lights`). You can find these under **Settings > Devices & Services** in Home Assistant. Subpage and trigger cards don't need a device name.
+1. **Choose a type** — **[Trigger](/card-types/buttons)** to start Home Assistant automations with a single tap, **[Cover](/card-types/covers)** to control blinds and shutters, **[Date](/card-types/calendar)** to show today's date, **[Internal Relay](/card-types/internal-relays)** to control built-in relays locally, **[Sensor](/card-types/sensors)** to display a live numeric reading or text state, **[Slider](/card-types/sliders)** to control light brightness, **Subpage** to create a folder of extra cards, **Toggle** (the default) to control a device, or **[Weather](/card-types/weather)** to show the current weather condition.
+2. **Pick the device** you want to control by entering its Home Assistant entity name (for example, `light.living_room` or `switch.garden_lights`). You can find these under **Settings > Devices & Services** in Home Assistant. Internal Relay cards choose from the panel's relay list instead. Subpage and trigger cards don't need a device name.
 3. **Choose an icon** — type to search, or select **Auto** to let the panel pick one based on the device type.
 4. **Set a label** (optional). If left blank the card uses the device's friendly name from Home Assistant.
 
@@ -32,6 +32,8 @@ Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A
 **[Cover](/card-types/covers)** — controls blinds, shutters, and garage doors with a position slider. 
 
 **[Date](/card-types/calendar)** — displays today's day number with the month underneath.
+
+**[Internal Relay](/card-types/internal-relays)** — controls a built-in relay directly on the panel, with switch and push-button modes.
 
 **[Sensor](/card-types/sensors)** — displays a live reading from a Home Assistant sensor entity. Use the mode tabs to choose **Numeric** or **Text**.
 

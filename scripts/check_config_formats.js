@@ -55,6 +55,7 @@ function subpageTypeFromCode(code) {
     C: "cover",
     R: "garage",
     P: "push",
+    I: "internal",
     G: "subpage",
   }[code || ""] || (code || "");
 }
@@ -172,6 +173,17 @@ assertButtonRoundTrip(hooks, "delimiter button", {
   precision: "1",
 }, true);
 
+assertButtonRoundTrip(hooks, "internal relay push button", {
+  entity: "relay_1",
+  label: "Door Strike",
+  icon: "Gesture Tap",
+  icon_on: "Auto",
+  sensor: "push",
+  unit: "",
+  type: "internal",
+  precision: "",
+}, false);
+
 assert.deepStrictEqual(buttonShape(hooks.parseButtonConfig("light.legacy;Legacy;Auto;Lightbulb;sensor.legacy;W;sensor;1")), {
   entity: "light.legacy",
   label: "Legacy",
@@ -210,6 +222,14 @@ assertSubpageRoundTrip(hooks, "normal subpage", {
   ],
 }, true);
 
+assertSubpageRoundTrip(hooks, "internal relay subpage", {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "relay_1", label: "Relay", icon: "Power Plug", type: "internal" }),
+    buttonShape({ entity: "relay_2", label: "Bell", icon: "Gesture Tap", sensor: "push", type: "internal" }),
+  ],
+}, true);
+
 assertSubpageRoundTrip(hooks, "delimiter subpage", {
   order: ["1", "B", "2"],
   buttons: [
@@ -239,6 +259,13 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|R,cover.garag
     buttonShape({ entity: "cover.garage", icon: "Garage", icon_on: "Garage Open", type: "garage" }),
   ],
 }, "compact garage subpage parse");
+
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|I,relay_2,Gate,Power%20Plug,Power,push")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "relay_2", label: "Gate", icon: "Power Plug", icon_on: "Power", sensor: "push", type: "internal" }),
+  ],
+}, "compact internal relay subpage parse");
 
 const largeSubpage = {
   order: Array.from({ length: 25 }, (_, i) => (i === 4 ? "B" : String(i + 1))),

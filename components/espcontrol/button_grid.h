@@ -90,13 +90,13 @@ inline std::string decode_compact_field(const std::string &value) {
 
 // Structured view of a button config string: entity;label;icon;icon_on;sensor;unit;type;precision
 struct ParsedCfg {
-  std::string entity;      // 0  HA entity_id (e.g. light.kitchen)
+  std::string entity;      // 0  HA entity_id, or internal relay key for internal cards
   std::string label;       // 1  display name (blank = use HA friendly_name)
   std::string icon;        // 2  icon name for off/default state
   std::string icon_on;     // 3  icon name for on state (blank = no swap)
-  std::string sensor;      // 4  sensor entity for toggle overlay; "h" for horizontal slider
+  std::string sensor;      // 4  sensor entity; "h" for horizontal slider; "push" for internal relay mode
   std::string unit;        // 5  unit suffix for sensor display
-  std::string type;        // 6  button type: "" (toggle), sensor, slider, cover, garage, push, subpage
+  std::string type;        // 6  button type: "" (toggle), sensor, slider, cover, garage, push, internal, subpage
   std::string precision;   // 7  decimal places for sensors; "text" = text sensor mode
 };
 
@@ -219,6 +219,195 @@ inline const char* garage_closed_icon(const std::string &icon) {
 
 inline const char* garage_open_icon(const std::string &icon_on) {
   return (icon_on.empty() || icon_on == "Auto") ? find_icon("Garage Open") : find_icon(icon_on.c_str());
+}
+
+// ── Internal relay controls ───────────────────────────────────────────
+//
+// Only devices that actually have relays register entries here. The shared
+// grid code can then control those relays locally without referencing device-
+// specific ids, so non-relay devices still compile and simply have no relays.
+
+struct InternalRelayControl {
+  std::string key;
+  std::string label;
+  std::function<void(bool)> set_state;
+  std::function<void()> pulse;
+  std::function<bool()> is_on;
+};
+
+struct InternalRelayWatcher {
+  std::string key;
+  lv_obj_t *btn;
+  lv_obj_t *icon_lbl;
+  bool has_icon_on;
+  const char *icon_off;
+  const char *icon_on;
+  bool *child_was_on;
+  lv_obj_t *parent_btn;
+  lv_obj_t *parent_icon;
+  int parent_idx;
+  bool parent_has_alt_icon;
+  const char *parent_off_glyph;
+  const char *parent_on_glyph;
+  int *sp_on_count;
+};
+
+struct InternalRelayClickCtx {
+  std::string key;
+  bool push_mode;
+};
+
+inline std::vector<InternalRelayControl> &internal_relay_registry() {
+  static std::vector<InternalRelayControl> relays;
+  return relays;
+}
+
+inline std::vector<InternalRelayWatcher> &internal_relay_watchers() {
+  static std::vector<InternalRelayWatcher> watchers;
+  return watchers;
+}
+
+inline void clear_internal_relay_watchers() {
+  internal_relay_watchers().clear();
+}
+
+inline void register_internal_relay(
+    const std::string &key, const std::string &label,
+    std::function<void(bool)> set_state,
+    std::function<void()> pulse,
+    std::function<bool()> is_on) {
+  if (key.empty()) return;
+  InternalRelayControl r;
+  r.key = key;
+  r.label = label;
+  r.set_state = set_state;
+  r.pulse = pulse;
+  r.is_on = is_on;
+
+  auto &relays = internal_relay_registry();
+  for (auto &existing : relays) {
+    if (existing.key == key) {
+      existing = r;
+      return;
+    }
+  }
+  relays.push_back(r);
+}
+
+inline InternalRelayControl *find_internal_relay(const std::string &key) {
+  auto &relays = internal_relay_registry();
+  for (auto &relay : relays) {
+    if (relay.key == key) return &relay;
+  }
+  return nullptr;
+}
+
+inline bool internal_relay_push_mode(const ParsedCfg &p) {
+  return p.sensor == "push";
+}
+
+inline bool internal_relay_state(const std::string &key) {
+  InternalRelayControl *relay = find_internal_relay(key);
+  return relay && relay->is_on ? relay->is_on() : false;
+}
+
+inline std::string internal_relay_label(const ParsedCfg &p) {
+  if (!p.label.empty()) return p.label;
+  InternalRelayControl *relay = find_internal_relay(p.entity);
+  if (relay && !relay->label.empty()) return relay->label;
+  return p.entity.empty() ? std::string("Relay") : sentence_cap_text(p.entity);
+}
+
+inline const char *internal_relay_icon(const ParsedCfg &p, bool push_mode) {
+  if (!p.icon.empty() && p.icon != "Auto") return find_icon(p.icon.c_str());
+  return find_icon(push_mode ? "Gesture Tap" : "Power Plug");
+}
+
+inline void apply_internal_relay_state(lv_obj_t *btn, lv_obj_t *icon_lbl,
+                                       bool on, bool has_icon_on,
+                                       const char *icon_off, const char *icon_on) {
+  if (btn) {
+    if (on) lv_obj_add_state(btn, LV_STATE_CHECKED);
+    else lv_obj_clear_state(btn, LV_STATE_CHECKED);
+  }
+  if (icon_lbl && has_icon_on)
+    lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
+}
+
+inline void apply_internal_relay_parent_indicator(InternalRelayWatcher &w, bool on) {
+  if (!w.child_was_on || !w.parent_btn || !w.sp_on_count) return;
+  if (on && !*w.child_was_on) {
+    w.sp_on_count[w.parent_idx]++;
+    *w.child_was_on = true;
+  } else if (!on && *w.child_was_on) {
+    w.sp_on_count[w.parent_idx]--;
+    *w.child_was_on = false;
+  }
+  if (w.sp_on_count[w.parent_idx] > 0) {
+    lv_obj_add_state(w.parent_btn, LV_STATE_CHECKED);
+    if (w.parent_has_alt_icon && w.parent_icon)
+      lv_label_set_text(w.parent_icon, w.parent_on_glyph);
+  } else {
+    lv_obj_clear_state(w.parent_btn, LV_STATE_CHECKED);
+    if (w.parent_has_alt_icon && w.parent_icon)
+      lv_label_set_text(w.parent_icon, w.parent_off_glyph);
+  }
+}
+
+inline void notify_internal_relay_changed(const std::string &key, bool on) {
+  auto &watchers = internal_relay_watchers();
+  for (auto &w : watchers) {
+    if (w.key != key) continue;
+    apply_internal_relay_state(w.btn, w.icon_lbl, on, w.has_icon_on, w.icon_off, w.icon_on);
+    apply_internal_relay_parent_indicator(w, on);
+  }
+}
+
+inline void watch_internal_relay_state(
+    const std::string &key, lv_obj_t *btn, lv_obj_t *icon_lbl,
+    bool has_icon_on, const char *icon_off, const char *icon_on,
+    bool *child_was_on = nullptr, lv_obj_t *parent_btn = nullptr,
+    lv_obj_t *parent_icon = nullptr, int parent_idx = 0,
+    bool parent_has_alt_icon = false, const char *parent_off_glyph = nullptr,
+    const char *parent_on_glyph = nullptr, int *sp_on_count = nullptr) {
+  if (key.empty()) return;
+  InternalRelayWatcher w;
+  w.key = key;
+  w.btn = btn;
+  w.icon_lbl = icon_lbl;
+  w.has_icon_on = has_icon_on;
+  w.icon_off = icon_off;
+  w.icon_on = icon_on;
+  w.child_was_on = child_was_on;
+  w.parent_btn = parent_btn;
+  w.parent_icon = parent_icon;
+  w.parent_idx = parent_idx;
+  w.parent_has_alt_icon = parent_has_alt_icon;
+  w.parent_off_glyph = parent_off_glyph;
+  w.parent_on_glyph = parent_on_glyph;
+  w.sp_on_count = sp_on_count;
+  internal_relay_watchers().push_back(w);
+
+  bool on = internal_relay_state(key);
+  apply_internal_relay_state(btn, icon_lbl, on, has_icon_on, icon_off, icon_on);
+  InternalRelayWatcher &stored = internal_relay_watchers().back();
+  apply_internal_relay_parent_indicator(stored, on);
+}
+
+inline void send_internal_relay_action(const std::string &key, bool push_mode) {
+  InternalRelayControl *relay = find_internal_relay(key);
+  if (!relay) return;
+  if (push_mode) {
+    if (relay->pulse) relay->pulse();
+    return;
+  }
+  bool next = !internal_relay_state(key);
+  if (relay->set_state) relay->set_state(next);
+  notify_internal_relay_changed(key, next);
+}
+
+inline void send_internal_relay_action(const ParsedCfg &p) {
+  send_internal_relay_action(p.entity, internal_relay_push_mode(p));
 }
 
 inline std::string garage_state_label(const std::string &state) {
@@ -532,6 +721,34 @@ inline void setup_garage_card(BtnSlot &s, const ParsedCfg &p) {
   lv_label_set_text(s.text_lbl, "--");
 }
 
+inline void apply_push_button_transition(lv_obj_t *btn) {
+  static const lv_style_prop_t push_props[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
+  static lv_style_transition_dsc_t push_trans;
+  static bool push_trans_inited = false;
+  if (!push_trans_inited) {
+    lv_style_transition_dsc_init(&push_trans, push_props, lv_anim_path_ease_out, 400, 0, NULL);
+    push_trans_inited = true;
+  }
+  lv_obj_set_style_transition(btn, &push_trans,
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | LV_STATE_DEFAULT);
+}
+
+inline void setup_internal_relay_card(BtnSlot &s, const ParsedCfg &p) {
+  bool push_mode = internal_relay_push_mode(p);
+  std::string label = internal_relay_label(p);
+  lv_label_set_text(s.text_lbl, label.c_str());
+  const char *icon_off = internal_relay_icon(p, push_mode);
+  lv_label_set_text(s.icon_lbl, icon_off);
+  if (push_mode) {
+    apply_push_button_transition(s.btn);
+    return;
+  }
+  bool has_icon_on = !p.icon_on.empty() && p.icon_on != "Auto";
+  const char *icon_on = has_icon_on ? find_icon(p.icon_on.c_str()) : nullptr;
+  apply_internal_relay_state(s.btn, s.icon_lbl, internal_relay_state(p.entity),
+    has_icon_on, icon_off, icon_on);
+}
+
 // Set icon and label on a toggle/push button based on its config
 inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
   if (!p.entity.empty()) {
@@ -560,15 +777,7 @@ inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
       lv_label_set_text(s.icon_lbl, find_icon(p.icon.c_str()));
     } else if (p.type == "push") {
       lv_label_set_text(s.icon_lbl, "\U000F0741");
-      static const lv_style_prop_t push_props[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
-      static lv_style_transition_dsc_t push_trans;
-      static bool push_trans_inited = false;
-      if (!push_trans_inited) {
-        lv_style_transition_dsc_init(&push_trans, push_props, lv_anim_path_ease_out, 400, 0, NULL);
-        push_trans_inited = true;
-      }
-      lv_obj_set_style_transition(s.btn, &push_trans,
-        static_cast<lv_style_selector_t>(LV_PART_MAIN) | LV_STATE_DEFAULT);
+      apply_push_button_transition(s.btn);
     }
   }
 }
@@ -789,6 +998,8 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
       lv_obj_add_state(btn_obj, LV_STATE_CHECKED);
       send_toggle_action(p.entity);
     }
+  } else if (p.type == "internal") {
+    if (!p.entity.empty()) send_internal_relay_action(p);
   } else if (p.type == "slider" || p.type == "cover") {
     if (!p.entity.empty()) send_slider_action(p.entity, -1);
   } else {
@@ -1022,7 +1233,7 @@ struct SubpageBtn {
   std::string icon_on;
   std::string sensor;     // sensor entity for toggle; orientation "h"|"" for slider/cover
   std::string unit;
-  std::string type;       // button type: "" (toggle), sensor, slider, cover, garage, push, subpage
+  std::string type;       // button type: "" (toggle), sensor, slider, cover, garage, push, internal, subpage
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
@@ -1046,6 +1257,7 @@ inline std::string compact_subpage_type(const std::string &code) {
   if (code == "C") return "cover";
   if (code == "R") return "garage";
   if (code == "P") return "push";
+  if (code == "I") return "internal";
   if (code == "G") return "subpage";
   return code;
 }
@@ -1344,6 +1556,10 @@ inline void grid_phase1(
       setup_garage_card(s, p);
       continue;
     }
+    if (p.type == "internal") {
+      setup_internal_relay_card(s, p);
+      continue;
+    }
     if (p.type == "slider" || p.type == "cover") {
       setup_slider_visual(s, p, has_on ? on_val : DEFAULT_SLIDER_COLOR);
     } else {
@@ -1391,6 +1607,7 @@ inline void grid_phase2(
   sp_entity_alloc_idx = 0;
   memset(has_sensor, 0, sizeof(has_sensor));
   memset(has_icon_on, 0, sizeof(has_icon_on));
+  clear_internal_relay_watchers();
 
   bool has_on, has_off, has_sensor_color;
   uint32_t on_val = parse_hex_color(on_hex, has_on);
@@ -1438,6 +1655,15 @@ inline void grid_phase2(
       if (!p.entity.empty())
         subscribe_garage_state(s.btn, s.icon_lbl, s.text_lbl,
           garage_closed_icon(p.icon), garage_open_icon(p.icon_on), p.entity);
+      continue;
+    }
+    if (p.type == "internal") {
+      if (!p.entity.empty() && !internal_relay_push_mode(p)) {
+        bool internal_has_icon_on = !p.icon_on.empty() && p.icon_on != "Auto";
+        const char *internal_icon_on = internal_has_icon_on ? find_icon(p.icon_on.c_str()) : nullptr;
+        watch_internal_relay_state(p.entity, s.btn, s.icon_lbl,
+          internal_has_icon_on, internal_relay_icon(p, false), internal_icon_on);
+      }
       continue;
     }
 
@@ -1768,6 +1994,59 @@ inline void grid_phase2(
           kv.value = decltype(kv.value)(label->c_str());
           esphome::api::global_api_server->send_homeassistant_action(req);
         }, LV_EVENT_CLICKED, label);
+
+      } else if (sb.type == "internal") {
+        ParsedCfg ip;
+        ip.entity = sb.entity;
+        ip.label = sb.label;
+        ip.icon = sb.icon;
+        ip.icon_on = sb.icon_on;
+        ip.sensor = sb.sensor;
+        ip.type = sb.type;
+
+        bool push_mode = internal_relay_push_mode(ip);
+        const char *internal_icon_off = internal_relay_icon(ip, push_mode);
+        lv_label_set_text(sil, internal_icon_off);
+        std::string internal_label = internal_relay_label(ip);
+        lv_label_set_text(stl, internal_label.c_str());
+
+        if (push_mode) {
+          apply_push_button_transition(sb_btn);
+        } else if (!sb.entity.empty()) {
+          bool internal_has_icon_on = !sb.icon_on.empty() && sb.icon_on != "Auto";
+          const char *internal_icon_on = internal_has_icon_on ? find_icon(sb.icon_on.c_str()) : nullptr;
+
+          bool *child_was_on = nullptr;
+          lv_obj_t *parent_btn = nullptr;
+          lv_obj_t *parent_icon = nullptr;
+          if (sp_indicator) {
+            int cwi = sp_child_alloc_idx++;
+            if (cwi >= MAX_SUBPAGE_ITEMS) {
+              ESP_LOGW("sensors", "Too many subpage state indicators; skipping %s", sb.entity.c_str());
+            } else {
+              sp_child_was_on[cwi] = false;
+              child_was_on = &sp_child_was_on[cwi];
+              parent_btn = slots[si].btn;
+              parent_icon = slots[si].icon_lbl;
+            }
+          }
+
+          watch_internal_relay_state(
+            sb.entity, sb_btn, sil,
+            internal_has_icon_on, internal_icon_off, internal_icon_on,
+            child_was_on, parent_btn, parent_icon, si,
+            sp_has_icon_on, sp_icon_off_glyph, sp_icon_on_glyph, sp_on_count);
+        }
+
+        if (!sb.entity.empty()) {
+          InternalRelayClickCtx *ctx = new InternalRelayClickCtx();
+          ctx->key = sb.entity;
+          ctx->push_mode = push_mode;
+          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+            InternalRelayClickCtx *c = (InternalRelayClickCtx *)lv_event_get_user_data(e);
+            if (c && !c->key.empty()) send_internal_relay_action(c->key, c->push_mode);
+          }, LV_EVENT_CLICKED, ctx);
+        }
 
       } else if ((sb.type == "slider" || sb.type == "cover") && !sb.entity.empty()) {
         lv_obj_t *sl = setup_subpage_slider(sb_btn, sil, stl, sb, has_on ? on_val : DEFAULT_SLIDER_COLOR, sp_radius);

@@ -10,7 +10,7 @@ Espcontrol is actively developed and improved based on user feedback. There is n
 
 ## Additional Card Types
 
-In addition to the existing card types — **[Trigger](/card-types/buttons)**, **[Cover](/card-types/covers)**, **[Date](/card-types/calendar)**, **[Garage Door](/card-types/garage-doors)**, **[Sensor](/card-types/sensors)**, **[Slider](/card-types/sliders)**, **Subpage**, **Toggle**, and **[Weather](/card-types/weather)** — future releases will introduce more specialised controls:
+In addition to the existing card types — **[Trigger](/card-types/buttons)**, **[Cover](/card-types/covers)**, **[Date](/card-types/calendar)**, **[Garage Door](/card-types/garage-doors)**, **[Internal Relay](/card-types/internal-relays)**, **[Sensor](/card-types/sensors)**, **[Slider](/card-types/sliders)**, **Subpage**, **Toggle**, and **[Weather](/card-types/weather)** — future releases will introduce more specialised controls:
 
 | Card type | Description |
 | --- | --- |

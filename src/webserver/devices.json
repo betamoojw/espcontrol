@@ -53,7 +53,15 @@
     "rows": 3,
     "dragMode": "displace",
     "dragAnimation": true,
-    "features": { "screenRotation": true, "screenRotationOptions": ["0", "90", "180", "270"] },
+    "features": {
+      "screenRotation": true,
+      "screenRotationOptions": ["0", "90", "180", "270"],
+      "internalRelays": [
+        { "key": "relay_1", "label": "Relay 1" },
+        { "key": "relay_2", "label": "Relay 2" },
+        { "key": "relay_3", "label": "Relay 3" }
+      ]
+    },
     "screen": { "width": "55%", "aspect": "1/1" },
     "topbar": { "height": 7.5, "padding": "0.83cqw", "fontSize": 3.75 },
     "grid": { "top": 8.5, "compactTop": 0.83, "left": 1.04, "right": 1.04, "bottom": 0.83, "gap": 2.08, "fr": "1fr" },

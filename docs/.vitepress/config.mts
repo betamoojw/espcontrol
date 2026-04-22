@@ -179,6 +179,7 @@ export default defineConfig({
           { text: 'Covers', link: '/card-types/covers' },
           { text: 'Date', link: '/card-types/calendar' },
           { text: 'Garage Doors', link: '/card-types/garage-doors' },
+          { text: 'Internal Relays', link: '/card-types/internal-relays' },
           { text: 'Sensors', link: '/card-types/sensors' },
           { text: 'Sliders', link: '/card-types/sliders' },
           { text: 'Weather', link: '/card-types/weather' },

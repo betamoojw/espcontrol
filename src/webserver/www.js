@@ -128,6 +128,7 @@
       allowInSubpage: false,
       hideLabel: false,
       labelPlaceholder: null,
+      isAvailable: null,
       onSelect: null,
       renderSettings: null,
       renderPreview: null,
@@ -1503,6 +1504,7 @@
       cover: "C",
       garage: "R",
       push: "P",
+      internal: "I",
       subpage: "G",
     };
     return map[type || ""] || (type || "");
@@ -1517,6 +1519,7 @@
       C: "cover",
       R: "garage",
       P: "push",
+      I: "internal",
       G: "subpage",
     };
     return map[code || ""] || (code || "");
@@ -3212,6 +3215,7 @@
       for (var k in BUTTON_TYPES) {
         var td = BUTTON_TYPES[k];
         if (c.isSub && !td.allowInSubpage) continue;
+        if (td.isAvailable && !td.isAvailable({ isSub: c.isSub }) && (b.type || "") !== td.key) continue;
         typeOpts.push([td.key, td.label]);
       }
       typeOpts.sort(function (a, b) {

@@ -42,19 +42,21 @@ Use the switch version when the relay should represent an ongoing on/off state. 
 
 ## Using Relays on the Touchscreen
 
-Relay controls on the touchscreen still work through Home Assistant. The panel does not call the relay hardware locally when you tap a screen button. Instead, it sends a Home Assistant action for the entity you configured, and Home Assistant sends that command back to the Espcontrol device.
+Relay controls on the touchscreen can now work locally on the panel. Use an **Internal Relay** card when you want the touchscreen to control the physical relay even if Home Assistant is offline.
 
-That means Home Assistant actions must be set up, and Home Assistant must be connected, for touchscreen relay controls to work.
+Internal Relay cards have two modes:
 
-The relay entities are exposed to Home Assistant, so you can add them onto the Espcontrol touchscreen using the normal entity setup:
+- **Switch** — looks like a normal switch card and toggles the selected relay on or off.
+- **Push Button** — looks like a trigger card and briefly pulses the selected relay.
 
 1. Open the Espcontrol setup page in your browser.
 2. Choose an empty button slot.
-3. Leave the type as **Switch** for the normal entity-control setup.
-4. Set the entity to a relay switch entity, such as `switch.kitchen_panel_relay_1`, or a relay push button entity, such as `button.kitchen_panel_relay_1_push`.
-5. Save the button configuration.
+3. Change the type to **Internal**.
+4. Choose **Relay 1**, **Relay 2**, or **Relay 3**.
+5. Choose **Switch** or **Push Button** mode.
+6. Save the button configuration.
 
-Tapping a relay switch entity asks Home Assistant to toggle the relay. Tapping a relay push button entity asks Home Assistant to press that entity, which briefly pulses the relay instead.
+The relay entities are still exposed to Home Assistant. You can keep using normal Switch cards with relay entity IDs if you prefer Home Assistant to stay in the middle, but those cards need Home Assistant to be connected.
 
 The push button entities are useful when the relay is wired in parallel with existing momentary wall switches, for example when it is driving a dimmer or lighting controller that expects a short button press rather than a permanent on/off output.
 
