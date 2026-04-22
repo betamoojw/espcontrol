@@ -5135,7 +5135,7 @@
     var tzId = getTzId(opt);
     var offset = timezoneOffsetMinutes(tzId, new Date());
     if (offset == null || !isFinite(offset)) return opt;
-    return tzId + " (" + formatGmtOffset(offset) + " now)";
+    return tzId + " (" + formatGmtOffset(offset) + ")";
   }
 
   function appendTimezoneOption(select, opt) {
