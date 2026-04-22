@@ -1120,7 +1120,7 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
 inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_color) {
   setup_toggle_visual(s, p);
 
-  bool horizontal = p.sensor == "h";
+  bool horizontal = p.type == "slider" && p.sensor == "h";
   lv_obj_t *slider = setup_slider_widget(s.btn, on_color, horizontal);
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
   lv_obj_align(s.icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);
@@ -1272,7 +1272,7 @@ inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_
   if (!sb.label.empty()) lv_label_set_text(text_lbl, sb.label.c_str());
   else subscribe_friendly_name(text_lbl, sb.entity);
 
-  bool horiz = sb.sensor == "h";
+  bool horiz = sb.type == "slider" && sb.sensor == "h";
   lv_obj_t *sl = setup_slider_widget(btn, on_color, horiz);
   lv_coord_t pad = radius + 4;
   lv_obj_align(icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);

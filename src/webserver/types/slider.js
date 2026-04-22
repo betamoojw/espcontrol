@@ -1,6 +1,6 @@
 // Slider and cover button types: draggable brightness/position control.
 // Factory creates both "slider" (light.turn_on w/ brightness) and "cover"
-// (cover.set_cover_position) variants. b.sensor stores orientation ("h" or "").
+// (cover.set_cover_position) variants. b.sensor stores slider orientation ("h" or "").
 function sliderTypeFactory(opts) {
   return {
     label: opts.label,
@@ -28,35 +28,43 @@ function sliderTypeFactory(opts) {
         }
       ));
 
-      var isHoriz = b.sensor === "h";
-      var of = document.createElement("div");
-      of.className = "sp-field";
-      of.appendChild(helpers.fieldLabel("Direction"));
-      var seg = document.createElement("div");
-      seg.className = "sp-segment";
-      var btnV = document.createElement("button");
-      btnV.type = "button"; btnV.tabIndex = -1;
-      btnV.textContent = "Vertical";
-      if (!isHoriz) btnV.classList.add("active");
-      var btnH = document.createElement("button");
-      btnH.type = "button"; btnH.tabIndex = -1;
-      btnH.textContent = "Horizontal";
-      if (isHoriz) btnH.classList.add("active");
-      seg.appendChild(btnV);
-      seg.appendChild(btnH);
-      of.appendChild(seg);
-      panel.appendChild(of);
-
-      btnV.addEventListener("click", function () {
-        btnV.classList.add("active"); btnH.classList.remove("active");
+      var allowDirection = opts.allowDirection !== false;
+      if (!allowDirection && b.sensor) {
         b.sensor = "";
         helpers.saveField("sensor", "");
-      });
-      btnH.addEventListener("click", function () {
-        btnH.classList.add("active"); btnV.classList.remove("active");
-        b.sensor = "h";
-        helpers.saveField("sensor", "h");
-      });
+      }
+
+      if (allowDirection) {
+        var isHoriz = b.sensor === "h";
+        var of = document.createElement("div");
+        of.className = "sp-field";
+        of.appendChild(helpers.fieldLabel("Direction"));
+        var seg = document.createElement("div");
+        seg.className = "sp-segment";
+        var btnV = document.createElement("button");
+        btnV.type = "button"; btnV.tabIndex = -1;
+        btnV.textContent = "Vertical";
+        if (!isHoriz) btnV.classList.add("active");
+        var btnH = document.createElement("button");
+        btnH.type = "button"; btnH.tabIndex = -1;
+        btnH.textContent = "Horizontal";
+        if (isHoriz) btnH.classList.add("active");
+        seg.appendChild(btnV);
+        seg.appendChild(btnH);
+        of.appendChild(seg);
+        panel.appendChild(of);
+
+        btnV.addEventListener("click", function () {
+          btnV.classList.add("active"); btnH.classList.remove("active");
+          b.sensor = "";
+          helpers.saveField("sensor", "");
+        });
+        btnH.addEventListener("click", function () {
+          btnH.classList.add("active"); btnV.classList.remove("active");
+          b.sensor = "h";
+          helpers.saveField("sensor", "h");
+        });
+      }
 
       var hasIconOn = b.icon_on && b.icon_on !== "Auto";
       var iconOnToggle = helpers.toggleRow(opts.iconOnLabel, helpers.idPrefix + "iconon-toggle", hasIconOn);
@@ -104,7 +112,7 @@ function sliderTypeFactory(opts) {
     renderPreview: function (b, helpers) {
       var label = b.label || b.entity || opts.fallbackLabel;
       var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : opts.fallbackIcon;
-      var horizClass = b.sensor === "h" ? " sp-slider-horiz" : "";
+      var horizClass = opts.allowDirection !== false && b.sensor === "h" ? " sp-slider-horiz" : "";
       return {
         iconHtml:
           '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>' +
@@ -143,4 +151,5 @@ registerButtonType("cover", sliderTypeFactory({
   badgeIcon: "blinds-horizontal",
   iconOnLabel: "Change Icon When Open",
   iconOnFieldLabel: "Icon When Open",
+  allowDirection: false,
 }));
