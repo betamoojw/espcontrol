@@ -1448,9 +1448,7 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
           if (fill) slider_update_fill(fill, btn_ptr, inv ? 100 : 0, horiz, inv, rad);
         }
         if (has_icon_on) {
-          if (is_cover)
-            lv_label_set_text(icon_lbl, state == "closed" ? icon_on : icon_off);
-          else
+          if (!is_cover)
             lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
         }
         if (is_cover) {
