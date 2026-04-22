@@ -105,6 +105,26 @@ inline bool check_daylight_transition(
   return is_day != last_is_day;
 }
 
+// ── Screen schedule helpers ───────────────────────────────────────────
+
+inline bool screen_schedule_in_window(int now_h, int on_hour, int off_hour) {
+  if (on_hour < 0) on_hour = 0;
+  if (on_hour > 23) on_hour = 23;
+  if (off_hour < 0) off_hour = 0;
+  if (off_hour > 23) off_hour = 23;
+  if (on_hour < off_hour) return now_h >= on_hour && now_h < off_hour;
+  if (on_hour > off_hour) return now_h >= on_hour || now_h < off_hour;
+  return true;
+}
+
+inline bool screen_schedule_always_on_mode(const std::string &mode) {
+  return mode == "Always On" || mode == "always_on";
+}
+
+inline bool screen_schedule_clock_mode(const std::string &mode) {
+  return mode == "Clock" || mode == "clock";
+}
+
 // ── Temperature label visibility ─────────────────────────────────────
 
 inline void update_temp_label(lv_obj_t *label, lv_obj_t *main_page_obj,

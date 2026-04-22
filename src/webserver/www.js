@@ -559,8 +559,10 @@
     scheduleEnabled: false,
     scheduleOnHour: 6,
     scheduleOffHour: 23,
+    scheduleMode: "screen_off",
     scheduleWakeTimeout: 60,
     scheduleWakeBrightness: 10,
+    scheduleClockBrightness: 10,
     timezone: "UTC (GMT+0)",
     timezoneOptions: [],
     clockFormat: "24h",
@@ -642,6 +644,28 @@
     if (n < 10) return 10;
     if (n > 100) return 100;
     return Math.round(n);
+  }
+
+  function normalizeScheduleClockBrightness(value) {
+    var n = parseFloat(value);
+    if (!isFinite(n) || n <= 0) return 10;
+    if (n < 1) return 1;
+    if (n > 100) return 100;
+    return Math.round(n);
+  }
+
+  function normalizeScheduleMode(value) {
+    var v = String(value || "").toLowerCase().replace(/[\s-]+/g, "_");
+    if (v === "always_on" || v === "always") return "always_on";
+    if (v === "clock") return "clock";
+    return "screen_off";
+  }
+
+  function scheduleModeOption(value) {
+    var mode = normalizeScheduleMode(value);
+    if (mode === "always_on") return "Always On";
+    if (mode === "clock") return "Clock";
+    return "Screen off";
   }
 
   function normalizeClockBrightness(value, fallback) {
@@ -743,15 +767,34 @@
   function syncScreenScheduleUi() {
     state.scheduleOnHour = normalizeHour(state.scheduleOnHour, 6);
     state.scheduleOffHour = normalizeHour(state.scheduleOffHour, 23);
+    state.scheduleMode = normalizeScheduleMode(state.scheduleMode);
     state.scheduleWakeTimeout = normalizeScheduleWakeTimeout(state.scheduleWakeTimeout);
     state.scheduleWakeBrightness = normalizeScheduleWakeBrightness(state.scheduleWakeBrightness);
+    state.scheduleClockBrightness = normalizeScheduleClockBrightness(state.scheduleClockBrightness);
     if (els.setScheduleToggle) els.setScheduleToggle.checked = !!state.scheduleEnabled;
     if (els.setScheduleOnHour) els.setScheduleOnHour.value = String(state.scheduleOnHour);
     if (els.setScheduleOffHour) els.setScheduleOffHour.value = String(state.scheduleOffHour);
+    if (els.setScheduleModeBtns) {
+      for (var mode in els.setScheduleModeBtns) {
+        els.setScheduleModeBtns[mode].classList.toggle("active", mode === state.scheduleMode);
+      }
+    }
     setSelectValue(els.setScheduleWakeTimeout, state.scheduleWakeTimeout, formatDuration(state.scheduleWakeTimeout));
     if (els.setScheduleWakeBrightness) {
       els.setScheduleWakeBrightness.value = state.scheduleWakeBrightness;
       els.setScheduleWakeBrightnessVal.textContent = Math.round(state.scheduleWakeBrightness) + "%";
+    }
+    if (els.setScheduleClockBrightness) {
+      els.setScheduleClockBrightness.value = state.scheduleClockBrightness;
+      els.setScheduleClockBrightnessVal.textContent = Math.round(state.scheduleClockBrightness) + "%";
+    }
+    if (els.setScheduleOffOptions) {
+      els.setScheduleOffOptions.className =
+        "sp-cond-field" + (state.scheduleMode === "screen_off" ? " sp-visible" : "");
+    }
+    if (els.setScheduleClockOptions) {
+      els.setScheduleClockOptions.className =
+        "sp-cond-field" + (state.scheduleMode === "clock" ? " sp-visible" : "");
     }
     if (els.setScheduleTimes) {
       els.setScheduleTimes.className = "sp-schedule-times" + (state.scheduleEnabled ? "" : " sp-hidden");
@@ -1185,6 +1228,10 @@
     postWithObjectIds("number", name, objectIds, "set?value=" + encodeURIComponent(value), errorMessage);
   }
 
+  function postSelectWithObjectId(name, objectId, option, errorMessage) {
+    postWithObjectId("select", name, objectId, "set?option=" + encodeURIComponent(option), errorMessage);
+  }
+
   function postScreensaverTimeout(value) {
     if (!screensaverTimeoutSupported(value)) {
       showBanner("Update the device firmware before using shorter screensaver timers.", "error");
@@ -1222,6 +1269,10 @@
     "The schedule wake timeout setting is not available on this firmware. Update the device firmware, then reload this page.";
   var SCREEN_SCHEDULE_WAKE_BRIGHTNESS_UNAVAILABLE =
     "The schedule wake brightness setting is not available on this firmware. Update the device firmware, then reload this page.";
+  var SCREEN_SCHEDULE_MODE_UNAVAILABLE =
+    "The schedule mode setting is not available on this firmware. Update the device firmware, then reload this page.";
+  var SCREEN_SCHEDULE_CLOCK_BRIGHTNESS_UNAVAILABLE =
+    "The schedule clock brightness setting is not available on this firmware. Update the device firmware, then reload this page.";
 
   function postScreenScheduleEnabled(on) {
     postSwitchWithObjectId("Screen: Schedule Enabled", "screen__schedule_enabled", on, SCREEN_SCHEDULE_UNAVAILABLE);
@@ -1233,6 +1284,15 @@
 
   function postScreenScheduleOffHour(value) {
     postNumberWithObjectId("Screen: Schedule Off Hour", "screen__schedule_off_hour", value, SCREEN_SCHEDULE_UNAVAILABLE);
+  }
+
+  function postScreenScheduleMode(value) {
+    postSelectWithObjectId(
+      "Screen: Schedule Mode",
+      "screen__schedule_mode",
+      scheduleModeOption(value),
+      SCREEN_SCHEDULE_MODE_UNAVAILABLE
+    );
   }
 
   function postScreenScheduleWakeTimeout(value) {
@@ -1249,6 +1309,14 @@
       "screen_schedule_wake_brightness",
       "schedule_wake_brightness",
     ], value, SCREEN_SCHEDULE_WAKE_BRIGHTNESS_UNAVAILABLE);
+  }
+
+  function postScreenScheduleClockBrightness(value) {
+    postNumberWithObjectIds("Screen: Schedule Clock Brightness", [
+      "screen__schedule_clock_brightness",
+      "screen_schedule_clock_brightness",
+      "schedule_clock_brightness",
+    ], value, SCREEN_SCHEDULE_CLOCK_BRIGHTNESS_UNAVAILABLE);
   }
 
   function getJsonQuietly(path, callback) {
@@ -1955,6 +2023,34 @@
     scheduleTimes.appendChild(offHour.wrap);
     els.setScheduleOffHour = offHour.select;
 
+    var scheduleModeField = document.createElement("div");
+    scheduleModeField.className = "sp-field";
+    scheduleModeField.appendChild(fieldLabel("At Off Time", "sp-set-schedule-mode"));
+    var scheduleModeTabs = document.createElement("div");
+    scheduleModeTabs.className = "sp-segment";
+    scheduleModeTabs.id = "sp-set-schedule-mode";
+    var scheduleModeButtons = {};
+    [
+      { value: "screen_off", label: "Screen off" },
+      { value: "always_on", label: "Always On" },
+      { value: "clock", label: "Clock" },
+    ].forEach(function (opt) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = opt.label;
+      btn.addEventListener("click", function () {
+        state.scheduleMode = opt.value;
+        postScreenScheduleMode(state.scheduleMode);
+        syncScreenScheduleUi();
+      });
+      scheduleModeButtons[opt.value] = btn;
+      scheduleModeTabs.appendChild(btn);
+    });
+    scheduleModeField.appendChild(scheduleModeTabs);
+    scheduleTimes.appendChild(scheduleModeField);
+    els.setScheduleModeBtns = scheduleModeButtons;
+
+    var offScreenOptions = condField();
     var wakeTimeoutField = document.createElement("div");
     wakeTimeoutField.className = "sp-field";
     wakeTimeoutField.appendChild(fieldLabel("When Woken, Idle Time to Screen Off", "sp-set-schedule-wake-timeout"));
@@ -1983,7 +2079,7 @@
       syncScreenScheduleUi();
     });
     wakeTimeoutField.appendChild(wakeTimeoutSelect);
-    scheduleTimes.appendChild(wakeTimeoutField);
+    offScreenOptions.appendChild(wakeTimeoutField);
     els.setScheduleWakeTimeout = wakeTimeoutSelect;
 
     var wakeBrightnessSlider = createRangeSlider(
@@ -1996,9 +2092,30 @@
       state.scheduleWakeBrightness = normalizeScheduleWakeBrightness(this.value);
       syncScreenScheduleUi();
     });
-    scheduleTimes.appendChild(wakeBrightnessSlider.wrap);
+    offScreenOptions.appendChild(wakeBrightnessSlider.wrap);
     els.setScheduleWakeBrightness = wakeBrightnessSlider.range;
     els.setScheduleWakeBrightnessVal = wakeBrightnessSlider.val;
+    scheduleTimes.appendChild(offScreenOptions);
+    els.setScheduleOffOptions = offScreenOptions;
+
+    var clockOptions = condField();
+    var clockBrightnessSlider = createRangeSlider(
+      "Clock Brightness",
+      state.scheduleClockBrightness,
+      postScreenScheduleClockBrightness
+    );
+    clockBrightnessSlider.range.id = "sp-set-schedule-clock-brightness";
+    clockBrightnessSlider.range.min = "1";
+    clockBrightnessSlider.range.step = "1";
+    clockBrightnessSlider.range.addEventListener("input", function () {
+      state.scheduleClockBrightness = normalizeScheduleClockBrightness(this.value);
+      syncScreenScheduleUi();
+    });
+    clockOptions.appendChild(clockBrightnessSlider.wrap);
+    scheduleTimes.appendChild(clockOptions);
+    els.setScheduleClockOptions = clockOptions;
+    els.setScheduleClockBrightness = clockBrightnessSlider.range;
+    els.setScheduleClockBrightnessVal = clockBrightnessSlider.val;
 
     scheduleBody.appendChild(scheduleTimes);
     els.setScheduleTimes = scheduleTimes;
@@ -4515,8 +4632,10 @@
         schedule_enabled: !!state.scheduleEnabled,
         schedule_on_hour: normalizeHour(state.scheduleOnHour, 6),
         schedule_off_hour: normalizeHour(state.scheduleOffHour, 23),
+        schedule_mode: normalizeScheduleMode(state.scheduleMode),
         schedule_wake_timeout: normalizeScheduleWakeTimeout(state.scheduleWakeTimeout),
         schedule_wake_brightness: normalizeScheduleWakeBrightness(state.scheduleWakeBrightness),
+        schedule_clock_brightness: normalizeScheduleClockBrightness(state.scheduleClockBrightness),
       },
     };
 
@@ -4778,19 +4897,27 @@
           state.scheduleEnabled = !!screenSettings.schedule_enabled;
           state.scheduleOnHour = normalizeHour(screenSettings.schedule_on_hour, 6);
           state.scheduleOffHour = normalizeHour(screenSettings.schedule_off_hour, 23);
+          state.scheduleMode = normalizeScheduleMode(screenSettings.schedule_mode);
           state.scheduleWakeTimeout = normalizeScheduleWakeTimeout(screenSettings.schedule_wake_timeout);
           state.scheduleWakeBrightness = normalizeScheduleWakeBrightness(
             screenSettings.schedule_wake_brightness != null
               ? screenSettings.schedule_wake_brightness
               : state.scheduleWakeBrightness
           );
+          state.scheduleClockBrightness = normalizeScheduleClockBrightness(
+            screenSettings.schedule_clock_brightness != null
+              ? screenSettings.schedule_clock_brightness
+              : state.scheduleClockBrightness
+          );
 
           postNumber("Screen: Daytime Brightness", state.brightnessDayVal);
           postNumber("Screen: Nighttime Brightness", state.brightnessNightVal);
           postScreenScheduleOnHour(state.scheduleOnHour);
           postScreenScheduleOffHour(state.scheduleOffHour);
+          postScreenScheduleMode(state.scheduleMode);
           postScreenScheduleWakeTimeout(state.scheduleWakeTimeout);
           postScreenScheduleWakeBrightness(state.scheduleWakeBrightness);
+          postScreenScheduleClockBrightness(state.scheduleClockBrightness);
           postScreenScheduleEnabled(state.scheduleEnabled);
 
           if (els.setDayBrightness) {
@@ -4999,6 +5126,10 @@
         state.scheduleOffHour = normalizeHour(val, 23);
         syncScreenScheduleUi();
       },
+      "select-screen__schedule_mode": function (val, d) {
+        state.scheduleMode = normalizeScheduleMode(d.value || val);
+        syncScreenScheduleUi();
+      },
       "number-screen__schedule_wake_timeout": function (val) {
         state.scheduleWakeTimeout = normalizeScheduleWakeTimeout(val);
         syncScreenScheduleUi();
@@ -5021,6 +5152,18 @@
       },
       "number-schedule_wake_brightness": function (val) {
         state.scheduleWakeBrightness = normalizeScheduleWakeBrightness(val);
+        syncScreenScheduleUi();
+      },
+      "number-screen__schedule_clock_brightness": function (val) {
+        state.scheduleClockBrightness = normalizeScheduleClockBrightness(val);
+        syncScreenScheduleUi();
+      },
+      "number-screen_schedule_clock_brightness": function (val) {
+        state.scheduleClockBrightness = normalizeScheduleClockBrightness(val);
+        syncScreenScheduleUi();
+      },
+      "number-schedule_clock_brightness": function (val) {
+        state.scheduleClockBrightness = normalizeScheduleClockBrightness(val);
         syncScreenScheduleUi();
       },
       "select-screen__timezone": function (val, d) {

@@ -78,6 +78,16 @@ script:
       - if:
           condition:
             lambda: |-
+              auto now = id(ha_time).now();
+              if (id(schedule_enabled).state && now.is_valid() &&
+                  !screen_schedule_in_window(
+                    now.hour,
+                    (int) id(schedule_on_hour).state,
+                    (int) id(schedule_off_hour).state)) {
+                std::string mode = id(schedule_mode).current_option();
+                if (screen_schedule_always_on_mode(mode) ||
+                    screen_schedule_clock_mode(mode)) return false;
+              }
               return id(screensaver_mode).state == "timer" ||
                      id(screensaver_mode).state == "sensor";
           then:
@@ -240,7 +250,8 @@ script:
       - if:
           condition:
             lambda: |-
-              return id(screen_schedule_asleep) ||
+              return (id(screen_schedule_asleep) &&
+                      !screen_schedule_clock_mode(id(schedule_mode).current_option())) ||
                      (id(schedule_enabled).state && !id(ha_time).now().is_valid());
           then:
             - script.execute: backlight_force_display_off
@@ -280,24 +291,19 @@ script:
       - script.stop: backlight_fade_current_ui_to_black
       - script.stop: backlight_sleep_display_off
       - script.stop: backlight_schedule_display_off
+      - script.stop: screen_schedule_show_clock
       - lambda: |-
           id(backlight_manual_off) = false;
           if (id(schedule_enabled).state) {
             auto now = id(ha_time).now();
             if (now.is_valid()) {
-              int on_hour = (int) id(schedule_on_hour).state;
-              int off_hour = (int) id(schedule_off_hour).state;
-              if (on_hour < 0) on_hour = 0;
-              if (on_hour > 23) on_hour = 23;
-              if (off_hour < 0) off_hour = 0;
-              if (off_hour > 23) off_hour = 23;
-              bool in_window = true;
-              if (on_hour < off_hour) {
-                in_window = now.hour >= on_hour && now.hour < off_hour;
-              } else if (on_hour > off_hour) {
-                in_window = now.hour >= on_hour || now.hour < off_hour;
-              }
-              id(manual_wake_ms) = in_window ? 0 : millis();
+              bool in_window = screen_schedule_in_window(
+                now.hour,
+                (int) id(schedule_on_hour).state,
+                (int) id(schedule_off_hour).state);
+              std::string mode = id(schedule_mode).current_option();
+              id(manual_wake_ms) =
+                (!in_window && !screen_schedule_always_on_mode(mode)) ? millis() : 0;
             }
           }
       - if:
@@ -357,23 +363,32 @@ script:
       - lambda: |-
           auto now = id(ha_time).now();
 
-          float day_pct = id(clock_brightness_day).state;
-          if (std::isnan(day_pct) || day_pct <= 0.0f) day_pct = 35.0f;
-          if (day_pct < 1.0f) day_pct = 1.0f;
-          if (day_pct > 100.0f) day_pct = 100.0f;
+          float pct = 35.0f;
+          if (id(screen_schedule_asleep) &&
+              screen_schedule_clock_mode(id(schedule_mode).current_option())) {
+            pct = id(schedule_clock_brightness).state;
+            if (std::isnan(pct) || pct <= 0.0f) pct = 10.0f;
+            if (pct < 1.0f) pct = 1.0f;
+            if (pct > 100.0f) pct = 100.0f;
+          } else {
+            float day_pct = id(clock_brightness_day).state;
+            if (std::isnan(day_pct) || day_pct <= 0.0f) day_pct = 35.0f;
+            if (day_pct < 1.0f) day_pct = 1.0f;
+            if (day_pct > 100.0f) day_pct = 100.0f;
 
-          float night_pct = id(clock_brightness_night).state;
-          if (std::isnan(night_pct) || night_pct <= 0.0f) night_pct = day_pct;
-          if (night_pct < 1.0f) night_pct = 1.0f;
-          if (night_pct > 100.0f) night_pct = 100.0f;
+            float night_pct = id(clock_brightness_night).state;
+            if (std::isnan(night_pct) || night_pct <= 0.0f) night_pct = day_pct;
+            if (night_pct < 1.0f) night_pct = 1.0f;
+            if (night_pct > 100.0f) night_pct = 100.0f;
 
-          bool is_day = id(last_is_daytime);
-          float pct = calc_brightness_pct(
-            id(sunrise_sunset_valid), id(sunrise_hour), id(sunrise_minute),
-            id(sunset_hour), id(sunset_minute),
-            now.is_valid() ? now.hour : 12, now.is_valid() ? now.minute : 0,
-            &is_day, day_pct, night_pct);
-          id(last_is_daytime) = is_day;
+            bool is_day = id(last_is_daytime);
+            pct = calc_brightness_pct(
+              id(sunrise_sunset_valid), id(sunrise_hour), id(sunrise_minute),
+              id(sunset_hour), id(sunset_minute),
+              now.is_valid() ? now.hour : 12, now.is_valid() ? now.minute : 0,
+              &is_day, day_pct, night_pct);
+            id(last_is_daytime) = is_day;
+          }
 
           float target = pct / 100.0f;
           if (target < 0.01f) target = 0.01f;
