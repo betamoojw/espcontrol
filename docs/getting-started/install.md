@@ -21,23 +21,9 @@ Flash the Espcontrol firmware to your Guition ESP32 display directly from your b
 
 ## Flash the Firmware
 
-Connect the display to your computer with the USB-C cable, then click the button for your panel.
+Connect the display to your computer with the USB-C cable, choose your panel, then click the install button.
 
-**10.1-inch (JC8012P4A1):**
-
-<EspInstallButton slug="guition-esp32-p4-jc8012p4a1" />
-
-**7-inch (JC1060P470):**
-
-<EspInstallButton slug="guition-esp32-p4-jc1060p470" />
-
-**4.3-inch (JC4880P443):**
-
-<EspInstallButton slug="guition-esp32-p4-jc4880p443" />
-
-**4-inch square (4848S040):**
-
-<EspInstallButton slug="guition-esp32-s3-4848s040" />
+<EspInstallSelector />
 
 ::: tip Which cable?
 If the install button doesn't detect your device, try a different USB-C cable. Charge-only cables (often thinner and cheaper) won't work — you need one that supports data transfer.
@@ -46,7 +32,7 @@ If the install button doesn't detect your device, try a different USB-C cable. C
 ### Step by Step
 
 1. **Plug in the display** using the USB-C cable. If your computer asks to install drivers, allow it.
-2. **Click "Install Espcontrol"** above. A dialog will ask you to choose a serial port — select the one that appeared when you plugged in the display.
+2. **Choose your panel** above, then click **Install Espcontrol**. A dialog will ask you to choose a serial port — select the one that appeared when you plugged in the display.
 3. **Wait for the flash to complete.** This takes a few minutes. You'll see a progress bar. Don't disconnect the cable until it finishes.
 4. **The display restarts** and shows a loading screen.
 
