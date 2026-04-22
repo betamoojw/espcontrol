@@ -99,6 +99,7 @@ select:
     initial_option: "Screen off"
     options:
       - "Screen off"
+      - "Screen Dimmed"
       - "Always On"
       - "Clock"
     web_server:
@@ -187,6 +188,37 @@ number:
         - if:
             condition:
               lambda: 'return id(manual_wake_ms) != 0;'
+            then:
+              - script.execute: backlight_apply_brightness
+
+  - platform: template
+    name: "Screen: Schedule Dimmed Brightness"
+    internal: true
+    id: schedule_dimmed_brightness
+    min_value: 1
+    max_value: 100
+    step: 1
+    initial_value: 10
+    optimistic: true
+    restore_value: true
+    unit_of_measurement: "%"
+    entity_category: config
+    icon: "mdi:brightness-4"
+    web_server:
+      sorting_group_id: sg_brightness
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: |-
+                if (!id(schedule_enabled).state || id(display_asleep)) return false;
+                auto now = id(ha_time).now();
+                return now.is_valid() &&
+                       !screen_schedule_in_window(
+                         now.hour,
+                         (int) id(schedule_on_hour).state,
+                         (int) id(schedule_off_hour).state) &&
+                       screen_schedule_always_on_mode(id(schedule_mode).current_option());
             then:
               - script.execute: backlight_apply_brightness
 
@@ -551,6 +583,16 @@ script:
             pct = id(schedule_wake_brightness).state;
             if (std::isnan(pct) || pct <= 0) pct = 10;
             if (pct < 10) pct = 10;
+            if (pct > 100) pct = 100;
+          } else if (id(schedule_enabled).state && now.is_valid() &&
+                     !screen_schedule_in_window(
+                       now.hour,
+                       (int) id(schedule_on_hour).state,
+                       (int) id(schedule_off_hour).state) &&
+                     screen_schedule_always_on_mode(id(schedule_mode).current_option())) {
+            pct = id(schedule_dimmed_brightness).state;
+            if (std::isnan(pct) || pct <= 0) pct = 10;
+            if (pct < 1) pct = 1;
             if (pct > 100) pct = 100;
           } else {
             bool is_day = id(last_is_daytime);

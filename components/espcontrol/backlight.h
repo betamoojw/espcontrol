@@ -118,7 +118,8 @@ inline bool screen_schedule_in_window(int now_h, int on_hour, int off_hour) {
 }
 
 inline bool screen_schedule_always_on_mode(const std::string &mode) {
-  return mode == "Always On" || mode == "always_on";
+  return mode == "Screen Dimmed" || mode == "screen_dimmed" ||
+         mode == "Always On" || mode == "always_on";
 }
 
 inline bool screen_schedule_clock_mode(const std::string &mode) {

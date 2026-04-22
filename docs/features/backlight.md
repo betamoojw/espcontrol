@@ -27,7 +27,7 @@ When the screensaver clock is active, it can use separate daytime and nighttime 
 
 ## Screen Schedule
 
-The [screen schedule](/features/screen-schedule) can turn the physical backlight off, keep the panel always on, or show a clock at set hours. **Screen Off** uses the schedule's separate **When Woken** brightness during a temporary wake. **Clock** uses its own clock brightness setting. **Always On** keeps using the normal day/night brightness rules.
+The [screen schedule](/features/screen-schedule) can turn the physical backlight off, keep the panel dimmed, or show a clock at set hours. **Screen Off** uses the schedule's separate **When Woken** brightness during a temporary wake. **Screen Dimmed** uses its own overnight brightness setting. **Clock** uses its own clock brightness setting.
 
 ## Before Clock Sync
 
