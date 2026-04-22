@@ -1257,8 +1257,19 @@
     postWithObjectId("switch", name, objectId, on ? "turn_on" : "turn_off", errorMessage);
   }
 
+  function postSwitchWithObjectIds(name, objectIds, on, errorMessage) {
+    postWithObjectIds("switch", name, objectIds, on ? "turn_on" : "turn_off", errorMessage);
+  }
+
+  var CLOCK_BAR_UNAVAILABLE =
+    "Clock bar setting is not available on this firmware. Update the device firmware, then reload this page.";
+
   function postClockBar(on) {
-    postSwitchWithObjectId("Screen: Clock Bar", "screen__clock_bar", on);
+    postSwitchWithObjectIds("Screen: Clock Bar", [
+      "screen__clock_bar",
+      "screen_clock_bar",
+      "clock_bar_enabled",
+    ], on, CLOCK_BAR_UNAVAILABLE);
   }
 
   var SCREEN_SCHEDULE_UNAVAILABLE =
@@ -5095,6 +5106,14 @@
         updateTempPreview();
       },
       "switch-screen__clock_bar": function (val, d) {
+        state.clockBarOn = d.value === true || val === "ON";
+        syncClockBarUi();
+      },
+      "switch-screen_clock_bar": function (val, d) {
+        state.clockBarOn = d.value === true || val === "ON";
+        syncClockBarUi();
+      },
+      "switch-clock_bar_enabled": function (val, d) {
         state.clockBarOn = d.value === true || val === "ON";
         syncClockBarUi();
       },
