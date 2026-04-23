@@ -615,13 +615,13 @@ script:
     mode: single
     then:
       - lambda: |-
-          const char *posix = apply_timezone(id(timezone_select).state);
+          const char *posix = apply_timezone(id(timezone_select).current_option());
           id(ha_time).set_timezone(posix);
           auto now = id(ha_time).now();
           if (!now.is_valid()) return;
           bool use_12h = id(clock_format_select).current_option() == "12h";
           auto r = recalc_sunrise_sunset(now.year, now.month, now.day_of_month,
-                                         id(timezone_select).state,
+                                         id(timezone_select).current_option(),
                                          use_12h);
           id(sunrise_hour) = r.rise_h;
           id(sunrise_minute) = r.rise_m;

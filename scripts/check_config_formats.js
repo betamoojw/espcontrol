@@ -57,7 +57,6 @@ function subpageTypeFromCode(code) {
     P: "push",
     I: "internal",
     G: "subpage",
-    T: "timezone",
   }[code || ""] || (code || "");
 }
 
@@ -207,17 +206,6 @@ assertButtonRoundTrip(hooks, "cover toggle button", {
   precision: "",
 }, false);
 
-assertButtonRoundTrip(hooks, "timezone button", {
-  entity: "Europe/London (GMT+0)",
-  label: "",
-  icon: "Auto",
-  icon_on: "Auto",
-  sensor: "",
-  unit: "",
-  type: "timezone",
-  precision: "",
-}, false);
-
 assert.deepStrictEqual(buttonShape(hooks.parseButtonConfig("light.legacy;Legacy;Auto;Lightbulb;sensor.legacy;W;sensor;1")), {
   entity: "light.legacy",
   label: "Legacy",
@@ -271,13 +259,6 @@ assertSubpageRoundTrip(hooks, "cover toggle subpage", {
   ],
 }, true);
 
-assertSubpageRoundTrip(hooks, "timezone subpage", {
-  order: ["1", "B"],
-  buttons: [
-    buttonShape({ entity: "Europe/London (GMT+0)", type: "timezone" }),
-  ],
-}, true);
-
 assertSubpageRoundTrip(hooks, "delimiter subpage", {
   order: ["1", "B", "2"],
   buttons: [
@@ -321,13 +302,6 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|C,cover.offic
     buttonShape({ entity: "cover.office_blind", label: "Office Blind", icon: "Blinds", icon_on: "Blinds Open", sensor: "toggle", type: "cover" }),
   ],
 }, "compact cover toggle subpage parse");
-
-assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|T,Europe/London%20(GMT+0)")), {
-  order: ["1", "B"],
-  buttons: [
-    buttonShape({ entity: "Europe/London (GMT+0)", type: "timezone" }),
-  ],
-}, "compact timezone subpage parse");
 
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|I,relay_2,Gate,Power%20Plug,Power,push")), {
   order: ["1", "B"],

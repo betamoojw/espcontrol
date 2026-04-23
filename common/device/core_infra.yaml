@@ -13,9 +13,7 @@ api:
 logger:
   logs:
     light: WARN
-    sensor: WARN
     script: INFO
-    text_sensor: WARN
 
 http_request:
   id: http_req

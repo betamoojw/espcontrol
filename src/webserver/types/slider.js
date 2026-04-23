@@ -94,8 +94,8 @@ function sliderTypeFactory(opts) {
       if (opts.alwaysShowIconPair) {
         var closedIconVal = b.icon && b.icon !== "Auto" ? b.icon : opts.defaultIcon;
         var openIconVal = b.icon_on && b.icon_on !== "Auto" ? b.icon_on : opts.defaultIconOn;
-        panel.appendChild(iconField("Open Icon", "icon-on", "icon_on", openIconVal, opts.defaultIconOn));
         panel.appendChild(iconField("Closed Icon", "icon", "icon", closedIconVal, opts.defaultIcon));
+        panel.appendChild(iconField("Open Icon", "icon-on", "icon_on", openIconVal, opts.defaultIconOn));
       } else {
         panel.appendChild(helpers.makeIconPicker(
           helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",

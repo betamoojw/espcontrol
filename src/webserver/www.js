@@ -8,7 +8,7 @@
 //
 // Per-device config (grid size, styling) is injected between __DEVICE_CONFIG__
 // markers by scripts/build.py. Button type plugins (switch, sensor, weather,
-// calendar, slider, cover, garage, push, subpage, timezone) are injected between __BUTTON_TYPES__ markers.
+// calendar, slider, cover, garage, push, subpage) are injected between __BUTTON_TYPES__ markers.
 // Icon data is generated between GENERATED:ICONS / GENERATED:DOMAIN_ICONS.
 // =============================================================================
 
@@ -525,42 +525,6 @@
     ".sp-fw-row{flex-direction:column;align-items:flex-start;gap:12px}" +
     "}";
 
-  var TIMEZONE_OPTIONS = [
-    "Pacific/Midway (GMT-11)", "Pacific/Pago_Pago (GMT-11)", "Pacific/Honolulu (GMT-10)", "America/Adak (GMT-10)",
-    "America/Anchorage (GMT-9)", "America/Juneau (GMT-9)", "America/Los_Angeles (GMT-8)", "America/Vancouver (GMT-8)",
-    "America/Tijuana (GMT-8)", "America/Denver (GMT-7)", "America/Phoenix (GMT-7)", "America/Edmonton (GMT-7)",
-    "America/Boise (GMT-7)", "America/Chicago (GMT-6)", "America/Mexico_City (GMT-6)", "America/Winnipeg (GMT-6)",
-    "America/Guatemala (GMT-6)", "America/Costa_Rica (GMT-6)", "America/New_York (GMT-5)", "America/Toronto (GMT-5)",
-    "America/Detroit (GMT-5)", "America/Havana (GMT-5)", "America/Bogota (GMT-5)", "America/Lima (GMT-5)",
-    "America/Jamaica (GMT-5)", "America/Panama (GMT-5)", "America/Halifax (GMT-4)", "America/Caracas (GMT-4)",
-    "America/Santiago (GMT-4)", "America/La_Paz (GMT-4)", "America/Manaus (GMT-4)", "America/Barbados (GMT-4)",
-    "America/Puerto_Rico (GMT-4)", "America/Santo_Domingo (GMT-4)", "America/St_Johns (GMT-3:30)", "America/Sao_Paulo (GMT-3)",
-    "America/Argentina/Buenos_Aires (GMT-3)", "America/Montevideo (GMT-3)", "America/Paramaribo (GMT-3)", "Atlantic/South_Georgia (GMT-2)",
-    "Atlantic/Azores (GMT-1)", "Atlantic/Cape_Verde (GMT-1)", "UTC (GMT+0)", "Europe/London (GMT+0)",
-    "Europe/Dublin (GMT+0)", "Europe/Lisbon (GMT+0)", "Africa/Casablanca (GMT+1)", "Africa/Accra (GMT+0)",
-    "Atlantic/Reykjavik (GMT+0)", "Europe/Paris (GMT+1)", "Europe/Berlin (GMT+1)", "Europe/Rome (GMT+1)",
-    "Europe/Madrid (GMT+1)", "Europe/Amsterdam (GMT+1)", "Europe/Brussels (GMT+1)", "Europe/Vienna (GMT+1)",
-    "Europe/Zurich (GMT+1)", "Europe/Stockholm (GMT+1)", "Europe/Oslo (GMT+1)", "Europe/Copenhagen (GMT+1)",
-    "Europe/Warsaw (GMT+1)", "Europe/Prague (GMT+1)", "Europe/Budapest (GMT+1)", "Europe/Belgrade (GMT+1)",
-    "Africa/Lagos (GMT+1)", "Africa/Tunis (GMT+1)", "Africa/Cairo (GMT+2)", "Europe/Athens (GMT+2)",
-    "Europe/Bucharest (GMT+2)", "Europe/Helsinki (GMT+2)", "Europe/Kyiv (GMT+2)", "Europe/Istanbul (GMT+3)",
-    "Africa/Johannesburg (GMT+2)", "Africa/Nairobi (GMT+3)", "Asia/Jerusalem (GMT+2)", "Asia/Amman (GMT+3)",
-    "Asia/Beirut (GMT+2)", "Europe/Moscow (GMT+3)", "Asia/Baghdad (GMT+3)", "Asia/Riyadh (GMT+3)",
-    "Asia/Kuwait (GMT+3)", "Asia/Qatar (GMT+3)", "Africa/Addis_Ababa (GMT+3)", "Asia/Tehran (GMT+3:30)",
-    "Asia/Dubai (GMT+4)", "Asia/Muscat (GMT+4)", "Asia/Baku (GMT+4)", "Asia/Tbilisi (GMT+4)",
-    "Indian/Mauritius (GMT+4)", "Asia/Kabul (GMT+4:30)", "Asia/Karachi (GMT+5)", "Asia/Tashkent (GMT+5)",
-    "Asia/Yekaterinburg (GMT+5)", "Asia/Kolkata (GMT+5:30)", "Asia/Colombo (GMT+5:30)", "Asia/Kathmandu (GMT+5:45)",
-    "Asia/Dhaka (GMT+6)", "Asia/Almaty (GMT+6)", "Asia/Rangoon (GMT+6:30)", "Asia/Bangkok (GMT+7)",
-    "Asia/Jakarta (GMT+7)", "Asia/Ho_Chi_Minh (GMT+7)", "Asia/Singapore (GMT+8)", "Asia/Kuala_Lumpur (GMT+8)",
-    "Asia/Shanghai (GMT+8)", "Asia/Hong_Kong (GMT+8)", "Asia/Taipei (GMT+8)", "Asia/Manila (GMT+8)",
-    "Australia/Perth (GMT+8)", "Asia/Tokyo (GMT+9)", "Asia/Seoul (GMT+9)", "Asia/Pyongyang (GMT+9)",
-    "Australia/Adelaide (GMT+9:30)", "Australia/Darwin (GMT+9:30)", "Australia/Sydney (GMT+10)", "Australia/Melbourne (GMT+10)",
-    "Australia/Brisbane (GMT+10)", "Australia/Hobart (GMT+10)", "Pacific/Guam (GMT+10)", "Pacific/Port_Moresby (GMT+10)",
-    "Asia/Vladivostok (GMT+10)", "Pacific/Noumea (GMT+11)", "Pacific/Norfolk (GMT+11)", "Asia/Magadan (GMT+11)",
-    "Pacific/Auckland (GMT+12)", "Pacific/Fiji (GMT+12)", "Pacific/Chatham (GMT+12:45)", "Pacific/Tongatapu (GMT+13)",
-    "Pacific/Apia (GMT+13)", "Pacific/Kiritimati (GMT+14)",
-  ];
-
   // ── State ──────────────────────────────────────────────────────────────
 
   var state = {
@@ -602,7 +566,7 @@
     scheduleDimmedBrightness: 10,
     scheduleClockBrightness: 10,
     timezone: "UTC (GMT+0)",
-    timezoneOptions: TIMEZONE_OPTIONS.slice(),
+    timezoneOptions: [],
     clockFormat: "24h",
     clockFormatOptions: ["12h", "24h"],
     screenRotation: "0",
@@ -1613,7 +1577,6 @@
       push: "P",
       internal: "I",
       subpage: "G",
-      timezone: "T",
     };
     return map[type || ""] || (type || "");
   }
@@ -1629,7 +1592,6 @@
       P: "push",
       I: "internal",
       G: "subpage",
-      T: "timezone",
     };
     return map[code || ""] || (code || "");
   }
@@ -2329,7 +2291,7 @@
     tzSelect.value = state.timezone;
     tzSelect.addEventListener("change", function () {
       state.timezone = this.value;
-      postText("Screen: Timezone", this.value);
+      postSelect("Screen: Timezone", this.value);
       updateClock();
     });
     tzField.appendChild(tzSelect);
@@ -3024,12 +2986,12 @@
         var b = c.buttons[bIdx];
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
-        var color = (b.type === "sensor" || b.type === "weather" || b.type === "calendar" || b.type === "timezone")
+        var color = (b.type === "sensor" || b.type === "weather" || b.type === "calendar")
           ? state.sensorColor : state.offColor;
         var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
         if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
-          ? previewTypeDef.renderPreview(b, { escHtml: escHtml, escAttr: escAttr })
+          ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
           : null;
 
         var btn = document.createElement("div");
@@ -5183,15 +5145,6 @@
     select.appendChild(o);
   }
 
-  function updateTimezonePreviewCards() {
-    if (!els.previewMain) return;
-    if (typeof timezoneCardPreviewTime !== "function") return;
-    var previews = els.previewMain.querySelectorAll(".sp-timezone-preview");
-    for (var i = 0; i < previews.length; i++) {
-      previews[i].textContent = timezoneCardPreviewTime(previews[i].getAttribute("data-tz"));
-    }
-  }
-
   function updateClock() {
     if (!els.clock) return;
     var now = new Date();
@@ -5213,7 +5166,6 @@
       var mn = String(now.getUTCMinutes()).padStart(2, "0");
       els.clock.textContent = String(hr).padStart(2, "0") + ":" + mn;
     }
-    updateTimezonePreviewCards();
     var msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
     setTimeout(updateClock, msToNext + 50);
   }
@@ -5425,11 +5377,6 @@
       "number-schedule_clock_brightness": function (val) {
         state.scheduleClockBrightness = normalizeScheduleClockBrightness(val);
         syncScreenScheduleUi();
-      },
-      "text-screen__timezone": function (val, d) {
-        state.timezone = d.value || val || state.timezone;
-        if (els.setTimezone) els.setTimezone.value = state.timezone;
-        updateClock();
       },
       "select-screen__timezone": function (val, d) {
         state.timezone = d.value || val || state.timezone;

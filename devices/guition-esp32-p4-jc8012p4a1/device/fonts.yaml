@@ -12,7 +12,7 @@ font:
     id: statistics_font_lt
     size: 60
     bpp: 4
-    glyphs: "0123456789:.-°/%kWhVA "
+    glyphs: "0123456789.-°/%kWhVA "
 
   # Main page: button icons
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
