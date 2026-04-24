@@ -110,7 +110,7 @@ switch:
     internal: true
     id: clock_screensaver_enabled
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: RESTORE_DEFAULT_OFF
     icon: "mdi:clock-outline"
     entity_category: config
     web_server:

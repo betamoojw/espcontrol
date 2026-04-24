@@ -563,7 +563,7 @@
     presenceEntity: "",
     screensaverMode: "disabled",
     _screensaverModeReceived: false,
-    clockScreensaverOn: true,
+    clockScreensaverOn: false,
     clockBrightnessDay: 35,
     clockBrightnessNight: 35,
     clockBrightnessSplitReceived: false,
@@ -5003,7 +5003,7 @@
           var importedClockBrightnessNight = normalizeClockBrightness(
             s.clock_brightness_night != null ? s.clock_brightness_night : s.clock_brightness,
             importedClockBrightnessDay);
-          postSwitch("Screen Saver: Clock", s.clock_screensaver != null ? !!s.clock_screensaver : true);
+          postSwitch("Screen Saver: Clock", s.clock_screensaver != null ? !!s.clock_screensaver : false);
           postClockBrightnessDay(importedClockBrightnessDay);
           postClockBrightnessNight(importedClockBrightnessNight);
           postScreensaverTimeout(s.screensaver_timeout || 300);
@@ -5019,7 +5019,7 @@
           state.screensaverMode = importedScreensaverMode;
           state._screensaverModeReceived = true;
           state.presenceEntity = s.presence_sensor_entity || "";
-          state.clockScreensaverOn = s.clock_screensaver != null ? !!s.clock_screensaver : true;
+          state.clockScreensaverOn = s.clock_screensaver != null ? !!s.clock_screensaver : false;
           state.clockBrightnessDay = importedClockBrightnessDay;
           state.clockBrightnessNight = importedClockBrightnessNight;
           state.screensaverTimeout = s.screensaver_timeout || 300;
