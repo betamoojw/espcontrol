@@ -110,16 +110,6 @@ Use this for the first install.
 
 If ESPHome cannot access the USB port directly, choose **Manual download** instead. For a blank screen, select the factory firmware option if ESPHome asks which format to use. Then open [ESPHome Web Tools](https://web.esphome.io/) in Chrome or Edge, connect to the display, and flash the downloaded file.
 
-## Install with the ESPHome Command Line
-
-If you use ESPHome on your own computer, create a YAML file with the same template, then run:
-
-```sh
-esphome run espcontrol-kitchen.yaml
-```
-
-ESPHome will compile the firmware and ask where to install it. Choose the serial port for a USB install, or enter the device IP address for an OTA update.
-
 ## After the Display Boots
 
 1. Wait for the display to join WiFi.
