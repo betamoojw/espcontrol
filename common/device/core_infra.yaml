@@ -9,6 +9,15 @@ api:
   reboot_timeout: 0s
   homeassistant_states: true
   homeassistant_services: true
+  on_client_connected:
+    - lambda: |-
+        refresh_weather_forecast_cards();
+
+interval:
+  - interval: 1h
+    then:
+      - lambda: |-
+          refresh_weather_forecast_cards();
 
 logger:
   logs:

@@ -82,6 +82,8 @@ def cfg_lines(device: dict) -> list[str]:
     if device["wrap_tall_labels"]:
         lines.append("            cfg.wrap_tall_labels = true;")
     lines.append(f"            cfg.sp_sensor_font = id({device['sensor_font']})->get_lv_font();")
+    lines.append(f"            cfg.forecast_font = id({device['forecast_font']})->get_lv_font();")
+    lines.append(f"            cfg.forecast_unit_font = id({device['forecast_unit_font']})->get_lv_font();")
     return lines
 
 

@@ -22,7 +22,7 @@ A subpage has one fewer usable slot than the home screen because it includes a *
 
 You can also right-click an empty space on the home screen and choose **Create Subpage**.
 
-Subpages can contain Switch, Action, Trigger, Sensor, Slider, Cover, Garage Door, Date, Weather, and Internal cards. They cannot contain another Subpage card.
+Subpages can contain Switch, Action, Trigger, Sensor, Slider, Cover, Garage Door, Date, Weather, Weather Forecast, and Internal cards. They cannot contain another Subpage card.
 
 ## Display State
 
@@ -32,7 +32,7 @@ When **Display State** is on:
 
 - The Subpage card lights up if any active-capable card inside it is on, open, playing, unlocked, or otherwise active.
 - You can also enable **Change Icon When On** to use a different icon while anything inside the subpage is active.
-- Read-only cards such as Sensor, Date, and Weather do not affect the Subpage card state.
+- Read-only cards such as Sensor, Date, Weather, and Weather Forecast do not affect the Subpage card state.
 
 ## Moving Cards Between Pages
 

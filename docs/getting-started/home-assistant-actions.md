@@ -6,7 +6,7 @@ description:
 
 # Home Assistant Actions
 
-Espcontrol needs permission to call Home Assistant actions (like toggling lights or switches) on your behalf. Without this, the touchscreen can display the time and screensaver but **cards won't be able to control your devices**.
+Espcontrol needs permission to call Home Assistant actions (like toggling lights or switches) on your behalf. Without this, the touchscreen can display the time and screensaver but **cards won't be able to control your devices or request forecast data**.
 
 Your display will prompt you to do this during first-time setup. Follow the steps below.
 
@@ -36,7 +36,7 @@ You only need to do this once per device. The setting persists across firmware u
 
 ## What If I Skip This?
 
-You won't be able to control any devices, it will be in a read only state, and entities such as lights, switches, scenes, scripts, and helpers won't do anything when tapped.
+You won't be able to control any devices, it will be in a read only state, and entities such as lights, switches, scenes, scripts, and helpers won't do anything when tapped. Weather Forecast cards also won't be able to fetch tomorrow's forecast.
 
 ## Device Not Showing Up?
 

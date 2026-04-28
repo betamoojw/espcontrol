@@ -36,6 +36,7 @@ The **Type** dropdown uses these card names on the device:
 | **[Date](/card-types/calendar)** | Shows the local date, or the date and time. | No |
 | **[World Clock](/card-types/timezones)** | Shows the current time for another city. | No, choose a city/timezone |
 | **[Weather](/card-types/weather)** | Shows the current condition from a weather entity. | Yes, as **Weather Entity** |
+| **[Weather Forecast](/card-types/weather-forecast)** | Shows tomorrow's high and low temperature from a weather entity. | Yes, as **Weather Entity** |
 | **[Internal](/card-types/internal-relays)** | Controls a built-in relay locally on panels that have relay hardware. | Choose a relay |
 | **[Subpage](/features/subpages)** | Opens a folder-like page of extra cards. | No |
 

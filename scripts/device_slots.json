@@ -6,6 +6,8 @@
       "cols": 5,
       "grid": "3x5",
       "sensor_font": "statistics_font",
+      "forecast_font": "forecast_font",
+      "forecast_unit_font": "forecast_unit_font",
       "color_correction": false,
       "wrap_tall_labels": true
     },
@@ -15,6 +17,8 @@
       "cols": 2,
       "grid": "3x2",
       "sensor_font": "statistics_font_lg",
+      "forecast_font": "forecast_font_lg",
+      "forecast_unit_font": "forecast_unit_font_lg",
       "color_correction": true,
       "wrap_tall_labels": false
     },
@@ -24,6 +28,8 @@
       "cols": 5,
       "grid": "5x4",
       "sensor_font": "statistics_font_lt",
+      "forecast_font": "forecast_font_lt",
+      "forecast_unit_font": "forecast_unit_font_lt",
       "color_correction": true,
       "wrap_tall_labels": true
     },
@@ -33,6 +39,8 @@
       "cols": 3,
       "grid": "3x3",
       "sensor_font": "statistics_font",
+      "forecast_font": "forecast_font_sm",
+      "forecast_unit_font": "forecast_unit_font",
       "color_correction": false,
       "wrap_tall_labels": false
     }

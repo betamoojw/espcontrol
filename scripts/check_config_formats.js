@@ -53,6 +53,7 @@ function subpageTypeFromCode(code) {
     T: "timezone",
     S: "sensor",
     W: "weather",
+    F: "weather_forecast",
     L: "slider",
     C: "cover",
     R: "garage",
@@ -238,6 +239,17 @@ assertButtonRoundTrip(hooks, "timezone card", {
   sensor: "",
   unit: "",
   type: "timezone",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "weather forecast card", {
+  entity: "weather.forecast_home",
+  label: "",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "weather_forecast",
   precision: "",
 }, false);
 
@@ -444,6 +456,13 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|T,America/New
     buttonShape({ entity: "America/New_York (GMT-5)", type: "timezone" }),
   ],
 }, "compact timezone subpage parse");
+
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|F,weather.forecast_home")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "weather.forecast_home", type: "weather_forecast" }),
+  ],
+}, "compact weather forecast subpage parse");
 
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|R,cover.garage,,Garage,Garage%20Open")), {
   order: ["1", "B"],

@@ -196,6 +196,7 @@ export default defineConfig({
           { text: 'Date', link: '/card-types/calendar' },
           { text: 'World Clock', link: '/card-types/timezones' },
           { text: 'Weather', link: '/card-types/weather' },
+          { text: 'Weather Forecast', link: '/card-types/weather-forecast' },
           { text: 'Internal', link: '/card-types/internal-relays' },
           { text: 'Subpage', link: '/features/subpages' },
         ],

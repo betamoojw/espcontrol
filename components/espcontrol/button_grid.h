@@ -17,6 +17,7 @@
 #include <ctime>
 #include <vector>
 #include <functional>
+#include "esphome/components/api/homeassistant_service.h"
 #include "esphome/core/string_ref.h"
 #include "icons.h"
 #include "backlight.h"
@@ -98,7 +99,7 @@ struct ParsedCfg {
   std::string icon_on;     // 3  icon name for on state (blank = no swap)
   std::string sensor;      // 4  sensor entity, or action name for Action cards
   std::string unit;        // 5  unit suffix for sensor display
-  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
+  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, weather_forecast, slider, cover, garage, push, internal, subpage
   std::string precision;   // 7  decimal places for sensors; "text" = text sensor mode
 };
 
@@ -238,6 +239,195 @@ inline std::string weather_label_for_state(const std::string &state) {
     label[0] = static_cast<char>(toupper(static_cast<unsigned char>(label[0])));
   }
   return label;
+}
+
+struct WeatherForecastCardRef {
+  lv_obj_t *value_lbl;
+  lv_obj_t *unit_lbl;
+  lv_obj_t *label_lbl;
+  std::string entity_id;
+};
+
+inline WeatherForecastCardRef *weather_forecast_card_refs() {
+  static WeatherForecastCardRef refs[MAX_GRID_SLOTS + MAX_SUBPAGE_ITEMS];
+  return refs;
+}
+
+inline int &weather_forecast_card_count() {
+  static int count = 0;
+  return count;
+}
+
+inline void reset_weather_forecast_cards() {
+  weather_forecast_card_count() = 0;
+}
+
+inline std::string weather_forecast_unit_symbol(const std::string &unit) {
+  std::string lower = unit;
+  for (char &ch : lower) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  if (lower.find("f") != std::string::npos || lower.find("fahrenheit") != std::string::npos) return "\u2109";
+  if (lower.find("c") != std::string::npos || lower.find("celsius") != std::string::npos) return "\u2103";
+  return unit;
+}
+
+inline void apply_weather_forecast_card_text(const WeatherForecastCardRef &ref,
+                                             bool valid, int high, int low,
+                                             const std::string &unit) {
+  if (ref.label_lbl) lv_label_set_text(ref.label_lbl, "Tomorrow");
+  if (!ref.value_lbl || !ref.unit_lbl) return;
+  if (!valid) {
+    lv_label_set_text(ref.value_lbl, "-- / --");
+    lv_label_set_text(ref.unit_lbl, "");
+    return;
+  }
+  char buf[24];
+  snprintf(buf, sizeof(buf), "%d / %d", high, low);
+  lv_label_set_text(ref.value_lbl, buf);
+  std::string normalized_unit = weather_forecast_unit_symbol(unit);
+  lv_label_set_text(ref.unit_lbl, normalized_unit.c_str());
+}
+
+inline void apply_weather_forecast_to_entity(const std::string &entity_id,
+                                             bool valid, int high, int low,
+                                             const std::string &unit) {
+  WeatherForecastCardRef *refs = weather_forecast_card_refs();
+  int count = weather_forecast_card_count();
+  for (int i = 0; i < count; i++) {
+    if (refs[i].entity_id == entity_id) {
+      apply_weather_forecast_card_text(refs[i], valid, high, low, unit);
+    }
+  }
+}
+
+inline void register_weather_forecast_card(lv_obj_t *value_lbl, lv_obj_t *unit_lbl,
+                                           lv_obj_t *label_lbl,
+                                           const std::string &entity_id) {
+  int &count = weather_forecast_card_count();
+  if (count >= MAX_GRID_SLOTS + MAX_SUBPAGE_ITEMS) {
+    ESP_LOGW("weather_forecast", "Too many forecast cards; skipping updates");
+    return;
+  }
+  weather_forecast_card_refs()[count++] = {value_lbl, unit_lbl, label_lbl, entity_id};
+  apply_weather_forecast_card_text(weather_forecast_card_refs()[count - 1], false, 0, 0, "");
+}
+
+inline bool weather_forecast_entity_id_safe(const std::string &entity_id) {
+  if (entity_id.compare(0, 8, "weather.") != 0) return false;
+  for (char ch : entity_id) {
+    if (!(std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '.')) return false;
+  }
+  return true;
+}
+
+inline bool parse_weather_forecast_temp(const std::string &value, int &out) {
+  if (value.empty()) return false;
+  char *end = nullptr;
+  float parsed = strtof(value.c_str(), &end);
+  if (end == value.c_str()) return false;
+  out = static_cast<int>(parsed >= 0 ? parsed + 0.5f : parsed - 0.5f);
+  return true;
+}
+
+inline bool parse_weather_forecast_payload(const std::string &payload,
+                                           int &high, int &low,
+                                           std::string &unit) {
+  size_t p1 = payload.find('|');
+  if (p1 == std::string::npos) return false;
+  size_t p2 = payload.find('|', p1 + 1);
+  if (p2 == std::string::npos) return false;
+  std::string high_text = payload.substr(0, p1);
+  std::string low_text = payload.substr(p1 + 1, p2 - p1 - 1);
+  unit = payload.substr(p2 + 1);
+  return parse_weather_forecast_temp(high_text, high) &&
+         parse_weather_forecast_temp(low_text, low);
+}
+
+inline std::string weather_forecast_response_template(const std::string &entity_id) {
+  return std::string("{% set entity = '") + entity_id + "' %}"
+    "{% set forecasts = response.get(entity, {}).get('forecast', []) %}"
+    "{% set tomorrow = (now().date() + timedelta(days=1)).isoformat() %}"
+    "{% set ns = namespace(forecast=none) %}"
+    "{% for item in forecasts %}"
+    "{% if ns.forecast is none and item.datetime is defined and item.datetime[:10] == tomorrow %}"
+    "{% set ns.forecast = item %}"
+    "{% endif %}"
+    "{% endfor %}"
+    "{% set f = ns.forecast if ns.forecast is not none else (forecasts[1] if forecasts|length > 1 else none) %}"
+    "{{ f.temperature if f is not none and f.temperature is defined else '' }}|"
+    "{{ f.templow if f is not none and f.templow is defined else '' }}|"
+    "{{ state_attr(entity, 'temperature_unit') or '' }}";
+}
+
+inline uint32_t next_weather_forecast_call_id() {
+  static uint32_t call_id = 100000;
+  return call_id++;
+}
+
+inline void request_weather_forecast_entity(const std::string &entity_id) {
+  if (!weather_forecast_entity_id_safe(entity_id) || esphome::api::global_api_server == nullptr) {
+    apply_weather_forecast_to_entity(entity_id, false, 0, 0, "");
+    return;
+  }
+
+  esphome::api::HomeassistantActionRequest req;
+  req.service = decltype(req.service)("weather.get_forecasts");
+  req.is_event = false;
+  req.call_id = next_weather_forecast_call_id();
+  req.wants_response = true;
+  std::string response_template = weather_forecast_response_template(entity_id);
+  req.response_template = decltype(req.response_template)(response_template);
+  req.data.init(2);
+  auto &entity_kv = req.data.emplace_back();
+  entity_kv.key = decltype(entity_kv.key)("entity_id");
+  entity_kv.value = decltype(entity_kv.value)(entity_id.c_str());
+  auto &type_kv = req.data.emplace_back();
+  type_kv.key = decltype(type_kv.key)("type");
+  type_kv.value = decltype(type_kv.value)("daily");
+
+  esphome::api::global_api_server->register_action_response_callback(
+    req.call_id,
+    [entity_id](const esphome::api::ActionResponse &response) {
+      if (!response.is_success()) {
+        ESP_LOGW("weather_forecast", "Forecast request failed for %s: %s",
+          entity_id.c_str(), response.get_error_message().c_str());
+        apply_weather_forecast_to_entity(entity_id, false, 0, 0, "");
+        return;
+      }
+      auto json = response.get_json();
+      const char *payload = json["response"].as<const char *>();
+      if (payload == nullptr) {
+        apply_weather_forecast_to_entity(entity_id, false, 0, 0, "");
+        return;
+      }
+      int high = 0;
+      int low = 0;
+      std::string unit;
+      bool valid = parse_weather_forecast_payload(payload, high, low, unit);
+      apply_weather_forecast_to_entity(entity_id, valid, high, low, unit);
+    });
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline void refresh_weather_forecast_cards() {
+  WeatherForecastCardRef *refs = weather_forecast_card_refs();
+  int count = weather_forecast_card_count();
+  if (count <= 0) return;
+  std::vector<std::string> requested;
+  requested.reserve(count);
+  for (int i = 0; i < count; i++) {
+    const std::string &entity_id = refs[i].entity_id;
+    if (entity_id.empty()) continue;
+    bool already_requested = false;
+    for (const auto &existing : requested) {
+      if (existing == entity_id) {
+        already_requested = true;
+        break;
+      }
+    }
+    if (already_requested) continue;
+    requested.push_back(entity_id);
+    request_weather_forecast_entity(entity_id);
+  }
 }
 
 inline const char* garage_closed_icon(const std::string &icon) {
@@ -1018,6 +1208,29 @@ inline void setup_weather_card(BtnSlot &s, bool has_sensor_color, uint32_t senso
   lv_label_set_text(s.text_lbl, "Weather");
 }
 
+inline void setup_weather_forecast_card(BtnSlot &s, const ParsedCfg &p,
+                                        const lv_font_t *forecast_font,
+                                        const lv_font_t *forecast_unit_font,
+                                        bool has_sensor_color, uint32_t sensor_val) {
+  if (has_sensor_color) {
+    lv_obj_set_style_bg_color(s.btn, lv_color_hex(sensor_val),
+      static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
+  }
+  lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  if (forecast_font) {
+    lv_obj_set_style_text_font(s.sensor_lbl, forecast_font, LV_PART_MAIN);
+  }
+  if (forecast_unit_font) {
+    lv_obj_set_style_text_font(s.unit_lbl, forecast_unit_font, LV_PART_MAIN);
+  }
+  lv_label_set_text(s.sensor_lbl, "-- / --");
+  lv_label_set_text(s.unit_lbl, "");
+  lv_label_set_text(s.text_lbl, "Tomorrow");
+  register_weather_forecast_card(s.sensor_lbl, s.unit_lbl, s.text_lbl, p.entity);
+}
+
 inline void setup_garage_card(BtnSlot &s, const ParsedCfg &p) {
   lv_label_set_text(s.icon_lbl, garage_closed_icon(p.icon));
   lv_label_set_text(s.text_lbl, p.label.empty() ? "Garage Door" : p.label.c_str());
@@ -1435,7 +1648,8 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
                                 lv_obj_t *btn_obj) {
   ParsedCfg p = parse_cfg(cfg);
   if (p.type == "sensor" || p.type == "text_sensor" ||
-      p.type == "calendar" || p.type == "timezone") return;
+      p.type == "calendar" || p.type == "timezone" ||
+      p.type == "weather_forecast") return;
   if (p.type == "push") {
     std::string label = p.label;
     if (label.empty()) {
@@ -1753,7 +1967,7 @@ struct SubpageBtn {
   std::string icon_on;
   std::string sensor;     // sensor entity, slider mode, internal relay mode, or action name
   std::string unit;
-  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
+  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, weather_forecast, slider, cover, garage, push, internal, subpage
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
@@ -1775,6 +1989,7 @@ inline std::string compact_subpage_type(const std::string &code) {
   if (code == "T") return "timezone";
   if (code == "S") return "sensor";
   if (code == "W") return "weather";
+  if (code == "F") return "weather_forecast";
   if (code == "L") return "slider";
   if (code == "C") return "cover";
   if (code == "R") return "garage";
@@ -1986,6 +2201,8 @@ struct GridConfig {
   bool color_correction;
   bool wrap_tall_labels;
   const lv_font_t *sp_sensor_font;
+  const lv_font_t *forecast_font;
+  const lv_font_t *forecast_unit_font;
 };
 
 // ── Phase 1: Visual setup ────────────────────────────────────────────
@@ -2032,6 +2249,7 @@ inline void grid_phase1(
 
   reset_calendar_cards();
   reset_timezone_cards();
+  reset_weather_forecast_cards();
 
   for (int i = 0; i < NS; i++)
     lv_obj_add_flag(slots[i].btn, LV_OBJ_FLAG_HIDDEN);
@@ -2076,6 +2294,11 @@ inline void grid_phase1(
     }
     if (p.type == "weather") {
       setup_weather_card(s, has_sensor_color, sensor_val);
+      continue;
+    }
+    if (p.type == "weather_forecast") {
+      setup_weather_forecast_card(s, p, cfg.forecast_font, cfg.forecast_unit_font,
+        has_sensor_color, sensor_val);
       continue;
     }
     if (p.type == "garage") {
@@ -2188,6 +2411,9 @@ inline void grid_phase2(
     if (p.type == "weather") {
       if (!p.entity.empty())
         subscribe_weather_state(s.icon_lbl, s.text_lbl, p.entity);
+      continue;
+    }
+    if (p.type == "weather_forecast") {
       continue;
     }
     if (p.type == "garage") {
@@ -2540,6 +2766,39 @@ inline void grid_phase2(
         if (!sb.entity.empty())
           subscribe_weather_state(sil, stl, sb.entity);
 
+      } else if (sb.type == "weather_forecast") {
+        if (has_sensor_color)
+          lv_obj_set_style_bg_color(sb_btn, lv_color_hex(sensor_val),
+            static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
+        lv_obj_clear_flag(sb_btn, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(sil, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_t *sc = lv_obj_create(sb_btn);
+        lv_obj_set_align(sc, LV_ALIGN_TOP_LEFT);
+        lv_obj_set_size(sc, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_clear_flag(sc, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_clear_flag(sc, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_bg_opa(sc, LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_border_width(sc, 0, LV_PART_MAIN);
+        lv_obj_set_style_pad_all(sc, 0, LV_PART_MAIN);
+        lv_obj_set_layout(sc, LV_LAYOUT_FLEX);
+        lv_obj_set_style_flex_flow(sc, LV_FLEX_FLOW_ROW, LV_PART_MAIN);
+        lv_obj_set_style_flex_cross_place(sc, LV_FLEX_ALIGN_END, LV_PART_MAIN);
+
+        lv_obj_t *svl = lv_label_create(sc);
+        lv_obj_set_style_text_font(svl, cfg.forecast_font ? cfg.forecast_font : cfg.sp_sensor_font, LV_PART_MAIN);
+        lv_obj_set_style_text_color(svl, sp_txt_color, LV_PART_MAIN);
+        lv_label_set_text(svl, "-- / --");
+
+        lv_obj_t *sul = lv_label_create(sc);
+        lv_obj_set_style_text_font(sul, cfg.forecast_unit_font ? cfg.forecast_unit_font : sp_btn_fnt, LV_PART_MAIN);
+        lv_obj_set_style_text_color(sul, sp_txt_color, LV_PART_MAIN);
+        lv_obj_set_style_pad_bottom(sul, 6, LV_PART_MAIN);
+        lv_label_set_text(sul, "");
+
+        lv_label_set_text(stl, "Tomorrow");
+        register_weather_forecast_card(svl, sul, stl, sb.entity);
+
       } else if (sb.type == "cover" && cover_toggle_mode(sb.sensor)) {
         lv_label_set_text(sil, slider_icon_off(sb.type, sb.entity, sb.icon));
         lv_label_set_text(stl, sb.label.empty() ? "Cover" : sb.label.c_str());
@@ -2838,6 +3097,7 @@ inline void grid_phase2(
 
     lv_obj_set_user_data(slots[si].btn, (void *)sub_scr);
   }
+  refresh_weather_forecast_cards();
   ESP_LOGI("sensors", "Phase 2: done (%lu ms)", esphome::millis());
 }
 

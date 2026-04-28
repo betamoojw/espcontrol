@@ -17,3 +17,5 @@ CONFIG_SCHEMA = cv.Schema({})
 async def to_code(config):
     comp_dir = os.path.dirname(os.path.abspath(__file__))
     cg.add_build_flag(f"-I{comp_dir}")
+    cg.add_define("USE_API_HOMEASSISTANT_ACTION_RESPONSES")
+    cg.add_define("USE_API_HOMEASSISTANT_ACTION_RESPONSES_JSON")
