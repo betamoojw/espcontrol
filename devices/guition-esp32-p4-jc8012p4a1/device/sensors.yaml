@@ -52,6 +52,7 @@ esphome:
             cfg.cols = 5;
             cfg.color_correction = true;
             cfg.wrap_tall_labels = true;
+            cfg.icon_font = id(icon_font_lt)->get_lv_font();
             cfg.sp_sensor_font = id(statistics_font_lt)->get_lv_font();
             cfg.climate_target_font = id(climate_target_font_lt)->get_lv_font();
             cfg.forecast_font = id(forecast_font_lt)->get_lv_font();
@@ -133,6 +134,7 @@ esphome:
             cfg.cols = 5;
             cfg.color_correction = true;
             cfg.wrap_tall_labels = true;
+            cfg.icon_font = id(icon_font_lt)->get_lv_font();
             cfg.sp_sensor_font = id(statistics_font_lt)->get_lv_font();
             cfg.climate_target_font = id(climate_target_font_lt)->get_lv_font();
             cfg.forecast_font = id(forecast_font_lt)->get_lv_font();

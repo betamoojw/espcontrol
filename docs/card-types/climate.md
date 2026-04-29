@@ -8,7 +8,7 @@ description:
 
 A Climate card controls a Home Assistant `climate` entity, such as a thermostat, heat pump, radiator valve, or air conditioner.
 
-On the main screen it shows the current temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, and mode controls.
+On the main screen it shows the current temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, mode tabs, and a preset menu.
 
 ## Setting Up a Climate Card
 
@@ -32,10 +32,10 @@ The detail page only shows controls that the climate entity supports:
 
 | Home Assistant attribute | Control shown |
 |---|---|
-| `hvac_modes` | Top-right mode menu |
+| `hvac_modes` | Mode tabs along the bottom |
 | `fan_modes` | Fan selector |
 | `swing_modes` | Swing selector |
-| `preset_modes` | Preset tabs along the bottom |
+| `preset_modes` | Top-right preset menu |
 
 ## Heat/Cool Mode
 

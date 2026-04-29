@@ -36,6 +36,7 @@ esphome:
             cfg.num_slots = 6;
             cfg.cols = 2;
             cfg.color_correction = true;
+            cfg.icon_font = id(icon_font_lg)->get_lv_font();
             cfg.sp_sensor_font = id(statistics_font_lg)->get_lv_font();
             cfg.climate_target_font = id(climate_target_font_lg)->get_lv_font();
             cfg.forecast_font = id(forecast_font_lg)->get_lv_font();
@@ -90,6 +91,7 @@ esphome:
             cfg.num_slots = 6;
             cfg.cols = 2;
             cfg.color_correction = true;
+            cfg.icon_font = id(icon_font_lg)->get_lv_font();
             cfg.sp_sensor_font = id(statistics_font_lg)->get_lv_font();
             cfg.climate_target_font = id(climate_target_font_lg)->get_lv_font();
             cfg.forecast_font = id(forecast_font_lg)->get_lv_font();
