@@ -3,7 +3,7 @@
 // =============================================================================
 // Shared C++ utilities included by each device's sensors.yaml lambda. Handles:
 //   - Parsing semicolon-delimited button config strings into structured fields
-//   - Grid layout with double-height (d), double-wide (w), 2×2 big (b), and 3×3 (x) cells
+//   - Grid layout with double-height (d), double-wide (w), and 2×2 big (b) cells
 //   - LVGL visual setup for toggle buttons, sensor/time cards, and slider widgets
 //   - Home Assistant state subscriptions and action dispatch
 //   - Subpage creation (nested grid screens with back button)
@@ -630,8 +630,6 @@ struct ClimateCardCtx {
   bool has_low = false;
   bool has_high = false;
   bool edit_high = false;
-  bool inline_controls = false;
-  bool inline_updating_arc = false;
   float target = 20.0f;
   float low = 18.0f;
   float high = 22.0f;
@@ -653,12 +651,6 @@ struct ClimateCardCtx {
   uint32_t off_color = CLIMATE_NEUTRAL_COLOR;
   int precision = 0;
   lv_timer_t *send_timer = nullptr;
-  lv_obj_t *inline_arc = nullptr;
-  lv_obj_t *inline_state = nullptr;
-  lv_obj_t *inline_target = nullptr;
-  lv_obj_t *inline_unit = nullptr;
-  lv_obj_t *inline_minus = nullptr;
-  lv_obj_t *inline_plus = nullptr;
 };
 
 struct ClimateOptionCtx {
@@ -847,8 +839,6 @@ inline void climate_apply_btn_color(lv_obj_t *btn, uint32_t color) {
     static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
 }
 
-inline void climate_update_inline(ClimateCardCtx *ctx);
-
 inline void climate_update_dashboard(ClimateCardCtx *ctx) {
   if (!ctx) return;
   climate_apply_btn_color(ctx->card_btn, climate_state_color(ctx));
@@ -864,7 +854,6 @@ inline void climate_update_dashboard(ClimateCardCtx *ctx) {
     std::string label = climate_dashboard_label(ctx);
     lv_label_set_text(ctx->text_lbl, label.c_str());
   }
-  climate_update_inline(ctx);
 }
 
 inline std::vector<std::string> climate_parse_list(const std::string &raw) {
@@ -1010,7 +999,6 @@ inline void climate_hide_popup() {
 }
 
 inline void climate_update_detail(ClimateCardCtx *ctx);
-inline void climate_update_dashboard(ClimateCardCtx *ctx);
 
 inline void climate_apply_selected_target(ClimateCardCtx *ctx, float value,
                                           bool send_debounced) {
@@ -1034,29 +1022,23 @@ inline void climate_apply_selected_target(ClimateCardCtx *ctx, float value,
     ctx->target = value;
     ctx->has_target = true;
   }
-  climate_update_dashboard(ctx);
   climate_update_detail(ctx);
   if (send_debounced) climate_schedule_temperature_send(ctx);
 }
 
-inline void climate_update_arc_obj(lv_obj_t *arc, ClimateCardCtx *ctx, bool *updating) {
-  if (!ctx || !arc) return;
+inline void climate_update_arc(ClimateCardCtx *ctx) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (!ctx || !ui.arc) return;
   int min_v = static_cast<int>(roundf(ctx->min_temp * 10.0f));
   int max_v = static_cast<int>(roundf(ctx->max_temp * 10.0f));
   if (max_v <= min_v) max_v = min_v + 1;
   int value = static_cast<int>(roundf(climate_selected_target(ctx) * 10.0f));
   if (value < min_v) value = min_v;
   if (value > max_v) value = max_v;
-  if (updating) *updating = true;
-  lv_arc_set_range(arc, min_v, max_v);
-  lv_arc_set_value(arc, value);
-  if (updating) *updating = false;
-}
-
-inline void climate_update_arc(ClimateCardCtx *ctx) {
-  ClimateDetailUi &ui = climate_detail_ui();
-  if (!ctx || !ui.arc) return;
-  climate_update_arc_obj(ui.arc, ctx, &ui.updating_arc);
+  ui.updating_arc = true;
+  lv_arc_set_range(ui.arc, min_v, max_v);
+  lv_arc_set_value(ui.arc, value);
+  ui.updating_arc = false;
 }
 
 inline void climate_style_chip(lv_obj_t *btn, bool active) {
@@ -1269,110 +1251,6 @@ inline void climate_set_button_label_font(lv_obj_t *btn, const lv_font_t *font) 
   if (!btn || !font) return;
   lv_obj_t *label = lv_obj_get_child(btn, 0);
   if (label) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
-}
-
-inline void climate_layout_inline_controls(ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->inline_controls || !ctx->card_btn || !ctx->inline_arc) return;
-  lv_obj_update_layout(ctx->card_btn);
-  lv_coord_t w = lv_obj_get_width(ctx->card_btn);
-  lv_coord_t h = lv_obj_get_height(ctx->card_btn);
-  if (w < 1 || h < 1) return;
-  lv_coord_t short_side = w < h ? w : h;
-  lv_coord_t arc_size = ((w * 78 / 100) < (h * 72 / 100)) ? (w * 78 / 100) : (h * 72 / 100);
-  if (arc_size < 140) arc_size = short_side * 72 / 100;
-  lv_coord_t arc_width = short_side < 420 ? 14 : 18;
-  lv_coord_t btn_size = short_side * 16 / 100;
-  if (btn_size < 56) btn_size = 56;
-  if (btn_size > 86) btn_size = 86;
-  lv_coord_t btn_x = btn_size * 7 / 10;
-  lv_coord_t btn_y = h / 2 - btn_size / 2 - h / 15;
-  lv_coord_t target_y = -h / 14;
-
-  lv_obj_set_size(ctx->inline_arc, arc_size, arc_size);
-  lv_obj_align(ctx->inline_arc, LV_ALIGN_CENTER, 0, -h / 20);
-  lv_obj_set_style_arc_width(ctx->inline_arc, arc_width, LV_PART_MAIN);
-  lv_obj_set_style_arc_width(ctx->inline_arc, arc_width, LV_PART_INDICATOR);
-  lv_obj_set_size(ctx->inline_minus, btn_size, btn_size);
-  lv_obj_set_style_radius(ctx->inline_minus, btn_size / 2, LV_PART_MAIN);
-  lv_obj_set_size(ctx->inline_plus, btn_size, btn_size);
-  lv_obj_set_style_radius(ctx->inline_plus, btn_size / 2, LV_PART_MAIN);
-  lv_obj_align(ctx->inline_target, LV_ALIGN_CENTER, 0, target_y);
-  lv_obj_update_layout(ctx->inline_target);
-  lv_obj_align_to(ctx->inline_unit, ctx->inline_target, LV_ALIGN_OUT_RIGHT_TOP, 2, 8);
-  lv_obj_align_to(ctx->inline_state, ctx->inline_target, LV_ALIGN_OUT_BOTTOM_MID, 0, 8);
-  lv_obj_align(ctx->inline_minus, LV_ALIGN_CENTER, -btn_x, btn_y);
-  lv_obj_align(ctx->inline_plus, LV_ALIGN_CENTER, btn_x, btn_y);
-}
-
-inline void climate_create_inline_controls(ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->inline_controls || !ctx->card_btn || ctx->inline_arc) return;
-  ctx->inline_arc = lv_arc_create(ctx->card_btn);
-  lv_arc_set_bg_angles(ctx->inline_arc, 135, 45);
-  lv_arc_set_range(ctx->inline_arc, 50, 350);
-  lv_arc_set_value(ctx->inline_arc, 200);
-  lv_obj_set_style_bg_opa(ctx->inline_arc, LV_OPA_TRANSP, LV_PART_MAIN);
-  lv_obj_set_style_border_width(ctx->inline_arc, 0, LV_PART_MAIN);
-  lv_obj_set_style_arc_rounded(ctx->inline_arc, true, LV_PART_MAIN);
-  lv_obj_set_style_arc_rounded(ctx->inline_arc, true, LV_PART_INDICATOR);
-  lv_obj_set_style_pad_all(ctx->inline_arc, 8, LV_PART_KNOB);
-  lv_obj_set_style_border_width(ctx->inline_arc, 4, LV_PART_KNOB);
-  lv_obj_set_style_shadow_width(ctx->inline_arc, 0, LV_PART_KNOB);
-  lv_obj_add_flag(ctx->inline_arc, LV_OBJ_FLAG_ADV_HITTEST);
-  lv_obj_add_event_cb(ctx->inline_arc, [](lv_event_t *e) {
-    ClimateCardCtx *ctx = static_cast<ClimateCardCtx *>(lv_event_get_user_data(e));
-    if (!ctx || ctx->inline_updating_arc) return;
-    lv_obj_t *arc = static_cast<lv_obj_t *>(lv_event_get_target(e));
-    climate_apply_selected_target(ctx, lv_arc_get_value(arc) / 10.0f, false);
-  }, LV_EVENT_VALUE_CHANGED, ctx);
-  lv_obj_add_event_cb(ctx->inline_arc, [](lv_event_t *e) {
-    ClimateCardCtx *ctx = static_cast<ClimateCardCtx *>(lv_event_get_user_data(e));
-    if (ctx) climate_send_temperature_action(ctx);
-  }, LV_EVENT_RELEASED, ctx);
-
-  ctx->inline_state = climate_create_label(ctx->card_btn, "Idle", LV_ALIGN_CENTER, 0, 0,
-    ctx->label_font, CLIMATE_DETAIL_TEXT_COLOR);
-  ctx->inline_target = climate_create_label(ctx->card_btn, "20", LV_ALIGN_CENTER, 0, 0,
-    ctx->target_font, 0xE8E8E8);
-  ctx->inline_unit = climate_create_label(ctx->card_btn, display_temperature_unit_symbol(), LV_ALIGN_CENTER, 0, 0,
-    ctx->unit_font ? ctx->unit_font : ctx->label_font, 0xE8E8E8);
-  const lv_font_t *control_font = ctx->climate_control_icon_font ? ctx->climate_control_icon_font : ctx->icon_font;
-  ctx->inline_minus = climate_create_round_button(ctx->card_btn, 64, find_icon("Minus"), control_font);
-  ctx->inline_plus = climate_create_round_button(ctx->card_btn, 64, find_icon("Plus"), control_font);
-  lv_obj_add_event_cb(ctx->inline_minus, [](lv_event_t *e) {
-    ClimateCardCtx *ctx = static_cast<ClimateCardCtx *>(lv_event_get_user_data(e));
-    if (ctx) climate_apply_selected_target(ctx, climate_selected_target(ctx) - climate_step(ctx), true);
-  }, LV_EVENT_CLICKED, ctx);
-  lv_obj_add_event_cb(ctx->inline_plus, [](lv_event_t *e) {
-    ClimateCardCtx *ctx = static_cast<ClimateCardCtx *>(lv_event_get_user_data(e));
-    if (ctx) climate_apply_selected_target(ctx, climate_selected_target(ctx) + climate_step(ctx), true);
-  }, LV_EVENT_CLICKED, ctx);
-}
-
-inline void climate_update_inline(ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->inline_controls) return;
-  climate_create_inline_controls(ctx);
-  if (!ctx->inline_arc) return;
-  if (ctx->inline_state) {
-    std::string state = climate_action_label(ctx);
-    lv_label_set_text(ctx->inline_state, state.c_str());
-    lv_obj_set_style_text_color(ctx->inline_state, lv_color_hex(CLIMATE_DETAIL_TEXT_COLOR), LV_PART_MAIN);
-  }
-  if (ctx->inline_target) {
-    char tbuf[16];
-    if (ctx->available) climate_format_temp(tbuf, sizeof(tbuf), ctx, climate_selected_target(ctx));
-    else snprintf(tbuf, sizeof(tbuf), "--");
-    lv_label_set_text(ctx->inline_target, tbuf);
-  }
-  if (ctx->inline_unit) {
-    lv_label_set_text(ctx->inline_unit, ctx->available ? display_temperature_unit_symbol() : "");
-  }
-  uint32_t active_color = climate_detail_accent_color(ctx);
-  lv_obj_set_style_arc_color(ctx->inline_arc, lv_color_hex(0x2A2A2A), LV_PART_MAIN);
-  lv_obj_set_style_arc_color(ctx->inline_arc, lv_color_hex(active_color), LV_PART_INDICATOR);
-  lv_obj_set_style_bg_color(ctx->inline_arc, lv_color_hex(0xF4F4F4), LV_PART_KNOB);
-  lv_obj_set_style_border_color(ctx->inline_arc, lv_color_hex(active_color), LV_PART_KNOB);
-  climate_update_arc_obj(ctx->inline_arc, ctx, &ctx->inline_updating_arc);
-  climate_layout_inline_controls(ctx);
 }
 
 inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text,
@@ -1755,21 +1633,14 @@ inline void climate_open_detail(ClimateCardCtx *ctx, lv_obj_t *return_page) {
 
 inline void setup_climate_card(BtnSlot &s, const ParsedCfg &p,
                                const lv_font_t *value_font,
-                               uint32_t off_color,
-                               bool inline_controls = false) {
-  if (inline_controls) {
-    lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN);
-  } else {
-    lv_label_set_text(s.icon_lbl, find_icon("Thermostat"));
-    lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
-    if (value_font) lv_obj_set_style_text_font(s.sensor_lbl, value_font, LV_PART_MAIN);
-    lv_label_set_text(s.sensor_lbl, "--");
-    lv_label_set_text(s.unit_lbl, "");
-    lv_label_set_text(s.text_lbl, p.label.empty() ? "Climate" : p.label.c_str());
-  }
+                               uint32_t off_color) {
+  lv_label_set_text(s.icon_lbl, find_icon("Thermostat"));
+  lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  if (value_font) lv_obj_set_style_text_font(s.sensor_lbl, value_font, LV_PART_MAIN);
+  lv_label_set_text(s.sensor_lbl, "--");
+  lv_label_set_text(s.unit_lbl, "");
+  lv_label_set_text(s.text_lbl, p.label.empty() ? "Climate" : p.label.c_str());
   climate_apply_btn_color(s.btn, off_color);
 }
 
@@ -1805,8 +1676,7 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
                                               const lv_font_t *value_font,
                                               const lv_font_t *target_font,
                                               const lv_font_t *icon_font,
-                                              const lv_font_t *climate_control_icon_font,
-                                              bool inline_controls = false) {
+                                              const lv_font_t *climate_control_icon_font) {
   ClimateCardCtx *ctx = new ClimateCardCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label;
@@ -1824,7 +1694,6 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
   ctx->on_color = on_color;
   ctx->off_color = off_color;
   ctx->precision = parse_precision(p.precision);
-  ctx->inline_controls = inline_controls;
   ctx->send_timer = lv_timer_create(climate_send_timer_cb, 450, ctx);
   lv_timer_pause(ctx->send_timer);
   lv_obj_set_user_data(card_btn, (void *)ctx);
@@ -1935,15 +1804,13 @@ struct OrderResult {
   int positions[MAX_GRID_SLOTS] = {};    // slot number at each grid position (1-based, 0=empty)
   bool is_double[MAX_GRID_SLOTS] = {};   // slot uses double height (suffix "d" or "b")
   bool is_wide[MAX_GRID_SLOTS] = {};     // slot uses double width (suffix "w" or "b")
-  bool is_3x3[MAX_GRID_SLOTS] = {};      // slot uses 3 rows × 3 columns (suffix "x")
 };
 
-// Parse "1,2d,3w,4b,5x,..." into positions + span flags
+// Parse "1,2d,3w,4b,..." into positions + double/wide flags
 inline void parse_order_string(const std::string &order_str, int num_slots, OrderResult &result) {
   memset(result.positions, 0, sizeof(result.positions));
   memset(result.is_double, 0, sizeof(result.is_double));
   memset(result.is_wide, 0, sizeof(result.is_wide));
-  memset(result.is_3x3, 0, sizeof(result.is_3x3));
   int slot_limit = bounded_grid_slots(num_slots);
   if (order_str.empty()) return;
   size_t gpos = 0, start = 0;
@@ -1955,16 +1822,13 @@ inline void parse_order_string(const std::string &order_str, int num_slots, Orde
       bool dbl = !token.empty() && token.back() == 'd';
       bool wide = !token.empty() && token.back() == 'w';
       bool big = !token.empty() && token.back() == 'b';
-      bool three = !token.empty() && token.back() == 'x';
       if (big) { dbl = true; wide = true; }
-      if (three) { dbl = true; wide = true; }
-      if (dbl || wide || three) token.pop_back();
+      if (dbl || wide) token.pop_back();
       int v = atoi(token.c_str());
       if (v >= 1 && v <= slot_limit) {
         result.positions[gpos] = v;
         result.is_double[v - 1] = dbl;
         result.is_wide[v - 1] = wide;
-        result.is_3x3[v - 1] = three;
       }
     }
     gpos++;
@@ -1979,19 +1843,18 @@ inline void clear_spanned_cells(const OrderResult &order, int num_slots, int col
     result.positions[p] = order.positions[p];
     result.is_double[p] = order.is_double[p];
     result.is_wide[p] = order.is_wide[p];
-    result.is_3x3[p] = order.is_3x3[p];
   }
   for (int p = 0; p < slot_limit; p++) {
     if (result.positions[p] <= 0) continue;
     int idx = result.positions[p] - 1;
-    int row_span = result.is_3x3[idx] ? 3 : (result.is_double[idx] ? 2 : 1);
-    int col_span = result.is_3x3[idx] ? 3 : (result.is_wide[idx] ? 2 : 1);
-    for (int r = 0; r < row_span; r++) {
-      for (int c = 0; c < col_span; c++) {
-        if (r == 0 && c == 0) continue;
-        int sp = p + r * cols + c;
-        if (sp < slot_limit && (p % cols) + c < cols) result.positions[sp] = 0;
-      }
+    if (result.is_double[idx] && p + cols < slot_limit) {
+      result.positions[p + cols] = 0;
+    }
+    if (result.is_wide[idx] && (p + 1) % cols != 0 && p + 1 < slot_limit) {
+      result.positions[p + 1] = 0;
+    }
+    if (result.is_double[idx] && result.is_wide[idx] && (p + 1) % cols != 0 && p + cols + 1 < slot_limit) {
+      result.positions[p + cols + 1] = 0;
     }
   }
 }
@@ -3309,11 +3172,9 @@ struct SubpageOrder {
   int positions[MAX_GRID_SLOTS] = {};
   bool is_double[MAX_GRID_SLOTS] = {};
   bool is_wide[MAX_GRID_SLOTS] = {};
-  bool is_3x3[MAX_GRID_SLOTS] = {};
   int back_pos = 0;
   bool back_dbl = false;
   bool back_wide = false;
-  bool back_3x3 = false;
   bool has_back_token = false;
 };
 
@@ -3377,7 +3238,7 @@ inline void subscribe_subpage_parent_climate_indicator(
   );
 }
 
-// Parse subpage order CSV; "B"/"Bd"/"Bw"/"Bb"/"Bx" tokens mark the back button position
+// Parse subpage order CSV; "B"/"Bd"/"Bw"/"Bb" tokens mark the back button position
 inline void parse_subpage_order(const std::string &order_str, int num_slots, int num_btns,
                                 SubpageOrder &result) {
   int slot_limit = bounded_grid_slots(num_slots);
@@ -3389,26 +3250,22 @@ inline void parse_subpage_order(const std::string &order_str, int num_slots, int
     if (cm == std::string::npos) cm = order_str.length();
     if (cm > st2) {
       std::string tk = order_str.substr(st2, cm - st2);
-      if (tk == "B" || tk == "Bd" || tk == "Bw" || tk == "Bb" || tk == "Bx") {
+      if (tk == "B" || tk == "Bd" || tk == "Bw" || tk == "Bb") {
         result.back_pos = gp2;
-        result.back_3x3 = (tk == "Bx");
-        result.back_dbl = result.back_3x3 || tk == "Bd" || tk == "Bb";
-        result.back_wide = result.back_3x3 || tk == "Bw" || tk == "Bb";
+        result.back_dbl = (tk == "Bd" || tk == "Bb");
+        result.back_wide = (tk == "Bw" || tk == "Bb");
         result.has_back_token = true;
       } else {
         bool d = !tk.empty() && tk.back() == 'd';
         bool w = !tk.empty() && tk.back() == 'w';
         bool bg = !tk.empty() && tk.back() == 'b';
-        bool three = !tk.empty() && tk.back() == 'x';
         if (bg) { d = true; w = true; }
-        if (three) { d = true; w = true; }
-        if (d || w || three) tk.pop_back();
+        if (d || w) tk.pop_back();
         int v = atoi(tk.c_str());
         if (v >= 1 && v <= btn_limit) {
           result.positions[gp2] = v;
           result.is_double[v - 1] = d;
           result.is_wide[v - 1] = w;
-          result.is_3x3[v - 1] = three;
         }
       }
     }
@@ -3497,8 +3354,8 @@ inline void grid_phase1(
     std::string scfg = s.config->state;
     lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
     int col = pos % COLS, row = pos / COLS;
-    int row_span = order.is_3x3[idx - 1] ? 3 : (order.is_double[idx - 1] ? 2 : 1);
-    int col_span = order.is_3x3[idx - 1] ? 3 : (order.is_wide[idx - 1] ? 2 : 1);
+    int row_span = order.is_double[idx - 1] ? 2 : 1;
+    int col_span = order.is_wide[idx - 1] ? 2 : 1;
     lv_obj_set_grid_cell(s.btn,
       LV_GRID_ALIGN_STRETCH, col, col_span,
       LV_GRID_ALIGN_STRETCH, row, row_span);
@@ -3538,8 +3395,7 @@ inline void grid_phase1(
       continue;
     }
     if (p.type == "climate") {
-      setup_climate_card(s, p, cfg.sp_sensor_font, has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
-        order.is_3x3[idx - 1]);
+      setup_climate_card(s, p, cfg.sp_sensor_font, has_off ? off_val : CLIMATE_NEUTRAL_COLOR);
       continue;
     }
     if (p.type == "garage") {
@@ -3662,8 +3518,7 @@ inline void grid_phase2(
           cfg.sp_sensor_font,
           cfg.climate_target_font ? cfg.climate_target_font : cfg.sp_sensor_font,
           cfg.icon_font,
-          cfg.climate_control_icon_font ? cfg.climate_control_icon_font : cfg.icon_font,
-          parsed.is_3x3[idx - 1]);
+          cfg.climate_control_icon_font ? cfg.climate_control_icon_font : cfg.icon_font);
         subscribe_climate_card(climate_ctx);
       }
       continue;
@@ -3832,8 +3687,8 @@ inline void grid_phase2(
     lv_obj_set_style_shadow_width(back_btn, 0, LV_PART_MAIN);
     if (has_off) lv_obj_set_style_bg_color(back_btn, lv_color_hex(off_val),
       static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
-    lv_obj_set_grid_cell(back_btn, LV_GRID_ALIGN_STRETCH, sp_ord.back_pos % COLS, sp_ord.back_3x3 ? 3 : (sp_ord.back_wide ? 2 : 1),
-      LV_GRID_ALIGN_STRETCH, sp_ord.back_pos / COLS, sp_ord.back_3x3 ? 3 : (sp_ord.back_dbl ? 2 : 1));
+    lv_obj_set_grid_cell(back_btn, LV_GRID_ALIGN_STRETCH, sp_ord.back_pos % COLS, sp_ord.back_wide ? 2 : 1,
+      LV_GRID_ALIGN_STRETCH, sp_ord.back_pos / COLS, sp_ord.back_dbl ? 2 : 1);
     lv_obj_t *bi = lv_label_create(back_btn);
     lv_obj_set_style_text_font(bi, sp_icon_fnt, LV_PART_MAIN);
     lv_label_set_text(bi, "\U000F0141");
@@ -3854,7 +3709,7 @@ inline void grid_phase2(
       int col, row;
       if (sp_ord.has_back_token) { col = gp % COLS; row = gp / COLS; }
       else { int op = gp + 1; col = op % COLS; row = op / COLS; }
-      int rs = sp_ord.is_3x3[bn - 1] ? 3 : (sp_ord.is_double[bn - 1] ? 2 : 1);
+      int rs = sp_ord.is_double[bn - 1] ? 2 : 1;
 
       lv_obj_t *sb_btn = lv_btn_create(sub_scr);
       lv_obj_set_style_radius(sb_btn, sp_radius, LV_PART_MAIN);
@@ -3866,7 +3721,7 @@ inline void grid_phase2(
         static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
       if (has_on) lv_obj_set_style_bg_color(sb_btn, lv_color_hex(on_val),
         static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
-      int cs = sp_ord.is_3x3[bn - 1] ? 3 : (sp_ord.is_wide[bn - 1] ? 2 : 1);
+      int cs = sp_ord.is_wide[bn - 1] ? 2 : 1;
       lv_obj_set_grid_cell(sb_btn, LV_GRID_ALIGN_STRETCH, col, cs, LV_GRID_ALIGN_STRETCH, row, rs);
 
       lv_obj_t *sil = lv_label_create(sb_btn);

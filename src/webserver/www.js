@@ -227,16 +227,6 @@
     ".sp-btn-big{grid-row:span 2;grid-column:span 2}" +
     ".sp-btn-big .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
     ".sp-btn-big .sp-btn-label-row .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
-    ".sp-btn-thermostat{grid-row:span 3;grid-column:span 3}" +
-    ".sp-climate-control-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;" +
-    "gap:.9cqw;width:100%;height:100%;color:#e8e8e8}" +
-    ".sp-climate-control-temp{display:flex;align-items:flex-start;justify-content:center;line-height:1}" +
-    ".sp-climate-control-value{font-size:calc(var(--btn-icon)*1.55);font-weight:300;line-height:.9}" +
-    ".sp-climate-control-unit{font-size:calc(var(--btn-label)*1.4);opacity:.85;margin-top:.25cqw}" +
-    ".sp-climate-control-state{font-size:calc(var(--btn-label)*1.1);color:#d8d8d8;line-height:1.1}" +
-    ".sp-climate-control-actions{display:flex;gap:2.2cqw;margin-top:.8cqw}" +
-    ".sp-climate-control-btn{width:4.6cqw;height:4.6cqw;border:2px solid rgba(255,255,255,.9);" +
-    "border-radius:50%;display:grid;place-items:center;font-size:2.5cqw;line-height:1;color:#fff}" +
     ".sp-empty-cell{border:2px dashed rgba(255,255,255,.15);background:transparent;" +
     "border-radius:var(--empty-r);display:flex;align-items:center;justify-content:center;" +
     "cursor:pointer;transition:border-color .2s,background-color .2s}" +
@@ -508,7 +498,6 @@
     ".sp-back-btn.sp-btn-wide{grid-column:span 2}" +
     ".sp-back-btn.sp-btn-big{grid-row:span 2;grid-column:span 2}" +
     ".sp-back-btn.sp-btn-big .sp-btn-label{-webkit-line-clamp:var(--back-lines-dbl)}" +
-    ".sp-back-btn.sp-btn-thermostat{grid-row:span 3;grid-column:span 3}" +
 
     ".sp-btn-label-row{display:flex;align-items:flex-end;width:100%;overflow:hidden}" +
     ".sp-btn-label-row .sp-btn-label{flex:1;min-width:0}" +
@@ -1119,59 +1108,6 @@
 
   // ── Grid helpers ───────────────────────────────────────────────────────
 
-  function gridSizeFromSuffix(ch) {
-    if (ch === "x") return 9;
-    if (ch === "b") return 4;
-    if (ch === "d") return 2;
-    if (ch === "w") return 3;
-    return 1;
-  }
-
-  function gridSizeSuffix(size) {
-    return size === 9 ? "x" : size === 4 ? "b" : size === 2 ? "d" : size === 3 ? "w" : "";
-  }
-
-  function gridSizeClass(size) {
-    return size === 9 ? " sp-btn-thermostat" :
-      size === 4 ? " sp-btn-big" :
-      size === 2 ? " sp-btn-double" :
-      size === 3 ? " sp-btn-wide" : "";
-  }
-
-  function gridSizeRows(size) {
-    return size === 9 ? 3 : (size === 2 || size === 4 ? 2 : 1);
-  }
-
-  function gridSizeCols(size) {
-    return size === 9 ? 3 : (size === 3 || size === 4 ? 2 : 1);
-  }
-
-  function gridSpanCells(pos, size, maxSlots) {
-    var rows = gridSizeRows(size);
-    var cols = gridSizeCols(size);
-    var startCol = pos % GRID_COLS;
-    if (startCol + cols > GRID_COLS) return null;
-    var cells = [];
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
-        var p = pos + r * GRID_COLS + c;
-        if (p >= maxSlots) return null;
-        cells.push(p);
-      }
-    }
-    return cells;
-  }
-
-  function gridCoveredCells(pos, size, maxSlots) {
-    var cells = gridSpanCells(pos, size, maxSlots);
-    return cells ? cells.slice(1) : null;
-  }
-
-  function setGridSize(sizes, slot, size) {
-    if (size > 1) sizes[slot] = size;
-    else delete sizes[slot];
-  }
-
   function parseOrder(str) {
     var grid = [];
     for (var i = 0; i < NUM_SLOTS; i++) grid.push(0);
@@ -1181,11 +1117,15 @@
       var s = parts[i].trim();
       if (!s) continue;
       var last = s.charAt(s.length - 1);
-      var size = gridSizeFromSuffix(last);
+      var dbl = last === "d";
+      var wide = last === "w";
+      var big = last === "b";
       var n = parseInt(s, 10);
       if (n >= 1 && n <= NUM_SLOTS && !isNaN(n)) {
         grid[i] = n;
-        setGridSize(state.sizes, n, size);
+        if (big) state.sizes[n] = 4;
+        else if (dbl) state.sizes[n] = 2;
+        else if (wide) state.sizes[n] = 3;
       }
     }
     applySpans(grid, state.sizes, NUM_SLOTS);
@@ -1194,29 +1134,66 @@
 
   function applySpans(grid, sizes, maxSlots) {
     for (var i = 0; i < maxSlots; i++) {
-      var slot = grid[i];
-      if (!(slot > 0 || slot === -2)) continue;
-      var size = sizes[slot] || 1;
-      if (size <= 1) continue;
-      var toRes = gridCoveredCells(i, size, maxSlots);
-      if (!toRes) {
-        delete sizes[slot];
+      if ((grid[i] > 0 || grid[i] === -2) && sizes[grid[i]] === 4) {
+        var below = i + GRID_COLS;
+        var right = i + 1;
+        var diag = i + GRID_COLS + 1;
+        if (below >= maxSlots || right >= maxSlots || right % GRID_COLS === 0 || diag >= maxSlots) {
+          delete sizes[grid[i]];
+          continue;
+        }
+        var toRes = [below, right, diag];
+        var ok = true;
+        for (var ci = 0; ci < toRes.length; ci++) {
+          if (grid[toRes[ci]] > 0 || grid[toRes[ci]] === -2) {
+            var displaced = grid[toRes[ci]];
+            var placed = false;
+            for (var j = 0; j < maxSlots; j++) {
+              if (grid[j] === 0) { grid[j] = displaced; placed = true; break; }
+            }
+            if (!placed) { ok = false; break; }
+            grid[toRes[ci]] = 0;
+          }
+        }
+        if (!ok) { delete sizes[grid[i]]; continue; }
+        for (var ci = 0; ci < toRes.length; ci++) grid[toRes[ci]] = -1;
         continue;
       }
-      var ok = true;
-      for (var ci = 0; ci < toRes.length; ci++) {
-        if (grid[toRes[ci]] > 0 || grid[toRes[ci]] === -2) {
-          var displaced = grid[toRes[ci]];
+      if ((grid[i] > 0 || grid[i] === -2) && sizes[grid[i]] === 2) {
+        var below = i + GRID_COLS;
+        if (below >= maxSlots) continue;
+        if (grid[below] > 0 || grid[below] === -2) {
+          var displaced = grid[below];
           var placed = false;
           for (var j = 0; j < maxSlots; j++) {
-            if (grid[j] === 0 && toRes.indexOf(j) === -1) { grid[j] = displaced; placed = true; break; }
+            if (grid[j] === 0) { grid[j] = displaced; placed = true; break; }
           }
-          if (!placed) { ok = false; break; }
-          grid[toRes[ci]] = 0;
+          if (!placed) {
+            delete sizes[grid[i]];
+            continue;
+          }
         }
+        grid[below] = -1;
       }
-      if (!ok) { delete sizes[slot]; continue; }
-      for (var ci = 0; ci < toRes.length; ci++) grid[toRes[ci]] = -1;
+      if ((grid[i] > 0 || grid[i] === -2) && sizes[grid[i]] === 3) {
+        var right = i + 1;
+        if (right >= maxSlots || right % GRID_COLS === 0) {
+          delete sizes[grid[i]];
+          continue;
+        }
+        if (grid[right] > 0 || grid[right] === -2) {
+          var displaced = grid[right];
+          var placed = false;
+          for (var j = 0; j < maxSlots; j++) {
+            if (grid[j] === 0) { grid[j] = displaced; placed = true; break; }
+          }
+          if (!placed) {
+            delete sizes[grid[i]];
+            continue;
+          }
+        }
+        grid[right] = -1;
+      }
     }
   }
 
@@ -1228,7 +1205,8 @@
     if (last < 0) return "";
     return grid.slice(0, last + 1).map(function (slot) {
       if (slot <= 0) return "";
-      return slot + gridSizeSuffix(state.sizes[slot]);
+      var sz = state.sizes[slot];
+      return slot + (sz === 4 ? "b" : sz === 2 ? "d" : sz === 3 ? "w" : "");
     }).join(",");
   }
 
@@ -1913,23 +1891,30 @@
       var hasBack = false;
       for (var i = 0; i < sp.order.length; i++) {
         var t = sp.order[i];
-        if (t === "B" || t === "Bd" || t === "Bw" || t === "Bb" || t === "Bx") { hasBack = true; break; }
+        if (t === "B" || t === "Bd" || t === "Bw" || t === "Bb") { hasBack = true; break; }
       }
       if (hasBack) {
         for (var i = 0; i < sp.order.length && i < NUM_SLOTS; i++) {
           var s = sp.order[i];
           if (!s) continue;
-          if (s === "B" || s === "Bd" || s === "Bw" || s === "Bb" || s === "Bx") {
+          if (s === "B" || s === "Bd" || s === "Bw" || s === "Bb") {
             grid[i] = -2;
-            setGridSize(sp.sizes, -2, gridSizeFromSuffix(s.charAt(s.length - 1)));
+            if (s === "Bb") sp.sizes[-2] = 4;
+            else if (s === "Bd") sp.sizes[-2] = 2;
+            else if (s === "Bw") sp.sizes[-2] = 3;
+            else delete sp.sizes[-2];
             continue;
           }
           var last = s.charAt(s.length - 1);
-          var size = gridSizeFromSuffix(last);
+          var dbl = last === "d";
+          var wide = last === "w";
+          var big = last === "b";
           var n = parseInt(s, 10);
           if (n >= 1 && n <= sp.buttons.length && !isNaN(n)) {
             grid[i] = n;
-            setGridSize(sp.sizes, n, size);
+            if (big) sp.sizes[n] = 4;
+            else if (dbl) sp.sizes[n] = 2;
+            else if (wide) sp.sizes[n] = 3;
           }
         }
       } else {
@@ -1939,11 +1924,15 @@
           var s = sp.order[i];
           if (!s) continue;
           var last = s.charAt(s.length - 1);
-          var size = gridSizeFromSuffix(last);
+          var dbl = last === "d";
+          var wide = last === "w";
+          var big = last === "b";
           var n = parseInt(s, 10);
           if (n >= 1 && n <= sp.buttons.length && !isNaN(n)) {
             grid[i + 1] = n;
-            setGridSize(sp.sizes, n, size);
+            if (big) sp.sizes[n] = 4;
+            else if (dbl) sp.sizes[n] = 2;
+            else if (wide) sp.sizes[n] = 3;
           }
         }
       }
@@ -1967,12 +1956,12 @@
     for (var i = 0; i <= last; i++) {
       if (grid[i] === -2) {
         var bsz = sp.sizes[-2];
-        order.push(bsz ? "B" + gridSizeSuffix(bsz) : "B");
+        order.push(bsz === 4 ? "Bb" : bsz === 2 ? "Bd" : bsz === 3 ? "Bw" : "B");
       } else if (grid[i] <= 0) {
         order.push("");
       } else {
         var ssz = sp.sizes[grid[i]];
-        order.push(grid[i] + gridSizeSuffix(ssz));
+        order.push(grid[i] + (ssz === 4 ? "b" : ssz === 2 ? "d" : ssz === 3 ? "w" : ""));
       }
     }
     return order;
@@ -3209,7 +3198,7 @@
       if (slot === -2) {
         var backBtn = document.createElement("div");
         var bkSz = c.sizes[-2];
-        backBtn.className = "sp-back-btn" + gridSizeClass(bkSz);
+        backBtn.className = "sp-back-btn" + (bkSz === 4 ? " sp-btn-big" : bkSz === 2 ? " sp-btn-double" : bkSz === 3 ? " sp-btn-wide" : "");
         backBtn.innerHTML =
           '<span class="sp-btn-icon mdi mdi-chevron-left"></span>' +
           '<span class="sp-btn-label">Back</span>';
@@ -3226,16 +3215,16 @@
         var label = b.label || b.entity || "Configure";
         var color = (b.type === "sensor" || b.type === "weather" || b.type === "weather_forecast" || b.type === "calendar" || b.type === "timezone")
           ? state.sensorColor : state.offColor;
-        var slotSz = c.sizes[slot];
         var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
         if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
-          ? previewTypeDef.renderPreview(b, { escHtml: escHtml, size: slotSz || 1, isSubpage: c.isSub })
+          ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
           : null;
 
         var btn = document.createElement("div");
+        var slotSz = c.sizes[slot];
         btn.className = "sp-btn" +
-          gridSizeClass(slotSz) +
+          (slotSz === 4 ? " sp-btn-big" : slotSz === 2 ? " sp-btn-double" : slotSz === 3 ? " sp-btn-wide" : "") +
           (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
         btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
         btn.draggable = true;
@@ -3246,10 +3235,10 @@
         var sensorBadge = hasWhenOn
           ? '<span class="sp-sensor-badge mdi mdi-' + badgeIcon + '"></span>'
           : '';
-        var labelHtml = typePreview && Object.prototype.hasOwnProperty.call(typePreview, "labelHtml")
+        var labelHtml = typePreview && typePreview.labelHtml
           ? typePreview.labelHtml
           : '<span class="sp-btn-label">' + escHtml(label) + '</span>';
-        var iconHtml = typePreview && Object.prototype.hasOwnProperty.call(typePreview, "iconHtml")
+        var iconHtml = typePreview && typePreview.iconHtml
           ? typePreview.iconHtml
           : '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>';
         btn.innerHTML =
@@ -3947,12 +3936,12 @@
   function resolveSpanPos(pos) {
     var c = ctx();
     if (c.grid[pos] === -1) {
-      for (var i = 0; i < c.maxSlots; i++) {
-        var slot = c.grid[i];
-        if (!(slot > 0 || slot === -2)) continue;
-        var cells = gridSpanCells(i, c.sizes[slot] || 1, c.maxSlots);
-        if (cells && cells.indexOf(pos) !== -1) return i;
-      }
+      var above = pos - GRID_COLS;
+      if (above >= 0 && (c.grid[above] > 0 || c.grid[above] === -2) && (c.sizes[c.grid[above]] === 2 || c.sizes[c.grid[above]] === 4)) return above;
+      var left = pos - 1;
+      if (pos % GRID_COLS !== 0 && left >= 0 && (c.grid[left] > 0 || c.grid[left] === -2) && (c.sizes[c.grid[left]] === 3 || c.sizes[c.grid[left]] === 4)) return left;
+      var diag = pos - GRID_COLS - 1;
+      if (pos % GRID_COLS !== 0 && diag >= 0 && (c.grid[diag] > 0 || c.grid[diag] === -2) && c.sizes[c.grid[diag]] === 4) return diag;
     }
     return pos;
   }
@@ -3993,6 +3982,15 @@
     grid[toPos] = movingSlot;
     grid[fromPos] = targetSlot;
     applySpans(grid, c.sizes, c.maxSlots);
+    if (c.sizes[movingSlot] === 4 && (toPos + GRID_COLS >= c.maxSlots || toPos + 1 >= c.maxSlots || (toPos + 1) % GRID_COLS === 0 || toPos + GRID_COLS + 1 >= c.maxSlots)) {
+      delete c.sizes[movingSlot];
+    }
+    if (c.sizes[movingSlot] === 2 && toPos + GRID_COLS >= c.maxSlots) {
+      delete c.sizes[movingSlot];
+    }
+    if (c.sizes[movingSlot] === 3 && (toPos + 1 >= c.maxSlots || (toPos + 1) % GRID_COLS === 0)) {
+      delete c.sizes[movingSlot];
+    }
     if (c.isSub) {
       getSubpage(state.editingSubpage).grid = grid;
     } else {
@@ -4003,10 +4001,17 @@
 
   function canPlaceSlotAt(grid, pos, size, maxSlots) {
     if (pos < 0 || pos >= maxSlots || grid[pos] !== 0) return false;
-    var cells = gridSpanCells(pos, size, maxSlots);
-    if (!cells) return false;
-    for (var i = 1; i < cells.length; i++) {
-      if (grid[cells[i]] !== 0) return false;
+    if (size === 2 || size === 4) {
+      var below = pos + GRID_COLS;
+      if (below >= maxSlots || grid[below] !== 0) return false;
+    }
+    if (size === 3 || size === 4) {
+      var right = pos + 1;
+      if (right >= maxSlots || right % GRID_COLS === 0 || grid[right] !== 0) return false;
+    }
+    if (size === 4) {
+      var diag = pos + GRID_COLS + 1;
+      if (diag >= maxSlots || grid[diag] !== 0) return false;
     }
     return true;
   }
@@ -4021,9 +4026,9 @@
 
   function placeSlotAt(grid, slot, pos, size) {
     grid[pos] = slot;
-    var cells = gridCoveredCells(pos, size, grid.length);
-    if (!cells) return;
-    for (var i = 0; i < cells.length; i++) grid[cells[i]] = -1;
+    if (size === 2 || size === 4) grid[pos + GRID_COLS] = -1;
+    if (size === 3 || size === 4) grid[pos + 1] = -1;
+    if (size === 4) grid[pos + GRID_COLS + 1] = -1;
   }
 
   function placeOrderedGridEntries(entries, sizes, maxSlots) {
@@ -4400,13 +4405,21 @@
     if (srcSz) state.sizes[newSlot] = srcSz;
 
     var srcPos = state.grid.indexOf(srcSlot);
-    var newPos = findPlacementCell(state.grid, srcPos + 1, state.sizes[newSlot] || 1, NUM_SLOTS);
-    if (newPos < 0 && state.sizes[newSlot]) {
-      delete state.sizes[newSlot];
-      newPos = firstFreeCell(srcPos + 1);
-    }
+    var newPos = firstFreeCell(srcPos + 1);
     if (newPos < 0) return;
-    placeSlotAt(state.grid, newSlot, newPos, state.sizes[newSlot] || 1);
+    state.grid[newPos] = newSlot;
+    if (state.sizes[newSlot] === 2 || state.sizes[newSlot] === 4) {
+      var belowNew = newPos + GRID_COLS;
+      if (belowNew < NUM_SLOTS && state.grid[belowNew] === 0) state.grid[belowNew] = -1;
+    }
+    if (state.sizes[newSlot] === 3 || state.sizes[newSlot] === 4) {
+      var rightNew = newPos + 1;
+      if (rightNew < NUM_SLOTS && rightNew % GRID_COLS !== 0 && state.grid[rightNew] === 0) state.grid[rightNew] = -1;
+    }
+    if (state.sizes[newSlot] === 4) {
+      var diagNew = newPos + GRID_COLS + 1;
+      if (diagNew < NUM_SLOTS && (newPos + 1) % GRID_COLS !== 0 && state.grid[diagNew] === 0) state.grid[diagNew] = -1;
+    }
 
     if (src.type === "subpage" && state.subpages[srcSlot]) {
       var spJson = serializeSubpageConfig(state.subpages[srcSlot]);
@@ -4442,15 +4455,24 @@
     if (srcSz) sp.sizes[newSlot] = srcSz;
 
     var srcPos = sp.grid.indexOf(srcSlot);
-    var newPos = findPlacementCell(sp.grid, srcPos + 1, sp.sizes[newSlot] || 1, NUM_SLOTS);
-    if (newPos < 0 && sp.sizes[newSlot]) {
-      delete sp.sizes[newSlot];
-      for (var c = srcPos + 1; c < NUM_SLOTS; c++) {
-        if (sp.grid[c] === 0) { newPos = c; break; }
-      }
+    var newPos = -1;
+    for (var c = srcPos + 1; c < NUM_SLOTS; c++) {
+      if (sp.grid[c] === 0) { newPos = c; break; }
     }
     if (newPos < 0) return;
-    placeSlotAt(sp.grid, newSlot, newPos, sp.sizes[newSlot] || 1);
+    sp.grid[newPos] = newSlot;
+    if (sp.sizes[newSlot] === 2 || sp.sizes[newSlot] === 4) {
+      var below = newPos + GRID_COLS;
+      if (below < NUM_SLOTS && sp.grid[below] === 0) sp.grid[below] = -1;
+    }
+    if (sp.sizes[newSlot] === 3 || sp.sizes[newSlot] === 4) {
+      var right = newPos + 1;
+      if (right < NUM_SLOTS && right % GRID_COLS !== 0 && sp.grid[right] === 0) sp.grid[right] = -1;
+    }
+    if (sp.sizes[newSlot] === 4) {
+      var diag = newPos + GRID_COLS + 1;
+      if (diag < NUM_SLOTS && (newPos + 1) % GRID_COLS !== 0 && sp.grid[diag] === 0) sp.grid[diag] = -1;
+    }
 
     sp.order = serializeSubpageGrid(sp);
     saveSubpageConfig(homeSlot);
@@ -4463,8 +4485,16 @@
     var c = ctx();
     for (var i = 0; i < c.maxSlots; i++) {
       if (c.grid[i] === slot) {
-        var cells = gridSpanCells(i, c.sizes[slot] || 1, c.maxSlots) || [i];
-        for (var j = 0; j < cells.length; j++) c.grid[cells[j]] = 0;
+        c.grid[i] = 0;
+        if ((c.sizes[slot] === 2 || c.sizes[slot] === 4) && i + GRID_COLS < c.maxSlots && c.grid[i + GRID_COLS] === -1) {
+          c.grid[i + GRID_COLS] = 0;
+        }
+        if ((c.sizes[slot] === 3 || c.sizes[slot] === 4) && i + 1 < c.maxSlots && c.grid[i + 1] === -1) {
+          c.grid[i + 1] = 0;
+        }
+        if (c.sizes[slot] === 4 && i + GRID_COLS + 1 < c.maxSlots && c.grid[i + GRID_COLS + 1] === -1) {
+          c.grid[i + GRID_COLS + 1] = 0;
+        }
         break;
       }
     }
@@ -4497,8 +4527,15 @@
     var c = ctx();
     for (var i = 0; i < c.maxSlots; i++) {
       if (slots.indexOf(c.grid[i]) !== -1) {
-        var cells = gridSpanCells(i, c.sizes[c.grid[i]] || 1, c.maxSlots) || [i];
-        for (var j = 1; j < cells.length; j++) c.grid[cells[j]] = 0;
+        if ((c.sizes[c.grid[i]] === 2 || c.sizes[c.grid[i]] === 4) && i + GRID_COLS < c.maxSlots && c.grid[i + GRID_COLS] === -1) {
+          c.grid[i + GRID_COLS] = 0;
+        }
+        if ((c.sizes[c.grid[i]] === 3 || c.sizes[c.grid[i]] === 4) && i + 1 < c.maxSlots && c.grid[i + 1] === -1) {
+          c.grid[i + 1] = 0;
+        }
+        if (c.sizes[c.grid[i]] === 4 && i + GRID_COLS + 1 < c.maxSlots && c.grid[i + GRID_COLS + 1] === -1) {
+          c.grid[i + GRID_COLS + 1] = 0;
+        }
         c.grid[i] = 0;
       }
     }
@@ -4595,17 +4632,23 @@
     var curSz = c.sizes[slot] || 1;
     if (curSz === targetSz) return;
 
-    var curCells = gridCoveredCells(slotPos, curSz, c.maxSlots) || [];
-    for (var i = 0; i < curCells.length; i++) {
-      if (c.grid[curCells[i]] === -1) c.grid[curCells[i]] = 0;
-    }
+    var curD = curSz === 2 || curSz === 4;
+    var curW = curSz === 3 || curSz === 4;
+    if (curD) { var bp = slotPos + GRID_COLS; if (bp < c.maxSlots && c.grid[bp] === -1) c.grid[bp] = 0; }
+    if (curW) { var rp = slotPos + 1; if (rp < c.maxSlots && c.grid[rp] === -1) c.grid[rp] = 0; }
+    if (curSz === 4) { var dp = slotPos + GRID_COLS + 1; if (dp < c.maxSlots && c.grid[dp] === -1) c.grid[dp] = 0; }
 
-    var need = targetSz > 1 ? gridCoveredCells(slotPos, targetSz, c.maxSlots) : [];
-    if (!need) { if (targetSz > 1) delete c.sizes[slot]; return; }
+    var wantD = targetSz === 2 || targetSz === 4;
+    var wantW = targetSz === 3 || targetSz === 4;
+    var need = [];
+    if (wantD) need.push(slotPos + GRID_COLS);
+    if (wantW) need.push(slotPos + 1);
+    if (wantD && wantW) need.push(slotPos + GRID_COLS + 1);
 
     for (var i = 0; i < need.length; i++) {
       var p = need[i];
       if (p >= c.maxSlots) { if (targetSz > 1) delete c.sizes[slot]; return; }
+      if (wantW && (slotPos + 1) % GRID_COLS === 0) { if (targetSz > 1) delete c.sizes[slot]; return; }
       if (c.grid[p] > 0 || c.grid[p] === -2) {
         if (c.isSub && c.grid[p] > 0) return;
         var displaced = c.grid[p];
@@ -4620,7 +4663,7 @@
     }
     for (var i = 0; i < need.length; i++) c.grid[need[i]] = -1;
 
-    setGridSize(c.sizes, slot, targetSz);
+    if (targetSz === 1) delete c.sizes[slot]; else c.sizes[slot] = targetSz;
 
     if (c.isSub) {
       var sp = getSubpage(state.editingSubpage);
@@ -4656,9 +4699,6 @@
       addSubItem(sub, "", "Tall", function () { resizeSlot(slot, 2); }, sz === 2);
       addSubItem(sub, "", "Wide", function () { resizeSlot(slot, 3); }, sz === 3);
       addSubItem(sub, "", "Large", function () { resizeSlot(slot, 4); }, sz === 4);
-      if (!c.isSub && b && b.type === "climate" && GRID_COLS >= 3 && GRID_ROWS >= 3) {
-        addSubItem(sub, "", "3x3 Climate Controls", function () { resizeSlot(slot, 9); }, sz === 9);
-      }
     });
 
     addCtxDivider();
@@ -4807,21 +4847,30 @@
     for (var i = 0; i < entries.length; i++) {
       var newSlot = firstFreeSlot();
       if (newSlot < 0) break;
-      var e = entries[i];
-      var pasteSize = e.size || 1;
-      var cell = findPlacementCell(state.grid, pos, pasteSize, NUM_SLOTS);
-      if (cell < 0 && pasteSize !== 1) {
-        pasteSize = 1;
-        cell = firstFreeCell(pos);
-      }
+      var cell = firstFreeCell(pos);
       if (cell < 0) break;
+      var e = entries[i];
       state.buttons[newSlot - 1] = {
         entity: e.entity, label: e.label, icon: e.icon,
         icon_on: e.icon_on, sensor: e.sensor, unit: e.unit,
         type: e.type || "", precision: e.precision || "",
       };
-      setGridSize(state.sizes, newSlot, pasteSize);
-      placeSlotAt(state.grid, newSlot, cell, state.sizes[newSlot] || 1);
+      if (e.size === 4) state.sizes[newSlot] = 4;
+      else if (e.size === 2) state.sizes[newSlot] = 2;
+      else if (e.size === 3) state.sizes[newSlot] = 3;
+      state.grid[cell] = newSlot;
+      if (e.size === 2 || e.size === 4) {
+        var below = cell + GRID_COLS;
+        if (below < NUM_SLOTS && state.grid[below] === 0) state.grid[below] = -1;
+      }
+      if (e.size === 3 || e.size === 4) {
+        var right = cell + 1;
+        if (right < NUM_SLOTS && right % GRID_COLS !== 0 && state.grid[right] === 0) state.grid[right] = -1;
+      }
+      if (e.size === 4) {
+        var diag = cell + GRID_COLS + 1;
+        if (diag < NUM_SLOTS && (cell + 1) % GRID_COLS !== 0 && state.grid[diag] === 0) state.grid[diag] = -1;
+      }
       if (e.subpageConfig) {
         var spCopy = parseSubpageConfig(e.subpageConfig);
         spCopy.sizes = {};
@@ -4846,27 +4895,37 @@
     var entries = state.clipboard.buttons;
     var lastSlot = -1;
     for (var i = 0; i < entries.length; i++) {
-      var e = entries[i];
-      var pasteSize = e.size || 1;
-      var cell = findPlacementCell(sp.grid, pos, pasteSize, maxPos);
-      if (cell < 0 && pasteSize !== 1) {
-        pasteSize = 1;
-        for (var c = pos; c < maxPos; c++) {
-          if (sp.grid[c] === 0) { cell = c; break; }
-        }
+      var cell = -1;
+      for (var c = pos; c < maxPos; c++) {
+        if (sp.grid[c] === 0) { cell = c; break; }
       }
       if (cell < 0) break;
       var newSlot = subpageFirstFreeSlot(sp);
       while (sp.buttons.length < newSlot) {
         sp.buttons.push(emptyButtonConfig());
       }
+      var e = entries[i];
       sp.buttons[newSlot - 1] = {
         entity: e.entity, label: e.label, icon: e.icon,
         icon_on: e.icon_on, sensor: e.sensor, unit: e.unit,
         type: e.type || "", precision: e.precision || "",
       };
-      setGridSize(sp.sizes, newSlot, pasteSize);
-      placeSlotAt(sp.grid, newSlot, cell, sp.sizes[newSlot] || 1);
+      if (e.size === 4) sp.sizes[newSlot] = 4;
+      else if (e.size === 2) sp.sizes[newSlot] = 2;
+      else if (e.size === 3) sp.sizes[newSlot] = 3;
+      sp.grid[cell] = newSlot;
+      if (e.size === 2 || e.size === 4) {
+        var below = cell + GRID_COLS;
+        if (below < maxPos && sp.grid[below] === 0) sp.grid[below] = -1;
+      }
+      if (e.size === 3 || e.size === 4) {
+        var right = cell + 1;
+        if (right < maxPos && right % GRID_COLS !== 0 && sp.grid[right] === 0) sp.grid[right] = -1;
+      }
+      if (e.size === 4) {
+        var diag = cell + GRID_COLS + 1;
+        if (diag < maxPos && (cell + 1) % GRID_COLS !== 0 && sp.grid[diag] === 0) sp.grid[diag] = -1;
+      }
       lastSlot = newSlot;
     }
     sp.order = serializeSubpageGrid(sp);
@@ -5001,18 +5060,20 @@
             var tok = origParts[j].trim();
             if (!tok) continue;
             var lastCh = tok.charAt(tok.length - 1);
-            var size = gridSizeFromSuffix(lastCh);
+            var dbl = lastCh === "d";
+            var wide = lastCh === "w";
+            var big = lastCh === "b";
             var num = parseInt(tok, 10);
             if (isNaN(num) || num < 1 || num > importedCount || seen[num]) continue;
             seen[num] = true;
-            usedSlots.push({ oldSlot: num, size: size });
+            usedSlots.push({ oldSlot: num, isDouble: dbl || big, isWide: wide || big, isBig: big });
           }
           for (var j = 0; j < importedCount; j++) {
             var sn = j + 1;
             if (seen[sn]) continue;
             var bb = data.buttons[j];
             if (bb.entity || bb.label || bb.type) {
-              usedSlots.push({ oldSlot: sn, size: 1 });
+              usedSlots.push({ oldSlot: sn, isDouble: false, isWide: false, isBig: false });
             }
           }
 
@@ -5024,7 +5085,9 @@
             var ns = j + 1;
             slotMap[usedSlots[j].oldSlot] = ns;
             buttons.push(data.buttons[usedSlots[j].oldSlot - 1]);
-            setGridSize(newSizes, ns, usedSlots[j].size || 1);
+            if (usedSlots[j].isBig) newSizes[ns] = 4;
+            else if (usedSlots[j].isDouble) newSizes[ns] = 2;
+            else if (usedSlots[j].isWide) newSizes[ns] = 3;
           }
           for (var j = limit; j < NUM_SLOTS; j++) buttons.push(empty);
 
@@ -5033,12 +5096,34 @@
           var pos = 0;
           for (var j = 0; j < limit && pos < NUM_SLOTS; j++) {
             var ns = j + 1;
-            var size = newSizes[ns] || 1;
-            if (!canPlaceSlotAt(newGrid, pos, size, NUM_SLOTS)) {
-              delete newSizes[ns];
-              size = 1;
+            var isB = newSizes[ns] === 4;
+            var isD = isB || newSizes[ns] === 2;
+            var isW = isB || newSizes[ns] === 3;
+            var row = Math.floor(pos / GRID_COLS);
+            if (isD && row >= GRID_ROWS - 1) {
+              isD = false;
+              if (isB) { isB = false; newSizes[ns] = isW ? 3 : undefined; if (!newSizes[ns]) delete newSizes[ns]; }
+              else delete newSizes[ns];
             }
-            placeSlotAt(newGrid, ns, pos, size);
+            var col = pos % GRID_COLS;
+            if (isW && col >= GRID_COLS - 1) {
+              isW = false;
+              if (isB) { isB = false; newSizes[ns] = isD ? 2 : undefined; if (!newSizes[ns]) delete newSizes[ns]; }
+              else delete newSizes[ns];
+            }
+            newGrid[pos] = ns;
+            if (isD) {
+              var bp = pos + GRID_COLS;
+              if (bp < NUM_SLOTS) newGrid[bp] = -1;
+            }
+            if (isW) {
+              var rp = pos + 1;
+              if (rp < NUM_SLOTS) newGrid[rp] = -1;
+            }
+            if (isD && isW) {
+              var dp = pos + GRID_COLS + 1;
+              if (dp < NUM_SLOTS) newGrid[dp] = -1;
+            }
             pos++;
             while (pos < NUM_SLOTS && newGrid[pos] === -1) pos++;
           }

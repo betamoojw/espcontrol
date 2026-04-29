@@ -423,13 +423,6 @@ assertSubpageRoundTrip(hooks, "climate subpage", {
   ],
 }, true);
 
-assertSubpageRoundTrip(hooks, "3x3 climate subpage order", {
-  order: ["Bx", "1x"],
-  buttons: [
-    buttonShape({ entity: "climate.living_room", label: "Living Room", icon: "Thermostat", type: "climate" }),
-  ],
-}, true);
-
 assertSubpageRoundTrip(hooks, "action subpage", {
   order: ["1", "B", "2"],
   buttons: [

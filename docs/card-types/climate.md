@@ -8,9 +8,7 @@ description:
 
 A Climate card controls a Home Assistant `climate` entity, such as a thermostat, heat pump, radiator valve, or air conditioner.
 
-On the main screen a normal Climate card shows the target temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, mode tabs, and a preset menu.
-
-On screens with at least a 3 by 3 home grid, a Climate card can also be resized to **3x3 Climate Controls** from the card size menu. That larger home-screen card shows the thermostat arc, target temperature, state, and plus/minus controls directly on the normal screen.
+On the main screen it shows the target temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, mode tabs, and a preset menu.
 
 ## Setting Up a Climate Card
 
@@ -24,7 +22,6 @@ Climate cards can also be placed inside a [Subpage](/features/subpages).
 ## How It Works on the Panel
 
 - The dashboard card shows the target temperature.
-- A 3x3 Climate Controls card lets you adjust the target temperature without opening the detail page.
 - The card label changes to the active action, such as **Heating**, **Cooling**, **Drying**, or **Fan**, while Home Assistant reports that action.
 - The card uses the normal on colour only while `hvac_action` is active, such as `heating`, `cooling`, `drying`, or `fan`. If Home Assistant reports `hvac_action` as `idle`, the card uses the off colour even when the mode is not **Off**.
 - The detail page uses `min_temp`, `max_temp`, and `target_temp_step` when Home Assistant provides them. Until those arrive, it uses 5-35 °C/°F with 0.5° steps.

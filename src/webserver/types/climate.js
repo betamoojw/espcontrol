@@ -47,23 +47,6 @@ registerButtonType("climate", {
     var label = b.label || b.entity || "Climate";
     var precision = parseInt(b.precision || "0", 10) || 0;
     var sample = (20).toFixed(precision);
-    if (helpers.size === 9) {
-      return {
-        iconHtml:
-          '<span class="sp-climate-control-preview">' +
-            '<span class="sp-climate-control-temp">' +
-              '<span class="sp-climate-control-value">' + sample + '</span>' +
-              '<span class="sp-climate-control-unit">' + temperatureUnitSymbol() + '</span>' +
-            '</span>' +
-            '<span class="sp-climate-control-state">Idle</span>' +
-            '<span class="sp-climate-control-actions">' +
-              '<span class="sp-climate-control-btn mdi mdi-minus"></span>' +
-              '<span class="sp-climate-control-btn mdi mdi-plus"></span>' +
-            '</span>' +
-          '</span>',
-        labelHtml: '',
-      };
-    }
     return {
       iconHtml:
         '<span class="sp-sensor-preview">' +
