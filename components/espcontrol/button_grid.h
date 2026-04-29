@@ -1069,7 +1069,6 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   lv_coord_t top_clearance = short_side < 520 ? 44 : 56;
 
   lv_obj_set_size(ui.back_btn, back_size, back_size);
-  lv_obj_set_style_radius(ui.back_btn, back_size / 2, LV_PART_MAIN);
   lv_obj_align(ui.back_btn, LV_ALIGN_TOP_LEFT, 12, top_clearance);
   lv_obj_move_foreground(ui.back_btn);
 
@@ -1142,7 +1141,18 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   lv_obj_set_style_bg_opa(ui.page, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_clear_flag(ui.page, LV_OBJ_FLAG_SCROLLABLE);
 
-  ui.back_btn = climate_create_round_button(ui.page, 48, "\U000F0141", ctx ? ctx->icon_font : nullptr);
+  ui.back_btn = lv_btn_create(ui.page);
+  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_TRANSP,
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
+  lv_obj_set_style_border_width(ui.back_btn, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(ui.back_btn, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(ui.back_btn, 0, LV_PART_MAIN);
+  lv_obj_t *back_icon = lv_label_create(ui.back_btn);
+  lv_label_set_text(back_icon, "\U000F0141");
+  lv_obj_set_style_text_color(back_icon, lv_color_hex(0xD8D8D8), LV_PART_MAIN);
+  if (ctx && ctx->icon_font) lv_obj_set_style_text_font(back_icon, ctx->icon_font, LV_PART_MAIN);
+  lv_obj_center(back_icon);
   lv_obj_add_event_cb(ui.back_btn, [](lv_event_t *e) {
     ClimateDetailUi &ui = climate_detail_ui();
     climate_hide_popup();
