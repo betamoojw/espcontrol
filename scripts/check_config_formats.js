@@ -51,6 +51,7 @@ function subpageTypeFromCode(code) {
     A: "action",
     D: "calendar",
     T: "timezone",
+    H: "climate",
     S: "sensor",
     W: "weather",
     F: "weather_forecast",
@@ -206,6 +207,17 @@ assertButtonRoundTrip(hooks, "garage label button", {
   sensor: "",
   unit: "",
   type: "garage",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "climate button", {
+  entity: "climate.living_room",
+  label: "Living Room",
+  icon: "Thermostat",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "climate",
   precision: "",
 }, false);
 
@@ -419,6 +431,13 @@ assertSubpageRoundTrip(hooks, "cover tilt subpage", {
   ],
 }, true);
 
+assertSubpageRoundTrip(hooks, "climate subpage", {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "climate.living_room", label: "Living Room", icon: "Thermostat", type: "climate" }),
+  ],
+}, true);
+
 assertSubpageRoundTrip(hooks, "action subpage", {
   order: ["1", "B", "2"],
   buttons: [
@@ -463,6 +482,13 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|F,weather.for
     buttonShape({ entity: "weather.forecast_home", type: "weather_forecast" }),
   ],
 }, "compact weather forecast subpage parse");
+
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|H,climate.living_room,Living%20Room,Thermostat")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "climate.living_room", label: "Living Room", icon: "Thermostat", type: "climate" }),
+  ],
+}, "compact climate subpage parse");
 
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|R,cover.garage,,Garage,Garage%20Open")), {
   order: ["1", "B"],

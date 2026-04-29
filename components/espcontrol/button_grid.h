@@ -15,6 +15,7 @@
 #include <cctype>
 #include <cstdint>
 #include <ctime>
+#include <cmath>
 #include <vector>
 #include <functional>
 #include "esphome/components/api/homeassistant_service.h"
@@ -99,7 +100,7 @@ struct ParsedCfg {
   std::string icon_on;     // 3  icon name for on state (blank = no swap)
   std::string sensor;      // 4  sensor entity, or action name for Action cards
   std::string unit;        // 5  unit suffix for sensor display
-  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, weather_forecast, slider, cover, garage, push, internal, subpage
+  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, push, internal, subpage
   std::string precision;   // 7  decimal places for sensors; "text" = text sensor mode
 };
 
@@ -731,6 +732,920 @@ inline uint32_t correct_color(uint32_t rgb) {
   uint8_t g = (uint8_t)(((rgb >> 8) & 0xFF) * 80 / 100);
   uint8_t b = rgb & 0xFF;
   return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+}
+
+// ── Climate card helpers ──────────────────────────────────────────────
+
+constexpr uint32_t CLIMATE_HEAT_COLOR = 0xA44A1C;
+constexpr uint32_t CLIMATE_COOL_COLOR = 0x1565C0;
+constexpr uint32_t CLIMATE_NEUTRAL_COLOR = 0x313131;
+
+struct ClimateCardCtx;
+
+struct ClimateDetailUi {
+  lv_obj_t *page = nullptr;
+  lv_obj_t *back_btn = nullptr;
+  lv_obj_t *power_btn = nullptr;
+  lv_obj_t *current_title = nullptr;
+  lv_obj_t *current_value = nullptr;
+  lv_obj_t *humidity_title = nullptr;
+  lv_obj_t *humidity_value = nullptr;
+  lv_obj_t *arc = nullptr;
+  lv_obj_t *state_label = nullptr;
+  lv_obj_t *target_value = nullptr;
+  lv_obj_t *target_unit = nullptr;
+  lv_obj_t *target_hint = nullptr;
+  lv_obj_t *minus_btn = nullptr;
+  lv_obj_t *plus_btn = nullptr;
+  lv_obj_t *low_btn = nullptr;
+  lv_obj_t *high_btn = nullptr;
+  lv_obj_t *mode_chip = nullptr;
+  lv_obj_t *fan_chip = nullptr;
+  lv_obj_t *swing_chip = nullptr;
+  lv_obj_t *preset_chip = nullptr;
+  lv_obj_t *overlay = nullptr;
+  lv_obj_t *popup = nullptr;
+  lv_obj_t *popup_title = nullptr;
+  bool updating_arc = false;
+  ClimateCardCtx *active = nullptr;
+  lv_obj_t *return_page = nullptr;
+};
+
+inline ClimateDetailUi &climate_detail_ui() {
+  static ClimateDetailUi ui;
+  return ui;
+}
+
+struct ClimateCardCtx {
+  std::string entity_id;
+  std::string label;
+  std::string friendly_name;
+  std::string hvac_mode = "off";
+  std::string hvac_action = "idle";
+  std::string fan_mode;
+  std::string swing_mode;
+  std::string preset_mode;
+  std::vector<std::string> hvac_modes;
+  std::vector<std::string> fan_modes;
+  std::vector<std::string> swing_modes;
+  std::vector<std::string> preset_modes;
+  bool available = false;
+  bool has_current = false;
+  bool has_humidity = false;
+  bool has_target = false;
+  bool has_low = false;
+  bool has_high = false;
+  bool edit_high = false;
+  float current = 0.0f;
+  float humidity = 0.0f;
+  float target = 20.0f;
+  float low = 18.0f;
+  float high = 22.0f;
+  float min_temp = 5.0f;
+  float max_temp = 35.0f;
+  float step = 0.5f;
+  lv_obj_t *card_btn = nullptr;
+  lv_obj_t *sensor_container = nullptr;
+  lv_obj_t *value_lbl = nullptr;
+  lv_obj_t *unit_lbl = nullptr;
+  lv_obj_t *text_lbl = nullptr;
+  const lv_font_t *value_font = nullptr;
+  const lv_font_t *label_font = nullptr;
+  const lv_font_t *icon_font = nullptr;
+  uint32_t on_color = DEFAULT_SLIDER_COLOR;
+  uint32_t off_color = CLIMATE_NEUTRAL_COLOR;
+  lv_timer_t *send_timer = nullptr;
+};
+
+struct ClimateOptionCtx {
+  ClimateCardCtx *ctx = nullptr;
+  std::string kind;
+  std::string value;
+};
+
+inline std::string climate_mode_label(const std::string &mode) {
+  if (mode == "off") return "Off";
+  if (mode == "heat") return "Heat";
+  if (mode == "cool") return "Cool";
+  if (mode == "heat_cool") return "Heat/Cool";
+  if (mode == "auto") return "Auto";
+  if (mode == "dry") return "Dry";
+  if (mode == "fan_only") return "Fan";
+  return sentence_cap_text(mode);
+}
+
+inline std::string climate_action_label(const ClimateCardCtx *ctx) {
+  if (!ctx || !ctx->available) return "Unavailable";
+  if (ctx->hvac_action == "heating") return "Heating";
+  if (ctx->hvac_action == "cooling") return "Cooling";
+  if (ctx->hvac_action == "drying") return "Drying";
+  if (ctx->hvac_action == "fan") return "Fan";
+  if (ctx->hvac_mode == "off") return "Off";
+  return "Idle";
+}
+
+inline bool climate_state_is_enabled(const std::string &state) {
+  return !(state.empty() || state == "off" || state == "unavailable" || state == "unknown");
+}
+
+inline void climate_format_temp(char *buf, size_t size, float value) {
+  snprintf(buf, size, "%.1f", value);
+}
+
+inline void climate_format_temp_unit(char *buf, size_t size, float value) {
+  snprintf(buf, size, "%.1f\u00B0C", value);
+}
+
+inline bool climate_dual_target(const ClimateCardCtx *ctx) {
+  return ctx && ctx->hvac_mode == "heat_cool" && ctx->has_low && ctx->has_high;
+}
+
+inline float climate_step(const ClimateCardCtx *ctx) {
+  return (ctx && ctx->step > 0.0f && ctx->step < 10.0f) ? ctx->step : 0.5f;
+}
+
+inline float climate_clamp(float value, float lo, float hi) {
+  if (hi < lo) hi = lo;
+  if (value < lo) return lo;
+  if (value > hi) return hi;
+  return value;
+}
+
+inline float climate_round_to_step(const ClimateCardCtx *ctx, float value) {
+  float step = climate_step(ctx);
+  float base = ctx ? ctx->min_temp : 0.0f;
+  float steps = floorf(((value - base) / step) + 0.5f);
+  return base + steps * step;
+}
+
+inline float climate_selected_target(const ClimateCardCtx *ctx) {
+  if (!ctx) return 20.0f;
+  if (climate_dual_target(ctx)) return ctx->edit_high ? ctx->high : ctx->low;
+  if (ctx->has_target) return ctx->target;
+  if (ctx->has_low) return ctx->low;
+  if (ctx->has_high) return ctx->high;
+  return climate_clamp(20.0f, ctx->min_temp, ctx->max_temp);
+}
+
+inline std::string climate_dashboard_label(const ClimateCardCtx *ctx) {
+  if (!ctx) return "Climate";
+  if (ctx->available && ctx->hvac_action == "heating") return "Heating";
+  if (ctx->available && ctx->hvac_action == "cooling") return "Cooling";
+  if (!ctx->label.empty()) return ctx->label;
+  if (!ctx->friendly_name.empty()) return ctx->friendly_name;
+  return ctx->entity_id.empty() ? std::string("Climate") : ctx->entity_id;
+}
+
+inline uint32_t climate_state_color(const ClimateCardCtx *ctx) {
+  if (!ctx || !ctx->available || ctx->hvac_mode == "off") return ctx ? ctx->off_color : CLIMATE_NEUTRAL_COLOR;
+  if (ctx->hvac_action == "heating") return CLIMATE_HEAT_COLOR;
+  if (ctx->hvac_action == "cooling") return CLIMATE_COOL_COLOR;
+  return ctx->on_color;
+}
+
+inline void climate_apply_btn_color(lv_obj_t *btn, uint32_t color) {
+  if (!btn) return;
+  lv_obj_set_style_bg_color(btn, lv_color_hex(color),
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
+  lv_obj_set_style_bg_color(btn, lv_color_hex(color),
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+  lv_obj_set_style_bg_color(btn, lv_color_hex(color),
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
+}
+
+inline void climate_update_dashboard(ClimateCardCtx *ctx) {
+  if (!ctx) return;
+  climate_apply_btn_color(ctx->card_btn, climate_state_color(ctx));
+  if (ctx->available && ctx->hvac_mode != "off") lv_obj_add_state(ctx->card_btn, LV_STATE_CHECKED);
+  else lv_obj_clear_state(ctx->card_btn, LV_STATE_CHECKED);
+
+  if (ctx->value_lbl) {
+    if (ctx->available && ctx->has_current) {
+      char buf[16];
+      climate_format_temp(buf, sizeof(buf), ctx->current);
+      lv_label_set_text(ctx->value_lbl, buf);
+      if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, "\u00B0C");
+    } else {
+      lv_label_set_text(ctx->value_lbl, "--");
+      if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, "");
+    }
+  }
+  if (ctx->text_lbl) {
+    std::string label = climate_dashboard_label(ctx);
+    lv_label_set_text(ctx->text_lbl, label.c_str());
+  }
+}
+
+inline std::vector<std::string> climate_parse_list(const std::string &raw) {
+  std::vector<std::string> out;
+  std::string token;
+  bool in_quote = false;
+  char quote = 0;
+  auto push_token = [&]() {
+    while (!token.empty() && std::isspace(static_cast<unsigned char>(token.front()))) token.erase(token.begin());
+    while (!token.empty() && std::isspace(static_cast<unsigned char>(token.back()))) token.pop_back();
+    if (!token.empty()) out.push_back(token);
+    token.clear();
+  };
+  for (char ch : raw) {
+    if (in_quote) {
+      if (ch == quote) {
+        in_quote = false;
+        push_token();
+      } else {
+        token.push_back(ch);
+      }
+      continue;
+    }
+    if (ch == '\'' || ch == '"') {
+      in_quote = true;
+      quote = ch;
+      continue;
+    }
+    if (std::isalnum(static_cast<unsigned char>(ch)) || ch == '_' || ch == '-' || ch == '/' || ch == ' ') {
+      token.push_back(ch);
+    } else {
+      push_token();
+    }
+  }
+  push_token();
+  return out;
+}
+
+inline bool climate_has_options(const std::vector<std::string> &options) {
+  return !options.empty();
+}
+
+inline void climate_send_string_action(ClimateCardCtx *ctx,
+                                       const char *service,
+                                       const char *key,
+                                       const std::string &value) {
+  if (!ctx || ctx->entity_id.empty() || esphome::api::global_api_server == nullptr) return;
+  esphome::api::HomeassistantActionRequest req;
+  req.service = decltype(req.service)(service);
+  req.is_event = false;
+  req.data.init(2);
+  auto &entity_kv = req.data.emplace_back();
+  entity_kv.key = decltype(entity_kv.key)("entity_id");
+  entity_kv.value = decltype(entity_kv.value)(ctx->entity_id.c_str());
+  auto &value_kv = req.data.emplace_back();
+  value_kv.key = decltype(value_kv.key)(key);
+  value_kv.value = decltype(value_kv.value)(value.c_str());
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline void climate_send_temperature_action(ClimateCardCtx *ctx) {
+  if (!ctx || ctx->entity_id.empty() || esphome::api::global_api_server == nullptr) return;
+  esphome::api::HomeassistantActionRequest req;
+  req.service = decltype(req.service)("climate.set_temperature");
+  req.is_event = false;
+  bool dual = climate_dual_target(ctx);
+  req.data.init(dual ? 3 : 2);
+  auto &entity_kv = req.data.emplace_back();
+  entity_kv.key = decltype(entity_kv.key)("entity_id");
+  entity_kv.value = decltype(entity_kv.value)(ctx->entity_id.c_str());
+  char low_buf[16];
+  char high_buf[16];
+  char target_buf[16];
+  if (dual) {
+    climate_format_temp(low_buf, sizeof(low_buf), ctx->low);
+    climate_format_temp(high_buf, sizeof(high_buf), ctx->high);
+    auto &low_kv = req.data.emplace_back();
+    low_kv.key = decltype(low_kv.key)("target_temp_low");
+    low_kv.value = decltype(low_kv.value)(low_buf);
+    auto &high_kv = req.data.emplace_back();
+    high_kv.key = decltype(high_kv.key)("target_temp_high");
+    high_kv.value = decltype(high_kv.value)(high_buf);
+  } else {
+    climate_format_temp(target_buf, sizeof(target_buf), climate_selected_target(ctx));
+    auto &temp_kv = req.data.emplace_back();
+    temp_kv.key = decltype(temp_kv.key)("temperature");
+    temp_kv.value = decltype(temp_kv.value)(target_buf);
+  }
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline void climate_send_timer_cb(lv_timer_t *timer) {
+  ClimateCardCtx *ctx = static_cast<ClimateCardCtx *>(lv_timer_get_user_data(timer));
+  if (!ctx) return;
+  climate_send_temperature_action(ctx);
+  lv_timer_pause(timer);
+}
+
+inline void climate_schedule_temperature_send(ClimateCardCtx *ctx) {
+  if (!ctx) return;
+  if (!ctx->send_timer) {
+    ctx->send_timer = lv_timer_create(climate_send_timer_cb, 450, ctx);
+  }
+  lv_timer_reset(ctx->send_timer);
+  lv_timer_resume(ctx->send_timer);
+}
+
+inline void climate_hide_popup() {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (ui.overlay) lv_obj_add_flag(ui.overlay, LV_OBJ_FLAG_HIDDEN);
+  if (ui.popup) lv_obj_add_flag(ui.popup, LV_OBJ_FLAG_HIDDEN);
+}
+
+inline void climate_update_detail(ClimateCardCtx *ctx);
+
+inline void climate_apply_selected_target(ClimateCardCtx *ctx, float value,
+                                          bool send_debounced) {
+  if (!ctx) return;
+  float step = climate_step(ctx);
+  value = climate_round_to_step(ctx, value);
+  if (climate_dual_target(ctx)) {
+    if (ctx->edit_high) {
+      float min_high = ctx->has_low ? ctx->low + step : ctx->min_temp + step;
+      value = climate_clamp(value, min_high, ctx->max_temp);
+      ctx->high = value;
+      ctx->has_high = true;
+    } else {
+      float max_low = ctx->has_high ? ctx->high - step : ctx->max_temp - step;
+      value = climate_clamp(value, ctx->min_temp, max_low);
+      ctx->low = value;
+      ctx->has_low = true;
+    }
+  } else {
+    value = climate_clamp(value, ctx->min_temp, ctx->max_temp);
+    ctx->target = value;
+    ctx->has_target = true;
+  }
+  climate_update_detail(ctx);
+  if (send_debounced) climate_schedule_temperature_send(ctx);
+}
+
+inline void climate_update_arc(ClimateCardCtx *ctx) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (!ctx || !ui.arc) return;
+  int min_v = static_cast<int>(roundf(ctx->min_temp * 10.0f));
+  int max_v = static_cast<int>(roundf(ctx->max_temp * 10.0f));
+  if (max_v <= min_v) max_v = min_v + 1;
+  int value = static_cast<int>(roundf(climate_selected_target(ctx) * 10.0f));
+  if (value < min_v) value = min_v;
+  if (value > max_v) value = max_v;
+  ui.updating_arc = true;
+  lv_arc_set_range(ui.arc, min_v, max_v);
+  lv_arc_set_value(ui.arc, value);
+  ui.updating_arc = false;
+}
+
+inline void climate_style_chip(lv_obj_t *btn, bool active) {
+  if (!btn) return;
+  lv_obj_set_style_bg_color(btn, lv_color_hex(active ? 0x303030 : 0x222222), LV_PART_MAIN);
+  lv_obj_set_style_border_color(btn, lv_color_hex(active ? 0xA0A0A0 : 0x333333), LV_PART_MAIN);
+  lv_obj_set_style_border_width(btn, active ? 2 : 1, LV_PART_MAIN);
+}
+
+inline void climate_set_button_label(lv_obj_t *btn, const std::string &text) {
+  if (!btn) return;
+  lv_obj_t *label = lv_obj_get_child(btn, 0);
+  if (label) lv_label_set_text(label, text.c_str());
+}
+
+inline void climate_set_visible(lv_obj_t *obj, bool visible) {
+  if (!obj) return;
+  if (visible) lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+  else lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+}
+
+inline void climate_update_detail(ClimateCardCtx *ctx) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (!ctx || ui.active != ctx) return;
+
+  if (ui.current_value) {
+    char buf[24];
+    if (ctx->available && ctx->has_current) climate_format_temp_unit(buf, sizeof(buf), ctx->current);
+    else snprintf(buf, sizeof(buf), "--");
+    lv_label_set_text(ui.current_value, buf);
+  }
+  bool show_humidity = ctx->available && ctx->has_humidity;
+  climate_set_visible(ui.humidity_title, show_humidity);
+  climate_set_visible(ui.humidity_value, show_humidity);
+  if (show_humidity && ui.humidity_value) {
+    char hbuf[16];
+    snprintf(hbuf, sizeof(hbuf), "%.0f%%", ctx->humidity);
+    lv_label_set_text(ui.humidity_value, hbuf);
+  }
+  if (ui.state_label) {
+    std::string state = climate_action_label(ctx);
+    lv_label_set_text(ui.state_label, state.c_str());
+  }
+  if (ui.target_value) {
+    char tbuf[16];
+    climate_format_temp(tbuf, sizeof(tbuf), climate_selected_target(ctx));
+    lv_label_set_text(ui.target_value, tbuf);
+  }
+  if (ui.target_unit) lv_label_set_text(ui.target_unit, "\u00B0C");
+  if (ui.target_hint) {
+    if (climate_dual_target(ctx)) {
+      lv_label_set_text(ui.target_hint, ctx->edit_high ? "High target" : "Low target");
+    } else {
+      lv_label_set_text(ui.target_hint, "Target");
+    }
+  }
+  bool dual = climate_dual_target(ctx);
+  climate_set_visible(ui.low_btn, dual);
+  climate_set_visible(ui.high_btn, dual);
+  climate_style_chip(ui.low_btn, dual && !ctx->edit_high);
+  climate_style_chip(ui.high_btn, dual && ctx->edit_high);
+
+  climate_set_visible(ui.mode_chip, climate_has_options(ctx->hvac_modes));
+  climate_set_visible(ui.fan_chip, climate_has_options(ctx->fan_modes));
+  climate_set_visible(ui.swing_chip, climate_has_options(ctx->swing_modes));
+  climate_set_visible(ui.preset_chip, climate_has_options(ctx->preset_modes));
+  climate_set_button_label(ui.mode_chip, "Mode\n" + climate_mode_label(ctx->hvac_mode));
+  climate_set_button_label(ui.fan_chip, "Fan\n" + (ctx->fan_mode.empty() ? std::string("None") : climate_mode_label(ctx->fan_mode)));
+  climate_set_button_label(ui.swing_chip, "Swing\n" + (ctx->swing_mode.empty() ? std::string("None") : climate_mode_label(ctx->swing_mode)));
+  climate_set_button_label(ui.preset_chip, "Preset\n" + (ctx->preset_mode.empty() ? std::string("None") : climate_mode_label(ctx->preset_mode)));
+
+  uint32_t active_color = climate_state_color(ctx);
+  lv_obj_set_style_arc_color(ui.arc, lv_color_hex(0x2A2A2A), LV_PART_MAIN);
+  lv_obj_set_style_arc_color(ui.arc, lv_color_hex(active_color), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(ui.arc, lv_color_hex(0xF4F4F4), LV_PART_KNOB);
+  lv_obj_set_style_border_color(ui.arc, lv_color_hex(active_color), LV_PART_KNOB);
+  climate_update_arc(ctx);
+}
+
+inline lv_obj_t *climate_create_label(lv_obj_t *parent, const char *text,
+                                      lv_align_t align, lv_coord_t x, lv_coord_t y,
+                                      const lv_font_t *font = nullptr,
+                                      uint32_t color = 0xE8E8E8) {
+  lv_obj_t *label = lv_label_create(parent);
+  lv_label_set_text(label, text);
+  lv_obj_set_style_text_color(label, lv_color_hex(color), LV_PART_MAIN);
+  if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
+  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  lv_obj_align(label, align, x, y);
+  return label;
+}
+
+inline lv_obj_t *climate_create_round_button(lv_obj_t *parent, lv_coord_t size,
+                                             const char *text, const lv_font_t *font = nullptr) {
+  lv_obj_t *btn = lv_btn_create(parent);
+  lv_obj_set_size(btn, size, size);
+  lv_obj_set_style_radius(btn, size / 2, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(btn, lv_color_hex(0x1C1C1C), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_color(btn, lv_color_hex(0x9A9A9A), LV_PART_MAIN);
+  lv_obj_set_style_border_width(btn, 2, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
+  lv_obj_t *label = lv_label_create(btn);
+  lv_label_set_text(label, text);
+  lv_obj_set_style_text_color(label, lv_color_hex(0xD8D8D8), LV_PART_MAIN);
+  if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
+  lv_obj_center(label);
+  return btn;
+}
+
+inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text) {
+  lv_obj_t *btn = lv_btn_create(parent);
+  lv_obj_set_style_radius(btn, 8, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(btn, lv_color_hex(0x222222), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(btn, 1, LV_PART_MAIN);
+  lv_obj_set_style_border_color(btn, lv_color_hex(0x333333), LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
+  lv_obj_t *label = lv_label_create(btn);
+  lv_label_set_text(label, text);
+  lv_obj_set_style_text_color(label, lv_color_hex(0xD8D8D8), LV_PART_MAIN);
+  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  lv_obj_center(label);
+  return btn;
+}
+
+inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (!ui.page) return;
+  lv_disp_t *disp = lv_disp_get_default();
+  lv_coord_t sw = disp ? lv_disp_get_hor_res(disp) : 480;
+  lv_coord_t sh = disp ? lv_disp_get_ver_res(disp) : 480;
+  lv_coord_t short_side = sw < sh ? sw : sh;
+  lv_coord_t arc_size = short_side * 68 / 100;
+  if (arc_size < 260) arc_size = short_side * 72 / 100;
+  lv_coord_t round_btn = short_side * 11 / 100;
+  if (round_btn < 48) round_btn = 48;
+  if (round_btn > 70) round_btn = 70;
+  lv_coord_t chip_w = (sw - 56) / 4;
+  if (chip_w > 140) chip_w = 140;
+  if (chip_w < 86) chip_w = 86;
+  lv_coord_t chip_h = sh < 520 ? 56 : 64;
+  lv_coord_t bottom = sh < 520 ? -10 : -22;
+
+  lv_obj_set_size(ui.arc, arc_size, arc_size);
+  lv_obj_align(ui.arc, LV_ALIGN_CENTER, 0, sh < 520 ? -6 : -12);
+  lv_obj_set_style_arc_width(ui.arc, short_side < 520 ? 24 : 30, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(ui.arc, short_side < 520 ? 24 : 30, LV_PART_INDICATOR);
+  lv_obj_set_style_pad_all(ui.arc, 8, LV_PART_KNOB);
+  lv_obj_set_size(ui.minus_btn, round_btn, round_btn);
+  lv_obj_set_style_radius(ui.minus_btn, round_btn / 2, LV_PART_MAIN);
+  lv_obj_set_size(ui.plus_btn, round_btn, round_btn);
+  lv_obj_set_style_radius(ui.plus_btn, round_btn / 2, LV_PART_MAIN);
+  lv_obj_align(ui.minus_btn, LV_ALIGN_CENTER, -round_btn, arc_size / 2 - round_btn / 4);
+  lv_obj_align(ui.plus_btn, LV_ALIGN_CENTER, round_btn, arc_size / 2 - round_btn / 4);
+
+  lv_obj_set_size(ui.mode_chip, chip_w, chip_h);
+  lv_obj_set_size(ui.fan_chip, chip_w, chip_h);
+  lv_obj_set_size(ui.swing_chip, chip_w, chip_h);
+  lv_obj_set_size(ui.preset_chip, chip_w, chip_h);
+  lv_obj_align(ui.mode_chip, LV_ALIGN_BOTTOM_MID, -chip_w * 3 / 2 - 6, bottom);
+  lv_obj_align(ui.fan_chip, LV_ALIGN_BOTTOM_MID, -chip_w / 2 - 2, bottom);
+  lv_obj_align(ui.swing_chip, LV_ALIGN_BOTTOM_MID, chip_w / 2 + 2, bottom);
+  lv_obj_align(ui.preset_chip, LV_ALIGN_BOTTOM_MID, chip_w * 3 / 2 + 6, bottom);
+
+  lv_obj_align(ui.current_title, LV_ALIGN_TOP_LEFT, sw / 13, sh / 14);
+  lv_obj_align(ui.current_value, LV_ALIGN_TOP_LEFT, sw / 8, sh / 14 + 34);
+  lv_obj_align(ui.humidity_title, LV_ALIGN_TOP_RIGHT, -sw / 10, sh / 14);
+  lv_obj_align(ui.humidity_value, LV_ALIGN_TOP_RIGHT, -sw / 6, sh / 14 + 34);
+  lv_obj_align(ui.state_label, LV_ALIGN_CENTER, 0, -50);
+  lv_obj_align(ui.target_value, LV_ALIGN_CENTER, -14, 14);
+  lv_obj_align(ui.target_unit, LV_ALIGN_CENTER, 64, -2);
+  lv_obj_align(ui.target_hint, LV_ALIGN_CENTER, 0, 78);
+  lv_obj_align(ui.low_btn, LV_ALIGN_CENTER, -44, 110);
+  lv_obj_align(ui.high_btn, LV_ALIGN_CENTER, 44, 110);
+  if (ctx && ctx->value_font) {
+    lv_obj_set_style_text_font(ui.current_value, ctx->value_font, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui.humidity_value, ctx->value_font, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui.target_value, ctx->value_font, LV_PART_MAIN);
+  }
+}
+
+inline void climate_open_options(ClimateCardCtx *ctx, const char *kind,
+                                 const char *title,
+                                 const std::vector<std::string> &options);
+
+inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (ui.page) {
+    climate_layout_detail_ui(ctx);
+    return;
+  }
+
+  ui.page = lv_obj_create(NULL);
+  lv_obj_set_style_bg_color(ui.page, lv_color_hex(0x1A1A1A), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.page, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_clear_flag(ui.page, LV_OBJ_FLAG_SCROLLABLE);
+
+  ui.back_btn = climate_create_round_button(ui.page, 48, "\U000F004D", ctx ? ctx->icon_font : nullptr);
+  lv_obj_align(ui.back_btn, LV_ALIGN_TOP_LEFT, 12, 12);
+  lv_obj_add_event_cb(ui.back_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    climate_hide_popup();
+    lv_obj_t *target = ui.return_page ? ui.return_page : (lv_obj_t *)lv_event_get_user_data(e);
+    if (target) lv_scr_load_anim(target, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+  }, LV_EVENT_CLICKED, nullptr);
+
+  ui.power_btn = climate_create_round_button(ui.page, 48, find_icon("Power"), ctx ? ctx->icon_font : nullptr);
+  lv_obj_align(ui.power_btn, LV_ALIGN_TOP_RIGHT, -12, 12);
+  lv_obj_add_event_cb(ui.power_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (!ui.active) return;
+    ui.active->hvac_mode = "off";
+    ui.active->available = true;
+    climate_update_dashboard(ui.active);
+    climate_update_detail(ui.active);
+    climate_send_string_action(ui.active, "climate.set_hvac_mode", "hvac_mode", "off");
+  }, LV_EVENT_CLICKED, nullptr);
+
+  ui.current_title = climate_create_label(ui.page, "Current temperature", LV_ALIGN_TOP_LEFT, 42, 36, nullptr, 0xBDBDBD);
+  ui.current_value = climate_create_label(ui.page, "--", LV_ALIGN_TOP_LEFT, 72, 74, ctx ? ctx->value_font : nullptr);
+  ui.humidity_title = climate_create_label(ui.page, "Current humidity", LV_ALIGN_TOP_RIGHT, -58, 36, nullptr, 0xBDBDBD);
+  ui.humidity_value = climate_create_label(ui.page, "--", LV_ALIGN_TOP_RIGHT, -104, 74, ctx ? ctx->value_font : nullptr);
+
+  ui.arc = lv_arc_create(ui.page);
+  lv_arc_set_bg_angles(ui.arc, 135, 45);
+  lv_arc_set_range(ui.arc, 50, 350);
+  lv_arc_set_value(ui.arc, 200);
+  lv_obj_set_style_bg_opa(ui.arc, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_border_width(ui.arc, 0, LV_PART_MAIN);
+  lv_obj_set_style_arc_rounded(ui.arc, true, LV_PART_MAIN);
+  lv_obj_set_style_arc_rounded(ui.arc, true, LV_PART_INDICATOR);
+  lv_obj_set_style_border_width(ui.arc, 4, LV_PART_KNOB);
+  lv_obj_set_style_shadow_width(ui.arc, 0, LV_PART_KNOB);
+  lv_obj_add_flag(ui.arc, LV_OBJ_FLAG_ADV_HITTEST);
+  lv_obj_add_event_cb(ui.arc, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.updating_arc || !ui.active) return;
+    lv_obj_t *arc = static_cast<lv_obj_t *>(lv_event_get_target(e));
+    float temp = lv_arc_get_value(arc) / 10.0f;
+    climate_apply_selected_target(ui.active, temp, false);
+  }, LV_EVENT_VALUE_CHANGED, nullptr);
+  lv_obj_add_event_cb(ui.arc, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.active) climate_send_temperature_action(ui.active);
+  }, LV_EVENT_RELEASED, nullptr);
+
+  ui.state_label = climate_create_label(ui.page, "Idle", LV_ALIGN_CENTER, 0, -50, nullptr);
+  ui.target_value = climate_create_label(ui.page, "20.0", LV_ALIGN_CENTER, -14, 14, ctx ? ctx->value_font : nullptr);
+  ui.target_unit = climate_create_label(ui.page, "\u00B0C", LV_ALIGN_CENTER, 64, -2);
+  ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, nullptr, 0xBDBDBD);
+  ui.minus_btn = climate_create_round_button(ui.page, 60, "-", ctx ? ctx->label_font : nullptr);
+  ui.plus_btn = climate_create_round_button(ui.page, 60, "+", ctx ? ctx->label_font : nullptr);
+  ui.low_btn = climate_create_chip(ui.page, "Low");
+  ui.high_btn = climate_create_chip(ui.page, "High");
+  lv_obj_set_size(ui.low_btn, 76, 36);
+  lv_obj_set_size(ui.high_btn, 76, 36);
+  lv_obj_add_event_cb(ui.minus_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (!ui.active) return;
+    climate_apply_selected_target(ui.active, climate_selected_target(ui.active) - climate_step(ui.active), true);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.plus_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (!ui.active) return;
+    climate_apply_selected_target(ui.active, climate_selected_target(ui.active) + climate_step(ui.active), true);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.low_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (!ui.active) return;
+    ui.active->edit_high = false;
+    climate_update_detail(ui.active);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.high_btn, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (!ui.active) return;
+    ui.active->edit_high = true;
+    climate_update_detail(ui.active);
+  }, LV_EVENT_CLICKED, nullptr);
+
+  ui.mode_chip = climate_create_chip(ui.page, "Mode\nOff");
+  ui.fan_chip = climate_create_chip(ui.page, "Fan\nNone");
+  ui.swing_chip = climate_create_chip(ui.page, "Swing\nNone");
+  ui.preset_chip = climate_create_chip(ui.page, "Preset\nNone");
+  lv_obj_add_event_cb(ui.mode_chip, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.active) climate_open_options(ui.active, "hvac", "Mode", ui.active->hvac_modes);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.fan_chip, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.active) climate_open_options(ui.active, "fan", "Fan", ui.active->fan_modes);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.swing_chip, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.active) climate_open_options(ui.active, "swing", "Swing", ui.active->swing_modes);
+  }, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(ui.preset_chip, [](lv_event_t *e) {
+    ClimateDetailUi &ui = climate_detail_ui();
+    if (ui.active) climate_open_options(ui.active, "preset", "Preset", ui.active->preset_modes);
+  }, LV_EVENT_CLICKED, nullptr);
+
+  ui.overlay = lv_obj_create(ui.page);
+  lv_obj_set_size(ui.overlay, lv_pct(100), lv_pct(100));
+  lv_obj_set_style_bg_color(ui.overlay, lv_color_hex(0x000000), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.overlay, LV_OPA_60, LV_PART_MAIN);
+  lv_obj_set_style_border_width(ui.overlay, 0, LV_PART_MAIN);
+  lv_obj_add_flag(ui.overlay, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_event_cb(ui.overlay, [](lv_event_t *e) { climate_hide_popup(); }, LV_EVENT_CLICKED, nullptr);
+
+  ui.popup = lv_obj_create(ui.page);
+  lv_obj_set_size(ui.popup, lv_pct(76), LV_SIZE_CONTENT);
+  lv_obj_set_style_bg_color(ui.popup, lv_color_hex(0x242424), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.popup, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(ui.popup, 0, LV_PART_MAIN);
+  lv_obj_set_style_radius(ui.popup, 14, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(ui.popup, 16, LV_PART_MAIN);
+  lv_obj_set_layout(ui.popup, LV_LAYOUT_FLEX);
+  lv_obj_set_style_flex_flow(ui.popup, LV_FLEX_FLOW_COLUMN, LV_PART_MAIN);
+  lv_obj_set_style_flex_cross_place(ui.popup, LV_FLEX_ALIGN_CENTER, LV_PART_MAIN);
+  lv_obj_set_style_pad_row(ui.popup, 10, LV_PART_MAIN);
+  lv_obj_align(ui.popup, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_add_flag(ui.popup, LV_OBJ_FLAG_HIDDEN);
+
+  climate_layout_detail_ui(ctx);
+}
+
+inline void climate_option_click(lv_event_t *e) {
+  ClimateOptionCtx *opt = static_cast<ClimateOptionCtx *>(lv_event_get_user_data(e));
+  if (!opt || !opt->ctx) return;
+  if (opt->kind == "hvac") {
+    opt->ctx->hvac_mode = opt->value;
+    opt->ctx->available = true;
+    climate_send_string_action(opt->ctx, "climate.set_hvac_mode", "hvac_mode", opt->value);
+  } else if (opt->kind == "fan") {
+    opt->ctx->fan_mode = opt->value;
+    climate_send_string_action(opt->ctx, "climate.set_fan_mode", "fan_mode", opt->value);
+  } else if (opt->kind == "swing") {
+    opt->ctx->swing_mode = opt->value;
+    climate_send_string_action(opt->ctx, "climate.set_swing_mode", "swing_mode", opt->value);
+  } else if (opt->kind == "preset") {
+    opt->ctx->preset_mode = opt->value;
+    climate_send_string_action(opt->ctx, "climate.set_preset_mode", "preset_mode", opt->value);
+  }
+  climate_hide_popup();
+  climate_update_dashboard(opt->ctx);
+  climate_update_detail(opt->ctx);
+}
+
+inline void climate_open_options(ClimateCardCtx *ctx, const char *kind,
+                                 const char *title,
+                                 const std::vector<std::string> &options) {
+  ClimateDetailUi &ui = climate_detail_ui();
+  if (!ctx || !ui.overlay || !ui.popup || options.empty()) return;
+  lv_obj_clean(ui.popup);
+  lv_obj_t *title_lbl = lv_label_create(ui.popup);
+  lv_label_set_text(title_lbl, title);
+  lv_obj_set_style_text_color(title_lbl, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+  lv_obj_set_style_text_align(title_lbl, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+
+  for (const auto &value : options) {
+    lv_obj_t *btn = climate_create_chip(ui.popup, climate_mode_label(value).c_str());
+    lv_obj_set_width(btn, lv_pct(92));
+    lv_obj_set_height(btn, 44);
+    ClimateOptionCtx *opt = new ClimateOptionCtx();
+    opt->ctx = ctx;
+    opt->kind = kind;
+    opt->value = value;
+    lv_obj_add_event_cb(btn, climate_option_click, LV_EVENT_CLICKED, opt);
+    lv_obj_add_event_cb(btn, [](lv_event_t *e) {
+      delete static_cast<ClimateOptionCtx *>(lv_event_get_user_data(e));
+    }, LV_EVENT_DELETE, opt);
+  }
+  lv_obj_t *cancel = climate_create_chip(ui.popup, "Cancel");
+  lv_obj_set_width(cancel, lv_pct(72));
+  lv_obj_set_height(cancel, 40);
+  lv_obj_add_event_cb(cancel, [](lv_event_t *e) { climate_hide_popup(); }, LV_EVENT_CLICKED, nullptr);
+
+  lv_obj_clear_flag(ui.overlay, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(ui.popup, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_move_foreground(ui.overlay);
+  lv_obj_move_foreground(ui.popup);
+  lv_obj_align(ui.popup, LV_ALIGN_CENTER, 0, 0);
+}
+
+inline void climate_open_detail(ClimateCardCtx *ctx, lv_obj_t *return_page) {
+  if (!ctx) return;
+  climate_ensure_detail_ui(ctx);
+  ClimateDetailUi &ui = climate_detail_ui();
+  ui.active = ctx;
+  ui.return_page = return_page ? return_page : lv_scr_act();
+  climate_hide_popup();
+  climate_layout_detail_ui(ctx);
+  climate_update_detail(ctx);
+  lv_scr_load_anim(ui.page, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+}
+
+inline void setup_climate_card(BtnSlot &s, const ParsedCfg &p,
+                               const lv_font_t *value_font,
+                               uint32_t off_color) {
+  lv_label_set_text(s.icon_lbl, find_icon("Thermostat"));
+  lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  if (value_font) lv_obj_set_style_text_font(s.sensor_lbl, value_font, LV_PART_MAIN);
+  lv_label_set_text(s.sensor_lbl, "--");
+  lv_label_set_text(s.unit_lbl, "");
+  lv_label_set_text(s.text_lbl, p.label.empty() ? "Climate" : p.label.c_str());
+  climate_apply_btn_color(s.btn, off_color);
+}
+
+inline void climate_subscribe_attribute_float(ClimateCardCtx *ctx,
+                                              const std::string &attribute,
+                                              std::function<void(float)> on_value,
+                                              std::function<void()> on_invalid = nullptr) {
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, attribute,
+    std::function<void(esphome::StringRef)>(
+      [ctx, on_value, on_invalid](esphome::StringRef state) {
+        float value = 0.0f;
+        if (parse_float_ref(state, value)) {
+          on_value(value);
+        } else if (on_invalid) {
+          on_invalid();
+        }
+        climate_update_dashboard(ctx);
+        climate_update_detail(ctx);
+      })
+  );
+}
+
+inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
+                                              lv_obj_t *sensor_container,
+                                              lv_obj_t *value_lbl,
+                                              lv_obj_t *unit_lbl,
+                                              lv_obj_t *text_lbl,
+                                              lv_obj_t *icon_lbl,
+                                              const ParsedCfg &p,
+                                              uint32_t on_color,
+                                              uint32_t off_color,
+                                              const lv_font_t *value_font) {
+  ClimateCardCtx *ctx = new ClimateCardCtx();
+  ctx->entity_id = p.entity;
+  ctx->label = p.label;
+  ctx->card_btn = card_btn;
+  ctx->sensor_container = sensor_container;
+  ctx->value_lbl = value_lbl;
+  ctx->unit_lbl = unit_lbl;
+  ctx->text_lbl = text_lbl;
+  ctx->value_font = value_font;
+  ctx->label_font = text_lbl ? lv_obj_get_style_text_font(text_lbl, LV_PART_MAIN) : nullptr;
+  ctx->icon_font = icon_lbl ? lv_obj_get_style_text_font(icon_lbl, LV_PART_MAIN) : nullptr;
+  ctx->on_color = on_color;
+  ctx->off_color = off_color;
+  ctx->send_timer = lv_timer_create(climate_send_timer_cb, 450, ctx);
+  lv_timer_pause(ctx->send_timer);
+  lv_obj_set_user_data(card_btn, (void *)ctx);
+  climate_update_dashboard(ctx);
+  return ctx;
+}
+
+inline void subscribe_climate_card(ClimateCardCtx *ctx) {
+  if (!ctx || ctx->entity_id.empty() || esphome::api::global_api_server == nullptr) return;
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, {},
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef state) {
+        std::string mode = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
+        ctx->available = !(mode.empty() || mode == "unavailable" || mode == "unknown");
+        ctx->hvac_mode = ctx->available ? mode : "off";
+        if (!climate_dual_target(ctx)) ctx->edit_high = false;
+        climate_update_dashboard(ctx);
+        climate_update_detail(ctx);
+      })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("friendly_name"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef name) {
+      ctx->friendly_name = string_ref_limited(name, HA_FRIENDLY_NAME_MAX_LEN);
+      climate_update_dashboard(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("hvac_action"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef action) {
+      ctx->hvac_action = string_ref_limited(action, HA_SHORT_STATE_MAX_LEN);
+      climate_update_dashboard(ctx);
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("hvac_modes"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef modes) {
+      ctx->hvac_modes = climate_parse_list(string_ref_limited(modes, HA_STATE_TEXT_MAX_LEN));
+      climate_update_detail(ctx);
+    })
+  );
+  climate_subscribe_attribute_float(ctx, "current_temperature",
+    [ctx](float value) { ctx->current = value; ctx->has_current = true; },
+    [ctx]() { ctx->has_current = false; });
+  climate_subscribe_attribute_float(ctx, "current_humidity",
+    [ctx](float value) { ctx->humidity = value; ctx->has_humidity = true; },
+    [ctx]() { ctx->has_humidity = false; });
+  climate_subscribe_attribute_float(ctx, "temperature",
+    [ctx](float value) { ctx->target = value; ctx->has_target = true; },
+    [ctx]() { ctx->has_target = false; });
+  climate_subscribe_attribute_float(ctx, "target_temp_low",
+    [ctx](float value) { ctx->low = value; ctx->has_low = true; },
+    [ctx]() { ctx->has_low = false; });
+  climate_subscribe_attribute_float(ctx, "target_temp_high",
+    [ctx](float value) { ctx->high = value; ctx->has_high = true; },
+    [ctx]() { ctx->has_high = false; });
+  climate_subscribe_attribute_float(ctx, "min_temp",
+    [ctx](float value) { ctx->min_temp = value; });
+  climate_subscribe_attribute_float(ctx, "max_temp",
+    [ctx](float value) { ctx->max_temp = value; });
+  climate_subscribe_attribute_float(ctx, "target_temp_step",
+    [ctx](float value) { ctx->step = value; });
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("fan_mode"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->fan_mode = string_ref_limited(value, HA_SHORT_STATE_MAX_LEN);
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("fan_modes"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->fan_modes = climate_parse_list(string_ref_limited(value, HA_STATE_TEXT_MAX_LEN));
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("swing_mode"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->swing_mode = string_ref_limited(value, HA_SHORT_STATE_MAX_LEN);
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("swing_modes"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->swing_modes = climate_parse_list(string_ref_limited(value, HA_STATE_TEXT_MAX_LEN));
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("preset_mode"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->preset_mode = string_ref_limited(value, HA_SHORT_STATE_MAX_LEN);
+      climate_update_detail(ctx);
+    })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, std::string("preset_modes"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef value) {
+      ctx->preset_modes = climate_parse_list(string_ref_limited(value, HA_STATE_TEXT_MAX_LEN));
+      climate_update_detail(ctx);
+    })
+  );
 }
 
 // ── Grid layout parsing ───────────────────────────────────────────────
@@ -1674,6 +2589,9 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
     lv_obj_t *sub_scr = (lv_obj_t *)lv_obj_get_user_data(btn_obj);
     if (sub_scr)
       lv_scr_load_anim(sub_scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+  } else if (p.type == "climate") {
+    ClimateCardCtx *ctx = (ClimateCardCtx *)lv_obj_get_user_data(btn_obj);
+    if (ctx) climate_open_detail(ctx, lv_scr_act());
   } else if (p.type == "garage") {
     if (!p.entity.empty()) {
       lv_obj_add_state(btn_obj, LV_STATE_CHECKED);
@@ -1967,7 +2885,7 @@ struct SubpageBtn {
   std::string icon_on;
   std::string sensor;     // sensor entity, slider mode, internal relay mode, or action name
   std::string unit;
-  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, weather_forecast, slider, cover, garage, push, internal, subpage
+  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, push, internal, subpage
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
@@ -1987,6 +2905,7 @@ inline std::string compact_subpage_type(const std::string &code) {
   if (code == "A") return "action";
   if (code == "D") return "calendar";
   if (code == "T") return "timezone";
+  if (code == "H") return "climate";
   if (code == "S") return "sensor";
   if (code == "W") return "weather";
   if (code == "F") return "weather_forecast";
@@ -2134,6 +3053,36 @@ inline void subscribe_subpage_parent_indicator(
       [parent_btn, parent_icon, parent_idx, child_was_on,
        has_alt_icon, off_glyph, on_glyph, sp_on_count](esphome::StringRef state) {
         bool is_on = is_entity_on_ref(state);
+        if (is_on && !*child_was_on) {
+          sp_on_count[parent_idx]++;
+          *child_was_on = true;
+        } else if (!is_on && *child_was_on) {
+          sp_on_count[parent_idx]--;
+          *child_was_on = false;
+        }
+        if (sp_on_count[parent_idx] > 0) {
+          lv_obj_add_state(parent_btn, LV_STATE_CHECKED);
+          if (has_alt_icon) lv_label_set_text(parent_icon, on_glyph);
+        } else {
+          lv_obj_clear_state(parent_btn, LV_STATE_CHECKED);
+          if (has_alt_icon) lv_label_set_text(parent_icon, off_glyph);
+        }
+      })
+  );
+}
+
+inline void subscribe_subpage_parent_climate_indicator(
+    const std::string &entity_id,
+    lv_obj_t *parent_btn, lv_obj_t *parent_icon,
+    int parent_idx, bool *child_was_on,
+    bool has_alt_icon, const char *off_glyph, const char *on_glyph,
+    int *sp_on_count) {
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    entity_id, {},
+    std::function<void(esphome::StringRef)>(
+      [parent_btn, parent_icon, parent_idx, child_was_on,
+       has_alt_icon, off_glyph, on_glyph, sp_on_count](esphome::StringRef state) {
+        bool is_on = climate_state_is_enabled(string_ref_limited(state, HA_SHORT_STATE_MAX_LEN));
         if (is_on && !*child_was_on) {
           sp_on_count[parent_idx]++;
           *child_was_on = true;
@@ -2301,6 +3250,10 @@ inline void grid_phase1(
         has_sensor_color, sensor_val);
       continue;
     }
+    if (p.type == "climate") {
+      setup_climate_card(s, p, cfg.sp_sensor_font, has_off ? off_val : CLIMATE_NEUTRAL_COLOR);
+      continue;
+    }
     if (p.type == "garage") {
       setup_garage_card(s, p);
       continue;
@@ -2414,6 +3367,17 @@ inline void grid_phase2(
       continue;
     }
     if (p.type == "weather_forecast") {
+      continue;
+    }
+    if (p.type == "climate") {
+      if (!p.entity.empty()) {
+        ClimateCardCtx *climate_ctx = create_climate_context(
+          s.btn, s.sensor_container, s.sensor_lbl, s.unit_lbl, s.text_lbl, s.icon_lbl, p,
+          has_on ? on_val : DEFAULT_SLIDER_COLOR,
+          has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
+          cfg.sp_sensor_font);
+        subscribe_climate_card(climate_ctx);
+      }
       continue;
     }
     if (p.type == "garage") {
@@ -2798,6 +3762,72 @@ inline void grid_phase2(
 
         lv_label_set_text(stl, "Tomorrow");
         register_weather_forecast_card(svl, sul, stl, sb.entity);
+
+      } else if (sb.type == "climate") {
+        lv_obj_add_flag(sil, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_t *sc = lv_obj_create(sb_btn);
+        lv_obj_set_align(sc, LV_ALIGN_TOP_LEFT);
+        lv_obj_set_size(sc, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_clear_flag(sc, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_clear_flag(sc, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_bg_opa(sc, LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_border_width(sc, 0, LV_PART_MAIN);
+        lv_obj_set_style_pad_all(sc, 0, LV_PART_MAIN);
+        lv_obj_set_layout(sc, LV_LAYOUT_FLEX);
+        lv_obj_set_style_flex_flow(sc, LV_FLEX_FLOW_ROW, LV_PART_MAIN);
+        lv_obj_set_style_flex_cross_place(sc, LV_FLEX_ALIGN_END, LV_PART_MAIN);
+
+        lv_obj_t *svl = lv_label_create(sc);
+        lv_obj_set_style_text_font(svl, cfg.sp_sensor_font, LV_PART_MAIN);
+        lv_obj_set_style_text_color(svl, sp_txt_color, LV_PART_MAIN);
+        lv_label_set_text(svl, "--");
+
+        lv_obj_t *sul = lv_label_create(sc);
+        lv_obj_set_style_text_font(sul, sp_btn_fnt, LV_PART_MAIN);
+        lv_obj_set_style_text_color(sul, sp_txt_color, LV_PART_MAIN);
+        lv_obj_set_style_pad_bottom(sul, 6, LV_PART_MAIN);
+        lv_label_set_text(sul, "");
+
+        ParsedCfg cp;
+        cp.entity = sb.entity;
+        cp.label = sb.label;
+        cp.icon = sb.icon;
+        cp.icon_on = sb.icon_on;
+        cp.sensor = sb.sensor;
+        cp.unit = sb.unit;
+        cp.type = sb.type;
+        cp.precision = sb.precision;
+        lv_label_set_text(stl, cp.label.empty() ? "Climate" : cp.label.c_str());
+        climate_apply_btn_color(sb_btn, has_off ? off_val : CLIMATE_NEUTRAL_COLOR);
+
+        if (!sb.entity.empty()) {
+          ClimateCardCtx *climate_ctx = create_climate_context(
+            sb_btn, sc, svl, sul, stl, sil, cp,
+            has_on ? on_val : DEFAULT_SLIDER_COLOR,
+            has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
+            cfg.sp_sensor_font);
+          subscribe_climate_card(climate_ctx);
+          if (sp_indicator) {
+            lv_obj_t *parent_btn = slots[si].btn;
+            lv_obj_t *parent_icon = slots[si].icon_lbl;
+            int parent_idx = si;
+            int cwi = sp_child_alloc_idx++;
+            if (cwi >= MAX_SUBPAGE_ITEMS) {
+              ESP_LOGW("sensors", "Too many subpage state indicators; skipping %s", sb.entity.c_str());
+            } else {
+              sp_child_was_on[cwi] = false;
+              subscribe_subpage_parent_climate_indicator(
+                sb.entity, parent_btn, parent_icon, parent_idx,
+                &sp_child_was_on[cwi], sp_has_icon_on,
+                sp_icon_off_glyph, sp_icon_on_glyph, sp_on_count);
+            }
+          }
+          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+            ClimateCardCtx *ctx = (ClimateCardCtx *)lv_event_get_user_data(e);
+            if (ctx) climate_open_detail(ctx, lv_scr_act());
+          }, LV_EVENT_CLICKED, climate_ctx);
+        }
 
       } else if (sb.type == "cover" && cover_toggle_mode(sb.sensor)) {
         lv_label_set_text(sil, slider_icon_off(sb.type, sb.entity, sb.icon));
