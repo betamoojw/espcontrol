@@ -1281,7 +1281,7 @@ inline void climate_layout_inline_controls(ClimateCardCtx *ctx) {
   lv_coord_t btn_size = short_side * 16 / 100;
   if (btn_size < 56) btn_size = 56;
   if (btn_size > 86) btn_size = 86;
-  lv_coord_t btn_x = btn_size * 3 / 5;
+  lv_coord_t btn_x = btn_size * 7 / 10;
   lv_coord_t btn_y = h / 2 - btn_size / 2 - h / 15;
   lv_coord_t target_y = -h / 14;
 
@@ -1466,7 +1466,7 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   for (bool is_visible : visible) {
     if (is_visible) visible_count++;
   }
-  lv_coord_t adjust_btn_x = round_btn * 3 / 5;
+  lv_coord_t adjust_btn_x = round_btn * 7 / 10;
   lv_coord_t adjust_btn_y_abs = sh / 2 + arc_cy + arc_size / 2 - round_btn / 2;
   lv_coord_t max_btn_y_abs = (visible_count > 0 ? control_y - 12 : frame_y + frame_h) - round_btn / 2;
   if (adjust_btn_y_abs > max_btn_y_abs) adjust_btn_y_abs = max_btn_y_abs;

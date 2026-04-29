@@ -234,7 +234,7 @@
     ".sp-climate-control-value{font-size:calc(var(--btn-icon)*1.55);font-weight:300;line-height:.9}" +
     ".sp-climate-control-unit{font-size:calc(var(--btn-label)*1.4);opacity:.85;margin-top:.25cqw}" +
     ".sp-climate-control-state{font-size:calc(var(--btn-label)*1.1);color:#d8d8d8;line-height:1.1}" +
-    ".sp-climate-control-actions{display:flex;gap:1.4cqw;margin-top:.8cqw}" +
+    ".sp-climate-control-actions{display:flex;gap:2.2cqw;margin-top:.8cqw}" +
     ".sp-climate-control-btn{width:4.6cqw;height:4.6cqw;border:2px solid rgba(255,255,255,.9);" +
     "border-radius:50%;display:grid;place-items:center;font-size:2.5cqw;line-height:1;color:#fff}" +
     ".sp-empty-cell{border:2px dashed rgba(255,255,255,.15);background:transparent;" +
