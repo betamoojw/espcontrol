@@ -2,7 +2,7 @@
 # ICONS - Material Design Icons for buttons and setup screens
 # =============================================================================
 # http://materialdesignicons.com/cdn/7.4.47/
-# Two icon fonts: 48px for button icons, 64px for setup screen icons.
+# Three icon fonts: button icons, smaller climate controls, and setup icons.
 # =============================================================================
 
 font:
@@ -12,6 +12,16 @@ font:
     size: 48
     bpp: 4
     glyphs: !include icon_glyphs.yaml
+
+  # Climate detail controls (chevron-left, minus, plus)
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: climate_control_icon_font
+    size: 34
+    bpp: 4
+    glyphs:
+      - "\U000F0141"  # mdi-chevron-left
+      - "\U000F0374"  # mdi-minus
+      - "\U000F0415"  # mdi-plus
 
   # Setup screen icons (64px)
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'

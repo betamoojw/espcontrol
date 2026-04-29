@@ -640,6 +640,7 @@ struct ClimateCardCtx {
   const lv_font_t *label_font = nullptr;
   const lv_font_t *unit_font = nullptr;
   const lv_font_t *icon_font = nullptr;
+  const lv_font_t *climate_control_icon_font = nullptr;
   uint32_t on_color = DEFAULT_SLIDER_COLOR;
   uint32_t off_color = CLIMATE_NEUTRAL_COLOR;
   lv_timer_t *send_timer = nullptr;
@@ -1196,14 +1197,6 @@ inline void climate_set_button_label_font(lv_obj_t *btn, const lv_font_t *font) 
   if (label) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
 }
 
-inline const lv_font_t *climate_control_symbol_font(const ClimateCardCtx *ctx,
-                                                    lv_coord_t short_side) {
-  if (!ctx) return nullptr;
-  if (short_side >= 520 && ctx->value_font) return ctx->value_font;
-  if (ctx->label_font) return ctx->label_font;
-  return ctx->unit_font;
-}
-
 inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text,
                                      const lv_font_t *font = nullptr) {
   lv_obj_t *btn = lv_btn_create(parent);
@@ -1302,22 +1295,23 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
     lv_obj_set_style_text_font(ui.state_label, ctx->label_font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui.current_value, ctx->label_font, LV_PART_MAIN);
     lv_obj_set_style_text_font(ui.target_hint, ctx->label_font, LV_PART_MAIN);
-    climate_set_button_label_font(ui.back_btn, ctx->label_font);
     climate_set_button_label_font(ui.low_btn, ctx->label_font);
     climate_set_button_label_font(ui.high_btn, ctx->label_font);
     climate_set_button_label_font(ui.preset_chip, ctx->label_font);
     climate_set_button_label_font(ui.fan_chip, ctx->label_font);
     climate_set_button_label_font(ui.swing_chip, ctx->label_font);
   }
-  const lv_font_t *control_font = climate_control_symbol_font(ctx, short_side);
-  if (control_font) {
-    climate_set_button_label_font(ui.minus_btn, control_font);
-    climate_set_button_label_font(ui.plus_btn, control_font);
-  }
   const lv_font_t *unit_font = ctx && ctx->unit_font ? ctx->unit_font : (ctx ? ctx->label_font : nullptr);
   if (unit_font) lv_obj_set_style_text_font(ui.target_unit, unit_font, LV_PART_MAIN);
   if (ctx && ctx->icon_font) {
     lv_obj_set_style_text_font(ui.current_title, ctx->icon_font, LV_PART_MAIN);
+  }
+  const lv_font_t *control_icon_font = ctx && ctx->climate_control_icon_font
+    ? ctx->climate_control_icon_font : (ctx ? ctx->icon_font : nullptr);
+  if (control_icon_font) {
+    climate_set_button_label_font(ui.back_btn, control_icon_font);
+    climate_set_button_label_font(ui.minus_btn, control_icon_font);
+    climate_set_button_label_font(ui.plus_btn, control_icon_font);
   }
 }
 
@@ -1345,9 +1339,11 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   lv_obj_set_style_shadow_width(ui.back_btn, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(ui.back_btn, 0, LV_PART_MAIN);
   lv_obj_t *back_icon = lv_label_create(ui.back_btn);
-  lv_label_set_text(back_icon, "<");
+  lv_label_set_text(back_icon, "\U000F0141");
   lv_obj_set_style_text_color(back_icon, lv_color_hex(0xD8D8D8), LV_PART_MAIN);
-  if (ctx && ctx->label_font) lv_obj_set_style_text_font(back_icon, ctx->label_font, LV_PART_MAIN);
+  const lv_font_t *control_icon_font = ctx && ctx->climate_control_icon_font
+    ? ctx->climate_control_icon_font : (ctx ? ctx->icon_font : nullptr);
+  if (control_icon_font) lv_obj_set_style_text_font(back_icon, control_icon_font, LV_PART_MAIN);
   lv_obj_center(back_icon);
   lv_obj_add_event_cb(ui.back_btn, [](lv_event_t *e) {
     ClimateDetailUi &ui = climate_detail_ui();
@@ -1386,8 +1382,8 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, ctx ? ctx->label_font : nullptr, 0xBDBDBD);
   ui.current_title = climate_create_label(ui.page, find_icon("Thermometer"), LV_ALIGN_CENTER, -64, 70, ctx ? ctx->icon_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
   ui.current_value = climate_create_label(ui.page, "-- \u00B0C", LV_ALIGN_CENTER, 22, 70, ctx ? ctx->label_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
-  ui.minus_btn = climate_create_round_button(ui.page, 60, "-", ctx ? ctx->label_font : nullptr);
-  ui.plus_btn = climate_create_round_button(ui.page, 60, "+", ctx ? ctx->label_font : nullptr);
+  ui.minus_btn = climate_create_round_button(ui.page, 60, find_icon("Minus"), control_icon_font);
+  ui.plus_btn = climate_create_round_button(ui.page, 60, find_icon("Plus"), control_icon_font);
   ui.low_btn = climate_create_chip(ui.page, "Low", ctx ? ctx->label_font : nullptr);
   ui.high_btn = climate_create_chip(ui.page, "High", ctx ? ctx->label_font : nullptr);
   lv_obj_set_size(ui.low_btn, 76, 36);
@@ -1629,7 +1625,8 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
                                               uint32_t off_color,
                                               const lv_font_t *value_font,
                                               const lv_font_t *target_font,
-                                              const lv_font_t *icon_font) {
+                                              const lv_font_t *icon_font,
+                                              const lv_font_t *climate_control_icon_font) {
   ClimateCardCtx *ctx = new ClimateCardCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label;
@@ -1644,6 +1641,7 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
   ctx->label_font = text_lbl ? lv_obj_get_style_text_font(text_lbl, LV_PART_MAIN) : nullptr;
   ctx->unit_font = unit_lbl ? lv_obj_get_style_text_font(unit_lbl, LV_PART_MAIN) : ctx->label_font;
   ctx->icon_font = icon_font ? icon_font : (icon_lbl ? lv_obj_get_style_text_font(icon_lbl, LV_PART_MAIN) : nullptr);
+  ctx->climate_control_icon_font = climate_control_icon_font ? climate_control_icon_font : ctx->icon_font;
   ctx->on_color = on_color;
   ctx->off_color = off_color;
   ctx->send_timer = lv_timer_create(climate_send_timer_cb, 450, ctx);
@@ -3236,6 +3234,7 @@ struct GridConfig {
   bool color_correction;
   bool wrap_tall_labels;
   const lv_font_t *icon_font;
+  const lv_font_t *climate_control_icon_font;
   const lv_font_t *sp_sensor_font;
   const lv_font_t *climate_target_font;
   const lv_font_t *forecast_font;
@@ -3465,7 +3464,8 @@ inline void grid_phase2(
           has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
           cfg.sp_sensor_font,
           cfg.climate_target_font ? cfg.climate_target_font : cfg.sp_sensor_font,
-          cfg.icon_font);
+          cfg.icon_font,
+          cfg.climate_control_icon_font ? cfg.climate_control_icon_font : cfg.icon_font);
         subscribe_climate_card(climate_ctx);
       }
       continue;
@@ -3891,7 +3891,8 @@ inline void grid_phase2(
             has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
             cfg.sp_sensor_font,
             cfg.climate_target_font ? cfg.climate_target_font : cfg.sp_sensor_font,
-            cfg.icon_font);
+            cfg.icon_font,
+            cfg.climate_control_icon_font ? cfg.climate_control_icon_font : cfg.icon_font);
           subscribe_climate_card(climate_ctx);
           if (sp_indicator) {
             lv_obj_t *parent_btn = slots[si].btn;
