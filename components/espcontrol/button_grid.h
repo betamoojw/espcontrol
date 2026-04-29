@@ -4201,11 +4201,11 @@ inline void grid_phase3(
   if (indoor_on && outdoor_on) {
     char buf[32];
     snprintf(buf, sizeof(buf), "-%s / -%s",
-             display_temperature_unit_symbol(), display_temperature_unit_symbol());
+             display_clock_bar_temperature_unit_symbol(), display_clock_bar_temperature_unit_symbol());
     lv_label_set_text(temp_label, buf);
   } else if (indoor_on || outdoor_on) {
     char buf[16];
-    snprintf(buf, sizeof(buf), "-%s", display_temperature_unit_symbol());
+    snprintf(buf, sizeof(buf), "-%s", display_clock_bar_temperature_unit_symbol());
     lv_label_set_text(temp_label, buf);
   }
 
@@ -4220,11 +4220,11 @@ inline void grid_phase3(
             float outdoor = *outdoor_temp_ptr;
             char buf[40];
             if (std::isnan(outdoor)) {
-              snprintf(buf, sizeof(buf), "%.0f%s", val, display_temperature_unit_symbol());
+              snprintf(buf, sizeof(buf), "%.0f%s", val, display_clock_bar_temperature_unit_symbol());
             } else {
               snprintf(buf, sizeof(buf), "%.0f%s / %.0f%s",
-                       outdoor, display_temperature_unit_symbol(),
-                       val, display_temperature_unit_symbol());
+                       outdoor, display_clock_bar_temperature_unit_symbol(),
+                       val, display_clock_bar_temperature_unit_symbol());
             }
             lv_label_set_text(temp_label, buf);
           }
@@ -4243,11 +4243,11 @@ inline void grid_phase3(
             float indoor = *indoor_temp_ptr;
             char buf[40];
             if (std::isnan(indoor)) {
-              snprintf(buf, sizeof(buf), "%.0f%s", val, display_temperature_unit_symbol());
+              snprintf(buf, sizeof(buf), "%.0f%s", val, display_clock_bar_temperature_unit_symbol());
             } else {
               snprintf(buf, sizeof(buf), "%.0f%s / %.0f%s",
-                       val, display_temperature_unit_symbol(),
-                       indoor, display_temperature_unit_symbol());
+                       val, display_clock_bar_temperature_unit_symbol(),
+                       indoor, display_clock_bar_temperature_unit_symbol());
             }
             lv_label_set_text(temp_label, buf);
           }

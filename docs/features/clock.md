@@ -17,7 +17,7 @@ Configured in the **Time Settings** section of the **Settings** tab in [Setup](/
 - **NTP Server 1 / 2 / 3** — choose the network time servers used to keep the panel clock accurate. Defaults to `0.pool.ntp.org`, `1.pool.ntp.org`, and `2.pool.ntp.org`.
 - **Sunrise / Sunset** — read-only reference values calculated from your timezone, updated daily. Displayed in whichever format you chose.
 
-The **Clock Bar** section controls whether the top bar is shown. It also contains the indoor and outdoor temperature controls shown in that bar.
+The **Clock Bar** section controls whether the top bar is shown. It also contains the indoor and outdoor temperature controls shown in that bar, including whether temperatures include the `°` symbol.
 
 ## How It Works
 

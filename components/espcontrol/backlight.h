@@ -134,9 +134,9 @@ inline void update_temp_label(lv_obj_t *label, lv_obj_t *main_page_obj,
                               bool this_enabled, bool other_enabled) {
   char one[12];
   char both[24];
-  snprintf(one, sizeof(one), "-%s", display_temperature_unit_symbol());
+  snprintf(one, sizeof(one), "-%s", display_clock_bar_temperature_unit_symbol());
   snprintf(both, sizeof(both), "-%s / -%s",
-           display_temperature_unit_symbol(), display_temperature_unit_symbol());
+           display_clock_bar_temperature_unit_symbol(), display_clock_bar_temperature_unit_symbol());
   if (this_enabled) {
     if (lv_scr_act() == main_page_obj)
       lv_obj_clear_flag(label, LV_OBJ_FLAG_HIDDEN);
@@ -161,7 +161,7 @@ inline void refresh_temp_label_values(lv_obj_t *label, lv_obj_t *main_page_obj,
 
   char indoor_buf[16];
   char outdoor_buf[16];
-  const char *unit = display_temperature_unit_symbol();
+  const char *unit = display_clock_bar_temperature_unit_symbol();
   if (indoor_enabled) {
     if (std::isnan(indoor)) snprintf(indoor_buf, sizeof(indoor_buf), "-%s", unit);
     else snprintf(indoor_buf, sizeof(indoor_buf), "%.0f%s", indoor, unit);

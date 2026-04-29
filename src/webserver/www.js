@@ -553,6 +553,7 @@
     outdoorEntity: "",
     temperatureUnit: "Auto",
     clockBarOn: true,
+    temperatureDegreeSymbolOn: true,
     presenceEntity: "",
     screensaverMode: "disabled",
     _screensaverModeReceived: false,
@@ -663,6 +664,11 @@
     if (unit === "\u00B0F") return "\u00B0F";
     if (unit === "\u00B0C") return "\u00B0C";
     return timezonePrefersFahrenheit(state.timezone) ? "\u00B0F" : "\u00B0C";
+  }
+
+  function clockBarTemperatureUnitSymbol() {
+    var unit = temperatureUnitSymbol();
+    return state.temperatureDegreeSymbolOn ? unit : unit.replace("\u00B0", "");
   }
 
   function appendScreenRotationOption(select, opt) {
@@ -895,6 +901,9 @@
     if (els.setClockBarToggle) els.setClockBarToggle.checked = !!state.clockBarOn;
     if (els.setClockBarBadge) {
       els.setClockBarBadge.className = "sp-card-badge" + (state.clockBarOn ? "" : " sp-hidden");
+    }
+    if (els.setTemperatureDegreeSymbolToggle) {
+      els.setTemperatureDegreeSymbolToggle.checked = !!state.temperatureDegreeSymbolOn;
     }
     updateTempPreview();
   }
@@ -1410,6 +1419,17 @@
       "screen_clock_bar",
       "clock_bar_enabled",
     ], on, CLOCK_BAR_UNAVAILABLE);
+  }
+
+  var TEMPERATURE_DEGREE_SYMBOL_UNAVAILABLE =
+    "Temperature degree symbol setting is not available on this firmware. Update the device firmware, then reload this page.";
+
+  function postTemperatureDegreeSymbol(on) {
+    postSwitchWithObjectIds("Screen: Temperature Degree Symbol", [
+      "screen__temperature_degree_symbol",
+      "screen_temperature_degree_symbol",
+      "temperature_degree_symbol_enabled",
+    ], on, TEMPERATURE_DEGREE_SYMBOL_UNAVAILABLE);
   }
 
   var SCREEN_SCHEDULE_UNAVAILABLE =
@@ -2426,6 +2446,15 @@
       state.clockBarOn = this.checked;
       syncClockBarUi();
       postClockBar(state.clockBarOn);
+    });
+
+    var degreeSymbol = toggleRow("Show Degree Symbol", "sp-set-temperature-degree-symbol", state.temperatureDegreeSymbolOn);
+    clockBarBody.appendChild(degreeSymbol.row);
+    els.setTemperatureDegreeSymbolToggle = degreeSymbol.input;
+    degreeSymbol.input.addEventListener("change", function () {
+      state.temperatureDegreeSymbolOn = this.checked;
+      syncClockBarUi();
+      postTemperatureDegreeSymbol(state.temperatureDegreeSymbolOn);
     });
 
     var outdoor = createEntityToggleSection("Outdoor Temperature", "sp-set-outdoor-toggle", state._outdoorOn,
@@ -4850,6 +4879,7 @@
         outdoor_temp_entity: state.outdoorEntity,
         temperature_unit: normalizeTemperatureUnit(state.temperatureUnit),
         clock_bar: state.clockBarOn,
+        temperature_degree_symbol: state.temperatureDegreeSymbolOn,
         timezone: state.timezone,
         clock_format: state.clockFormat,
         ntp_server_1: state.ntpServer1,
@@ -5077,6 +5107,7 @@
           postText("Indoor Temp Entity", s.indoor_temp_entity || "");
           postText("Outdoor Temp Entity", s.outdoor_temp_entity || "");
           postClockBar(s.clock_bar != null ? !!s.clock_bar : true);
+          postTemperatureDegreeSymbol(s.temperature_degree_symbol != null ? !!s.temperature_degree_symbol : true);
           var importedTimezone = s.timezone || state.timezone;
           var importedTemperatureUnit = normalizeTemperatureUnit(s.temperature_unit);
           var importedClockFormat =
@@ -5135,6 +5166,7 @@
           state.outdoorEntity = s.outdoor_temp_entity || "";
           state.temperatureUnit = importedTemperatureUnit;
           state.clockBarOn = s.clock_bar != null ? !!s.clock_bar : true;
+          state.temperatureDegreeSymbolOn = s.temperature_degree_symbol != null ? !!s.temperature_degree_symbol : true;
           state.timezone = importedTimezone;
           state.clockFormat = importedClockFormat;
           state.ntpServer1 = importedNtpServer1;
@@ -5396,6 +5428,18 @@
       },
       "switch-clock_bar_enabled": function (val, d) {
         state.clockBarOn = d.value === true || val === "ON";
+        syncClockBarUi();
+      },
+      "switch-screen__temperature_degree_symbol": function (val, d) {
+        state.temperatureDegreeSymbolOn = d.value === true || val === "ON";
+        syncClockBarUi();
+      },
+      "switch-screen_temperature_degree_symbol": function (val, d) {
+        state.temperatureDegreeSymbolOn = d.value === true || val === "ON";
+        syncClockBarUi();
+      },
+      "switch-temperature_degree_symbol_enabled": function (val, d) {
+        state.temperatureDegreeSymbolOn = d.value === true || val === "ON";
         syncClockBarUi();
       },
       "text-indoor_temp_entity": function (val) {
@@ -5773,7 +5817,7 @@
     if (!els.temp) return;
     var show = state.clockBarOn && (state._indoorOn || state._outdoorOn);
     els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
-    var unit = temperatureUnitSymbol();
+    var unit = clockBarTemperatureUnitSymbol();
     var indoor = state._indoorVal != null ? state._indoorVal + unit : "24" + unit;
     var outdoor = state._outdoorVal != null ? state._outdoorVal + unit : "17" + unit;
     if (state._indoorOn && state._outdoorOn) {

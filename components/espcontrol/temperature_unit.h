@@ -62,10 +62,19 @@ inline std::string &display_temperature_timezone_option() {
   return timezone;
 }
 
+inline bool &display_temperature_degree_symbol_enabled() {
+  static bool enabled = true;
+  return enabled;
+}
+
 inline void set_display_temperature_unit(const std::string &unit_option,
                                          const std::string &timezone_option) {
   display_temperature_unit_option() = normalize_temperature_unit_option(unit_option);
   display_temperature_timezone_option() = timezone_option.empty() ? std::string("UTC (GMT+0)") : timezone_option;
+}
+
+inline void set_display_temperature_degree_symbol(bool enabled) {
+  display_temperature_degree_symbol_enabled() = enabled;
 }
 
 inline bool display_temperature_uses_fahrenheit() {
@@ -77,4 +86,9 @@ inline bool display_temperature_uses_fahrenheit() {
 
 inline const char *display_temperature_unit_symbol() {
   return display_temperature_uses_fahrenheit() ? "\u00B0F" : "\u00B0C";
+}
+
+inline const char *display_clock_bar_temperature_unit_symbol() {
+  if (display_temperature_degree_symbol_enabled()) return display_temperature_unit_symbol();
+  return display_temperature_uses_fahrenheit() ? "F" : "C";
 }
