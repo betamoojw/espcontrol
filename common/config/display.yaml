@@ -36,12 +36,12 @@ script:
 
           if (lv_scr_act() == id(main_page)->obj) {
             lv_obj_clear_flag(id(display_time), LV_OBJ_FLAG_HIDDEN);
-            if (id(indoor_temp_enable).state || id(outdoor_temp_enable).state) {
-              lv_obj_clear_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-            } else {
-              lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-            }
           }
+          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+                                    enabled,
+                                    id(indoor_temp_enable).state,
+                                    id(outdoor_temp_enable).state,
+                                    id(indoor_temp), id(outdoor_temp));
 
 switch:
   - platform: template
@@ -71,18 +71,18 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          if (id(clock_bar_enabled).state) {
-            update_temp_label(id(temperatures), id(main_page)->obj, true, id(outdoor_temp_enable).state);
-          } else {
-            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-          }
+          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+                                    id(clock_bar_enabled).state,
+                                    id(indoor_temp_enable).state,
+                                    id(outdoor_temp_enable).state,
+                                    id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          if (id(clock_bar_enabled).state) {
-            update_temp_label(id(temperatures), id(main_page)->obj, false, id(outdoor_temp_enable).state);
-          } else {
-            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-          }
+          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+                                    id(clock_bar_enabled).state,
+                                    id(indoor_temp_enable).state,
+                                    id(outdoor_temp_enable).state,
+                                    id(indoor_temp), id(outdoor_temp));
 
   - platform: template
     name: "Outdoor Temp Enable"
@@ -96,18 +96,18 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          if (id(clock_bar_enabled).state) {
-            update_temp_label(id(temperatures), id(main_page)->obj, true, id(indoor_temp_enable).state);
-          } else {
-            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-          }
+          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+                                    id(clock_bar_enabled).state,
+                                    id(indoor_temp_enable).state,
+                                    id(outdoor_temp_enable).state,
+                                    id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          if (id(clock_bar_enabled).state) {
-            update_temp_label(id(temperatures), id(main_page)->obj, false, id(indoor_temp_enable).state);
-          } else {
-            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
-          }
+          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+                                    id(clock_bar_enabled).state,
+                                    id(indoor_temp_enable).state,
+                                    id(outdoor_temp_enable).state,
+                                    id(indoor_temp), id(outdoor_temp));
 
   - platform: template
     name: "Screen: Temperature Degree Symbol"
