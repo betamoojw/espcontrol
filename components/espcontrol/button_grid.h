@@ -1373,8 +1373,12 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   lv_obj_clear_flag(ui.page, LV_OBJ_FLAG_SCROLLABLE);
 
   ui.back_btn = lv_btn_create(ui.page);
-  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_TRANSP, LV_PART_MAIN);
-  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_TRANSP,
+  lv_obj_set_style_radius(ui.back_btn, 8, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.back_btn, lv_color_hex(0x222222), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.back_btn, lv_color_hex(0x303030),
+    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
+  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_COVER,
     static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
   lv_obj_set_style_border_width(ui.back_btn, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(ui.back_btn, 0, LV_PART_MAIN);
