@@ -680,6 +680,24 @@ inline void reset_climate_contexts() {
   climate_card_context_count() = 0;
 }
 
+struct ClimateHomeGridMetrics {
+  lv_obj_t *page = nullptr;
+  int cols = 3;
+  int rows = 3;
+};
+
+inline ClimateHomeGridMetrics &climate_home_grid_metrics() {
+  static ClimateHomeGridMetrics metrics;
+  return metrics;
+}
+
+inline void set_climate_home_grid_metrics(lv_obj_t *page, int cols, int rows) {
+  ClimateHomeGridMetrics &metrics = climate_home_grid_metrics();
+  metrics.page = page;
+  metrics.cols = cols > 0 ? cols : 3;
+  metrics.rows = rows > 0 ? rows : 3;
+}
+
 inline std::string climate_mode_label(const std::string &mode) {
   if (mode == "off") return "Off";
   if (mode == "heat") return "Heat";
@@ -1265,23 +1283,32 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   lv_coord_t short_side = sw < sh ? sw : sh;
   lv_coord_t back_size = short_side < 520 ? 60 : 72;
   lv_coord_t menu_size = short_side < 520 ? 44 : 48;
-  lv_coord_t card_start_top = sw < sh ? 50 : (short_side < 520 ? 38 : 42);
-  lv_coord_t grid_pad_left = 5;
-  lv_coord_t grid_pad_right = 5;
-  lv_coord_t grid_pad_bottom = short_side < 520 ? 4 : 5;
-  lv_coord_t grid_gap = sw < sh ? 14 : 10;
+  ClimateHomeGridMetrics &metrics = climate_home_grid_metrics();
+  lv_obj_t *home_grid = metrics.page;
+  lv_coord_t grid_pad_top = home_grid ? lv_obj_get_style_pad_top(home_grid, LV_PART_MAIN) : (sw < sh ? 50 : (short_side < 520 ? 38 : 42));
+  lv_coord_t grid_pad_left = home_grid ? lv_obj_get_style_pad_left(home_grid, LV_PART_MAIN) : 5;
+  lv_coord_t grid_pad_right = home_grid ? lv_obj_get_style_pad_right(home_grid, LV_PART_MAIN) : 5;
+  lv_coord_t grid_pad_bottom = home_grid ? lv_obj_get_style_pad_bottom(home_grid, LV_PART_MAIN) : (short_side < 520 ? 4 : 5);
+  lv_coord_t grid_gap_col = home_grid ? lv_obj_get_style_pad_column(home_grid, LV_PART_MAIN) : (sw < sh ? 14 : 10);
+  lv_coord_t grid_gap_row = home_grid ? lv_obj_get_style_pad_row(home_grid, LV_PART_MAIN) : (sw < sh ? 14 : 10);
   lv_coord_t grid_w = sw - grid_pad_left - grid_pad_right;
-  lv_coord_t grid_h = sh - card_start_top - grid_pad_bottom;
+  lv_coord_t grid_h = sh - grid_pad_top - grid_pad_bottom;
   if (grid_w < 1) grid_w = sw;
   if (grid_h < 1) grid_h = sh;
-  int grid_cols = sw < sh ? 2 : (short_side < 520 ? 3 : 5);
+  int grid_cols = home_grid && metrics.cols > 0 ? metrics.cols : (sw < sh ? 2 : (short_side < 520 ? 3 : 5));
+  int grid_rows = home_grid && metrics.rows > 0 ? metrics.rows : 3;
   int span_cols = grid_cols < 3 ? grid_cols : 3;
-  lv_coord_t col_w = (grid_w - grid_gap * (grid_cols - 1)) / grid_cols;
-  lv_coord_t frame_w = col_w * span_cols + grid_gap * (span_cols - 1);
+  int span_rows = grid_rows < 3 ? grid_rows : 3;
+  lv_coord_t col_w = (grid_w - grid_gap_col * (grid_cols - 1)) / grid_cols;
+  lv_coord_t row_h = (grid_h - grid_gap_row * (grid_rows - 1)) / grid_rows;
+  if (col_w < 1) col_w = grid_w / (span_cols > 0 ? span_cols : 1);
+  if (row_h < 1) row_h = grid_h / (span_rows > 0 ? span_rows : 1);
+  lv_coord_t frame_w = col_w * span_cols + grid_gap_col * (span_cols - 1);
+  lv_coord_t frame_h = row_h * span_rows + grid_gap_row * (span_rows - 1);
   if (frame_w > grid_w) frame_w = grid_w;
-  lv_coord_t frame_h = grid_h;
-  lv_coord_t frame_x = grid_pad_left + (grid_w - frame_w) / 2;
-  lv_coord_t frame_y = card_start_top;
+  if (frame_h > grid_h) frame_h = grid_h;
+  lv_coord_t frame_x = grid_pad_left;
+  lv_coord_t frame_y = grid_pad_top;
   lv_coord_t frame_cx = frame_x + frame_w / 2 - sw / 2;
   lv_coord_t frame_cy = frame_y + frame_h / 2 - sh / 2;
   lv_coord_t arc_size = (frame_w < frame_h ? frame_w : frame_h) * 86 / 100;
@@ -3435,6 +3462,7 @@ inline void grid_phase2(
       cfg.num_slots, MAX_GRID_SLOTS);
   }
   int ROWS = (NS + COLS - 1) / COLS;
+  set_climate_home_grid_metrics(main_page_obj, COLS, ROWS);
 
   static bool has_sensor[MAX_GRID_SLOTS] = {};
   static bool sensor_text_mode[MAX_GRID_SLOTS] = {};
