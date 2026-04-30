@@ -1191,7 +1191,7 @@ inline void climate_update_detail(ClimateCardCtx *ctx) {
   climate_set_visible(ui.mode_tabs, false);
 
   uint32_t active_color = climate_detail_accent_color(ctx);
-  lv_obj_set_style_arc_color(ui.arc, lv_color_hex(0x2A2A2A), LV_PART_MAIN);
+  lv_obj_set_style_arc_color(ui.arc, lv_color_hex(ctx ? ctx->off_color : CLIMATE_NEUTRAL_COLOR), LV_PART_MAIN);
   lv_obj_set_style_arc_color(ui.arc, lv_color_hex(active_color), LV_PART_INDICATOR);
   lv_obj_set_style_bg_color(ui.arc, lv_color_hex(0xF4F4F4), LV_PART_KNOB);
   lv_obj_set_style_border_color(ui.arc, lv_color_hex(active_color), LV_PART_KNOB);
