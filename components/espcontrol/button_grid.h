@@ -1462,8 +1462,10 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   ui.target_value = climate_create_label(ui.page, "20.0", LV_ALIGN_CENTER, 0, 14, ctx ? ctx->target_font : nullptr);
   ui.target_unit = climate_create_label(ui.page, display_temperature_unit_symbol(), LV_ALIGN_CENTER, 66, -2, unit_font);
   ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, ctx ? ctx->label_font : nullptr, 0xBDBDBD);
-  ui.minus_btn = climate_create_round_button(ui.page, 72, find_icon("Minus"), control_icon_font);
-  ui.plus_btn = climate_create_round_button(ui.page, 72, find_icon("Plus"), control_icon_font);
+  ui.minus_btn = climate_create_round_button(ui.page, 72, find_icon("Minus"), control_icon_font,
+    0xBDBDBD, 0xD8D8D8, CLIMATE_DETAIL_CARD_COLOR);
+  ui.plus_btn = climate_create_round_button(ui.page, 72, find_icon("Plus"), control_icon_font,
+    0xBDBDBD, 0xD8D8D8, CLIMATE_DETAIL_CARD_COLOR);
   ui.low_btn = climate_create_chip(ui.page, "Low", ctx ? ctx->label_font : nullptr);
   ui.high_btn = climate_create_chip(ui.page, "High", ctx ? ctx->label_font : nullptr);
   lv_obj_set_size(ui.low_btn, 76, 36);
