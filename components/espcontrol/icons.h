@@ -73,6 +73,7 @@ static const IconEntry ICON_ENTRIES[] = {
     {"Door",                       "\U000F081A"},
     {"Door Open",                  "\U000F081C"},
     {"Doorbell",                   "\U000F0869"},
+    {"Dots Horizontal",            "\U000F01D8"},
     {"Dryer",                      "\U000F0917"},
     {"EV Charger",                 "\U000F05F1"},
     {"Fan",                        "\U000F0210"},

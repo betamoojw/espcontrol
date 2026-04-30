@@ -1185,7 +1185,7 @@ inline void climate_update_detail(ClimateCardCtx *ctx) {
   climate_set_visible(ui.preset_chip, climate_has_options(ctx->hvac_modes));
   climate_set_visible(ui.fan_chip, climate_has_options(ctx->fan_modes));
   climate_set_visible(ui.swing_chip, climate_has_options(ctx->swing_modes));
-  climate_set_button_label(ui.preset_chip, "\U000F01D8");
+  climate_set_button_label(ui.preset_chip, find_icon("Dots Horizontal"));
   climate_set_button_label(ui.fan_chip, "Fan\n" + (ctx->fan_mode.empty() ? std::string("None") : climate_mode_label(ctx->fan_mode)));
   climate_set_button_label(ui.swing_chip, "Swing\n" + (ctx->swing_mode.empty() ? std::string("None") : climate_mode_label(ctx->swing_mode)));
   climate_set_visible(ui.mode_tabs, false);
@@ -1491,7 +1491,7 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
     climate_update_detail(ui.active);
   }, LV_EVENT_CLICKED, nullptr);
 
-  ui.preset_chip = climate_create_round_button(ui.page, 48, "\U000F01D8", control_icon_font,
+  ui.preset_chip = climate_create_round_button(ui.page, 48, find_icon("Dots Horizontal"), control_icon_font,
     0x8A8A8A, 0xBDBDBD, CLIMATE_DETAIL_CARD_COLOR);
   ui.fan_chip = climate_create_chip(ui.page, "Fan\nNone", ctx ? ctx->label_font : nullptr);
   ui.swing_chip = climate_create_chip(ui.page, "Swing\nNone", ctx ? ctx->label_font : nullptr);

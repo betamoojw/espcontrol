@@ -2,7 +2,6 @@
 - "\U000F0493"  # mdi-cog (Auto fallback)
 - "\U000F0141"  # mdi-chevron-left (Back button)
 - "\U000F0142"  # mdi-chevron-right (Subpage indicator)
-- "\U000F01D8"  # mdi-dots-horizontal (Climate options)
 - "\U000F0004"  # mdi-account
 - "\U000F001B"  # mdi-air-conditioner
 - "\U000F0D43"  # mdi-air-filter
@@ -59,6 +58,7 @@
 - "\U000F081A"  # mdi-door
 - "\U000F081C"  # mdi-door-open
 - "\U000F0869"  # mdi-doorbell-video
+- "\U000F01D8"  # mdi-dots-horizontal
 - "\U000F0917"  # mdi-tumble-dryer
 - "\U000F05F1"  # mdi-ev-station
 - "\U000F0210"  # mdi-fan
