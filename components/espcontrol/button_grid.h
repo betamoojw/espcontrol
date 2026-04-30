@@ -1336,7 +1336,7 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   }
   lv_obj_set_size(ui.back_btn, round_btn, round_btn);
   lv_obj_set_style_radius(ui.back_btn, round_btn / 2, LV_PART_MAIN);
-  lv_coord_t menu_inset = short_side < 520 ? 5 : 7;
+  lv_coord_t menu_inset = short_side < 520 ? 3 : 4;
   lv_obj_align(ui.back_btn, LV_ALIGN_TOP_LEFT, frame_x + menu_inset, frame_y + menu_inset);
   lv_obj_move_foreground(ui.back_btn);
   lv_obj_set_size(ui.preset_chip, round_btn, round_btn);
