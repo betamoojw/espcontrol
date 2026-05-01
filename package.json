@@ -3,10 +3,12 @@
   "private": true,
   "scripts": {
     "check:config": "node scripts/check_config_formats.js",
+    "check:generated": "python3 scripts/build.py --check",
     "check:timezones": "python3 scripts/check_timezones.py",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "webserver:build": "python3 scripts/build.py www"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",

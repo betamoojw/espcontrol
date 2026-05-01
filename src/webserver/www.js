@@ -190,14 +190,8 @@
 
     ".sp-page{display:none}.sp-page.active{display:block}" +
 
-    ".sp-support-btn{position:fixed;right:18px;bottom:18px;z-index:150;display:inline-flex;" +
-    "align-items:center;justify-content:center;gap:10px;min-height:56px;padding:8px 20px 8px 16px;" +
-    "border:1px solid #000;border-radius:999px;background:#ffdd00;color:#000;text-decoration:none;" +
-    "font-family:'Cookie',cursive;font-size:28px;font-weight:400;line-height:1;letter-spacing:0;" +
-    "box-shadow:0 6px 18px rgba(0,0,0,.32);transition:transform .2s,box-shadow .2s,filter .2s}" +
-    ".sp-support-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.38);filter:brightness(1.03)}" +
-    ".sp-support-btn:active{transform:translateY(0);filter:brightness(.96)}" +
-    ".sp-support-btn svg{width:30px;height:30px;flex-shrink:0;display:block}" +
+    ".sp-support-btn{position:fixed;right:28px;bottom:28px;z-index:150;display:inline-block;line-height:0}" +
+    ".sp-support-btn img{height:60px;display:block;border-radius:999px}" +
 
     ".fade-in{animation:fadeIn .3s ease}" +
     "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}" +
@@ -542,8 +536,6 @@
     ".sp-header{padding:0 10px}" +
     ".sp-tab{padding:0 10px;font-size:.75rem}" +
     ".sp-tab-docs{margin-left:2px;padding-left:16px;gap:4px}" +
-    ".sp-support-btn{right:12px;bottom:12px;min-height:48px;padding:7px 16px 7px 12px;font-size:24px}" +
-    ".sp-support-btn svg{width:26px;height:26px}" +
     ".sp-color-row{flex-wrap:wrap}" +
     ".sp-backup-btns{flex-direction:column}" +
     ".sp-fw-row{flex-direction:column;align-items:flex-start;gap:12px}" +
@@ -2030,6 +2022,17 @@
 
   // ── Init ───────────────────────────────────────────────────────────────
 
+  function addSupportButton() {
+    if (document.querySelector(".sp-support-btn")) return;
+    var link = document.createElement("a");
+    link.className = "sp-support-btn";
+    link.href = "https://www.buymeacoffee.com/jtenniswood";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.innerHTML = '<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" style="border-radius:999px;">';
+    document.body.appendChild(link);
+  }
+
   function init() {
     // Set CSS custom properties from device config
     var r = document.documentElement.style;
@@ -2081,6 +2084,7 @@
     document.head.appendChild(fonts);
 
     buildUI();
+    addSupportButton();
     syncClockBarUi();
     setupPreviewEvents();
     renderPreview();
