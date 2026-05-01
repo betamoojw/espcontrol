@@ -108,6 +108,10 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   // Slider cards used to store "h" here for horizontal layout. Sliders are
   // now always vertical, so treat any saved slider sensor value as legacy.
   if (p.type == "slider" && !p.sensor.empty()) p.sensor.clear();
+  if (p.type == "weather_forecast") {
+    p.type = "weather";
+    p.precision = "tomorrow";
+  }
   return p;
 }
 
@@ -2492,6 +2496,10 @@ inline void setup_weather_card(BtnSlot &s, bool has_sensor_color, uint32_t senso
   lv_label_set_text(s.text_lbl, "Weather");
 }
 
+inline bool weather_card_shows_tomorrow(const ParsedCfg &p) {
+  return p.type == "weather_forecast" || (p.type == "weather" && p.precision == "tomorrow");
+}
+
 inline void setup_weather_forecast_card(BtnSlot &s, const ParsedCfg &p,
                                         const lv_font_t *forecast_font,
                                         const lv_font_t *forecast_unit_font,
@@ -3293,6 +3301,10 @@ inline std::string decode_compact_subpage_field(const std::string &value) {
 
 inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
   if (b.type == "slider" && !b.sensor.empty()) b.sensor.clear();
+  if (b.type == "weather_forecast") {
+    b.type = "weather";
+    b.precision = "tomorrow";
+  }
   return b;
 }
 
@@ -3632,13 +3644,13 @@ inline void grid_phase1(
       setup_timezone_card(s, p, has_sensor_color, sensor_val);
       continue;
     }
-    if (p.type == "weather") {
-      setup_weather_card(s, has_sensor_color, sensor_val);
-      continue;
-    }
-    if (p.type == "weather_forecast") {
+    if (weather_card_shows_tomorrow(p)) {
       setup_weather_forecast_card(s, p, cfg.forecast_font, cfg.forecast_unit_font,
         has_sensor_color, sensor_val);
+      continue;
+    }
+    if (p.type == "weather") {
+      setup_weather_card(s, has_sensor_color, sensor_val);
       continue;
     }
     if (p.type == "climate") {
@@ -3755,12 +3767,12 @@ inline void grid_phase2(
     if (p.type == "timezone") {
       continue;
     }
+    if (weather_card_shows_tomorrow(p)) {
+      continue;
+    }
     if (p.type == "weather") {
       if (!p.entity.empty())
         subscribe_weather_state(s.icon_lbl, s.text_lbl, p.entity);
-      continue;
-    }
-    if (p.type == "weather_forecast") {
       continue;
     }
     if (p.type == "climate") {
@@ -4120,7 +4132,7 @@ inline void grid_phase2(
         lv_label_set_text(stl, label.c_str());
         register_timezone_card(svl, sul, stl, sb.entity, sb.label);
 
-      } else if (sb.type == "weather") {
+      } else if (sb.type == "weather" && sb.precision != "tomorrow") {
         if (has_sensor_color)
           lv_obj_set_style_bg_color(sb_btn, lv_color_hex(sensor_val),
             static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
@@ -4130,7 +4142,7 @@ inline void grid_phase2(
         if (!sb.entity.empty())
           subscribe_weather_state(sil, stl, sb.entity);
 
-      } else if (sb.type == "weather_forecast") {
+      } else if (sb.type == "weather_forecast" || (sb.type == "weather" && sb.precision == "tomorrow")) {
         if (has_sensor_color)
           lv_obj_set_style_bg_color(sb_btn, lv_color_hex(sensor_val),
             static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));

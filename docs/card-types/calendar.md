@@ -22,5 +22,5 @@ Date cards are read-only — tapping them does nothing.
 - In **Date & time** mode, the large time display follows the timezone and 12/24-hour setting selected in [Time Settings](/features/clock).
 - The label underneath follows the same local timezone, so it stays matched to the time shown above.
 - The panel publishes a **Screen: Date** diagnostic value, so you can check whether the device currently knows the date.
-- The card uses the **tertiary** colour from [Appearance](/features/appearance), like Sensor, World Clock, Weather, and Weather Forecast cards.
+- The card uses the **tertiary** colour from [Appearance](/features/appearance), like Sensor, World Clock, and Weather cards.
 - If the panel has not synced time yet, the card shows `--` until time becomes available.

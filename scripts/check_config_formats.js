@@ -270,16 +270,27 @@ assertButtonRoundTrip(hooks, "timezone card", {
   precision: "",
 }, false);
 
-assertButtonRoundTrip(hooks, "weather forecast card", {
+assertButtonRoundTrip(hooks, "weather tomorrow card", {
   entity: "weather.forecast_home",
   label: "",
   icon: "Auto",
   icon_on: "Auto",
   sensor: "",
   unit: "",
-  type: "weather_forecast",
-  precision: "",
+  type: "weather",
+  precision: "tomorrow",
 }, false);
+
+assert.deepStrictEqual(buttonShape(hooks.parseButtonConfig("weather.forecast_home;Weather;Auto;Auto;;;weather_forecast")), {
+  entity: "weather.forecast_home",
+  label: "Weather",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "weather",
+  precision: "tomorrow",
+}, "legacy weather forecast card parse");
 
 assertButtonRoundTrip(hooks, "scene action card", {
   entity: "scene.movie_mode",
@@ -484,7 +495,7 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|T,America/New
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|F,weather.forecast_home")), {
   order: ["1", "B"],
   buttons: [
-    buttonShape({ entity: "weather.forecast_home", type: "weather_forecast" }),
+    buttonShape({ entity: "weather.forecast_home", type: "weather", precision: "tomorrow" }),
   ],
 }, "compact weather forecast subpage parse");
 

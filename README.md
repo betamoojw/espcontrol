@@ -15,7 +15,7 @@ Supported panels include the **10.1-inch JC8012P4A1** (1280×800, landscape, 20 
 - **Grid layout** — a fixed grid sized to each screen so you can place cards exactly where you want them
 - **Subpages** — group related controls into folders to keep the home screen tidy
 - **Flexible card sizes** — make cards Single, Tall, Wide, or Large to suit the control
-- **Rich card types** — Switch, Action, Trigger, Sensor, Slider, Cover, Climate, Garage Door, Date, World Clock, Weather, and Weather Forecast
+- **Rich card types** — Switch, Action, Trigger, Sensor, Slider, Cover, Climate, Garage Door, Date, World Clock, Weather, and Internal
 - **Edit controls** — drag-and-drop ordering, bulk select, and copy-paste between pages from the built-in web UI
 - **Screensaver** — dims and sleeps after a set time, or wakes automatically from a presence sensor
 

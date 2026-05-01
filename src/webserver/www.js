@@ -1581,6 +1581,10 @@
     if (b && b.type === "slider" && b.sensor) {
       b.sensor = "";
     }
+    if (b && b.type === "weather_forecast") {
+      b.type = "weather";
+      b.precision = "tomorrow";
+    }
     if (b && b.type === "text_sensor") {
       b.type = "sensor";
       b.precision = "text";

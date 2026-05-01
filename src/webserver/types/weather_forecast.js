@@ -3,13 +3,16 @@ registerButtonType("weather_forecast", {
   label: "Weather Forecast",
   allowInSubpage: true,
   hideLabel: true,
+  isAvailable: function () {
+    return false;
+  },
   onSelect: function (b) {
     b.label = "";
     b.icon = "Auto";
     b.icon_on = "Auto";
     b.sensor = "";
     b.unit = "";
-    b.precision = "";
+    b.precision = "tomorrow";
   },
   renderSettings: function (panel, b, slot, helpers) {
     var ef = document.createElement("div");
