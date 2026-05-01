@@ -1,5 +1,5 @@
 ---
-title: Troubleshooting
+title: EspControl Troubleshooting
 description:
   Solutions for common issues when installing EspControl, connecting to WiFi, or adding the device to Home Assistant.
 ---

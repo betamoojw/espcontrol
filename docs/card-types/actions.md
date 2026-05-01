@@ -1,5 +1,5 @@
 ---
-title: Action
+title: Action Cards
 description:
   How to use action cards on your EspControl panel to run Home Assistant scenes, scripts, buttons, and helpers.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Icon Reference
+title: EspControl Icon Reference
 description: Browse all available icons for your EspControl cards.
 ---
 

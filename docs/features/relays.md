@@ -1,5 +1,5 @@
 ---
-title: Built-in Relays
+title: Built-in Relay Controls
 description:
   How EspControl exposes the built-in relays on the Guition 4848S040C relay variant in Home Assistant.
 ---

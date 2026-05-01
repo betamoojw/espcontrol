@@ -1,5 +1,5 @@
 ---
-title: Weather Forecast moved to Weather
+title: Weather Forecast Cards Moved to Weather
 description:
   Weather Forecast has moved into the Weather card's Display setting.
 ---

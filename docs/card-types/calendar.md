@@ -1,5 +1,5 @@
 ---
-title: Date
+title: Date Cards
 description:
   How to show today's date on your EspControl panel.
 ---

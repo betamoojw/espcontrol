@@ -1,5 +1,5 @@
 ---
-title: Trigger
+title: Trigger Cards
 description:
   How to use trigger cards on your EspControl panel to start Home Assistant automations.
 ---

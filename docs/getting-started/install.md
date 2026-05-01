@@ -1,5 +1,5 @@
 ---
-title: Install
+title: Install EspControl Firmware
 description:
   How to flash EspControl firmware to a Guition ESP32 touchscreen, connect it to WiFi, and add it to Home Assistant.
 ---

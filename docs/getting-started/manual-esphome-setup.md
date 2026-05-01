@@ -1,5 +1,5 @@
 ---
-title: Manual ESPHome Setup
+title: Manual ESPHome Setup for EspControl
 description:
   How to add EspControl to ESPHome manually, compile the firmware, and install it by USB or OTA.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Temperature Display
+title: EspControl Temperature Display
 description:
   How to show indoor and outdoor temperatures on your EspControl panel's top bar.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Roadmap
+title: EspControl Roadmap
 description:
   What's next for EspControl — community-driven development via GitHub issues and releases.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Internal
+title: Internal Relay Cards
 description:
   How to control built-in panel relays locally from EspControl cards without relying on Home Assistant.
 ---

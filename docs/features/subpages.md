@@ -1,5 +1,5 @@
 ---
-title: Subpage
+title: Subpage Cards
 description:
   How to use Subpage cards on your EspControl panel to organise cards into folders.
 ---

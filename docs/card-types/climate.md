@@ -1,5 +1,5 @@
 ---
-title: Climate
+title: Climate Cards
 description:
   How to control a Home Assistant climate entity from an EspControl thermostat card.
 ---

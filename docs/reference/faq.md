@@ -1,5 +1,5 @@
 ---
-title: FAQ
+title: EspControl FAQ
 description:
   Frequently asked questions about the EspControl touchscreen panel — WiFi, setup, updates, troubleshooting, and more.
 ---

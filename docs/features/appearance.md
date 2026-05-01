@@ -1,5 +1,5 @@
 ---
-title: Appearance
+title: EspControl Appearance Settings
 description:
   How to customise the primary, secondary, and tertiary colours on your EspControl panel.
 ---

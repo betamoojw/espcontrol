@@ -1,5 +1,5 @@
 ---
-title: Sensor
+title: Sensor Cards
 description:
   How to display live numeric readings or text states from Home Assistant on your EspControl panel.
 ---

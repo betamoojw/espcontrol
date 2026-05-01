@@ -1,5 +1,5 @@
 ---
-title: World Clock
+title: World Clock Cards
 description:
   How to show the current time for another city on your EspControl panel.
 ---

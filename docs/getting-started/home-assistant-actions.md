@@ -1,5 +1,5 @@
 ---
-title: Home Assistant Actions
+title: Home Assistant Actions for EspControl
 description:
   How to allow your EspControl touchscreen to perform Home Assistant actions so it can control lights, switches, and other devices.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Backlight
+title: EspControl Backlight Settings
 description:
   How the EspControl panel automatically adjusts screen brightness during the day and night based on sunrise and sunset.
 ---

@@ -1,5 +1,5 @@
 ---
-title: Screen Schedule
+title: EspControl Screen Schedule
 description:
   How to control what the EspControl panel does overnight.
 ---

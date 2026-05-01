@@ -1,5 +1,5 @@
 ---
-title: Time Settings
+title: EspControl Time Settings
 description:
   How to configure clock sync, timezone, and 12/24-hour format on your EspControl panel.
 ---

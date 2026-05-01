@@ -1,5 +1,5 @@
 ---
-title: Screen Setup
+title: EspControl Screen Setup
 description:
   How to use the built-in web page to configure cards, icons, display settings, screensaver, and brightness on your EspControl panel.
 ---

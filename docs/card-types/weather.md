@@ -1,5 +1,5 @@
 ---
-title: Weather
+title: Weather Cards
 description:
   How to show the current Home Assistant weather condition or tomorrow's forecast on your EspControl panel.
 ---

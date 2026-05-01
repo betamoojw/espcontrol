@@ -1,5 +1,5 @@
 ---
-title: Slider
+title: Slider Cards
 description:
   How to use slider cards on your EspControl panel to control light brightness and fan speed from Home Assistant.
 ---
