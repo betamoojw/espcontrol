@@ -597,6 +597,7 @@
     firmwareUpdateState: "",
     firmwareReleaseUrl: "",
     firmwareChecking: false,
+    firmwareInstallTargetVersion: "",
     autoUpdate: true,
     updateFrequency: "Daily",
     updateFreqOptions: ["Hourly", "Daily", "Weekly", "Monthly"],
@@ -963,6 +964,8 @@
   var sliderMigrationTimer = null;
   var pendingSliderSubpageMigrations = {};
   var _eventSource = null;
+  var firmwareInstallRefreshTimer = null;
+  var firmwareInstallRefreshUntil = 0;
 
   // ── Utilities ──────────────────────────────────────────────────────────
 
@@ -989,6 +992,7 @@
     state.firmwareVersion = isSpecificFirmwareVersion(version) ? version : "Dev";
     renderFirmwareVersion();
     renderFirmwareUpdateStatus();
+    stopFirmwareInstallRefreshIfComplete();
   }
 
   function displayFirmwareVersion(version) {
@@ -1043,12 +1047,65 @@
 
   function setFirmwareUpdateInfo(d) {
     var latest = d.latest_version || d.value || "";
+    var updateState = String(d.state || state.firmwareUpdateState || "").trim().toUpperCase();
     if (d.current_version) setFirmwareVersion(d.current_version);
     if (latest) state.firmwareLatestVersion = String(latest).trim();
-    state.firmwareUpdateState = String(d.state || state.firmwareUpdateState || "").trim().toUpperCase();
+    if (state.firmwareInstallTargetVersion &&
+        updateState === "UPDATE AVAILABLE" &&
+        Date.now() < firmwareInstallRefreshUntil) {
+      updateState = "INSTALLING";
+    }
+    state.firmwareUpdateState = updateState;
     state.firmwareReleaseUrl = d.release_url || state.firmwareReleaseUrl || "";
     if (state.firmwareUpdateState) state.firmwareChecking = false;
+    if (state.firmwareUpdateState === "INSTALLING") {
+      startFirmwareInstallRefresh();
+    } else {
+      stopFirmwareInstallRefreshIfComplete();
+    }
     renderFirmwareUpdateStatus();
+  }
+
+  function firmwareVersionMatches(version, expected) {
+    return String(version == null ? "" : version).trim() ===
+      String(expected == null ? "" : expected).trim();
+  }
+
+  function stopFirmwareInstallRefresh() {
+    if (firmwareInstallRefreshTimer) clearTimeout(firmwareInstallRefreshTimer);
+    firmwareInstallRefreshTimer = null;
+    firmwareInstallRefreshUntil = 0;
+    state.firmwareInstallTargetVersion = "";
+  }
+
+  function stopFirmwareInstallRefreshIfComplete() {
+    var target = state.firmwareInstallTargetVersion;
+    if (!target || state.firmwareUpdateState !== "NO UPDATE") return false;
+    if (isSpecificFirmwareVersion(target) && !firmwareVersionMatches(state.firmwareVersion, target)) {
+      setFirmwareVersion(target);
+    }
+    stopFirmwareInstallRefresh();
+    return true;
+  }
+
+  function pollFirmwareInstallRefresh() {
+    firmwareInstallRefreshTimer = null;
+    refreshFirmwareVersion();
+    if (stopFirmwareInstallRefreshIfComplete()) return;
+    if (Date.now() >= firmwareInstallRefreshUntil) {
+      stopFirmwareInstallRefresh();
+      return;
+    }
+    firmwareInstallRefreshTimer = setTimeout(pollFirmwareInstallRefresh, 5000);
+  }
+
+  function startFirmwareInstallRefresh() {
+    if (!state.firmwareInstallTargetVersion && isSpecificFirmwareVersion(state.firmwareLatestVersion)) {
+      state.firmwareInstallTargetVersion = state.firmwareLatestVersion;
+    }
+    firmwareInstallRefreshUntil = Date.now() + 180000;
+    if (firmwareInstallRefreshTimer) clearTimeout(firmwareInstallRefreshTimer);
+    firmwareInstallRefreshTimer = setTimeout(pollFirmwareInstallRefresh, 5000);
   }
 
   function isFirmwareVersionEvent(id, d) {
@@ -2855,9 +2912,11 @@
     fwCheckBtn.textContent = "Check for Update";
     fwCheckBtn.addEventListener("click", function () {
       if (firmwareUpdateAvailable()) {
+        state.firmwareInstallTargetVersion = state.firmwareLatestVersion;
         state.firmwareUpdateState = "INSTALLING";
         renderFirmwareUpdateStatus();
         postUpdateInstall("Firmware: Update");
+        startFirmwareInstallRefresh();
         return;
       }
       state.firmwareChecking = true;
