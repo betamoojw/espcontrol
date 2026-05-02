@@ -475,7 +475,7 @@
 
     ".sp-fw-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;margin-bottom:12px}" +
     ".sp-fw-version{font-size:.875rem;color:var(--text)}" +
-    ".sp-fw-label{font-size:.8rem;color:var(--text2)}" +
+    ".sp-fw-label{font-size:inherit;color:var(--text2)}" +
     ".sp-fw-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-left:auto}" +
     ".sp-fw-inline-status{display:none;font-size:.8rem;color:#3dd68c;white-space:nowrap}" +
     ".sp-fw-inline-status.sp-visible{display:inline}" +
