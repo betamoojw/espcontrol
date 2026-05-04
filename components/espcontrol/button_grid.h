@@ -2824,6 +2824,7 @@ inline const char *action_card_value_key(const std::string &action) {
 inline bool action_card_action_allowed(const std::string &action) {
   return action == "scene.turn_on" ||
          action == "script.turn_on" ||
+         action == "automation.trigger" ||
          action == "button.press" ||
          action == "input_button.press" ||
          action == "input_boolean.toggle" ||

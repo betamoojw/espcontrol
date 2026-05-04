@@ -314,6 +314,17 @@ assertButtonRoundTrip(hooks, "script action card", {
   precision: "",
 }, false);
 
+assertButtonRoundTrip(hooks, "automation action card", {
+  entity: "automation.goodnight",
+  label: "Goodnight Automation",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "automation.trigger",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
 assertButtonRoundTrip(hooks, "button action card", {
   entity: "button.restart_router",
   label: "Restart Router",
