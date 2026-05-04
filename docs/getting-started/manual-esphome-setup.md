@@ -10,10 +10,10 @@ The normal [browser install](/getting-started/install) is the easiest route. Use
 
 ## What You Need
 
-- A supported Guition ESP32 panel.
+- A supported ESP32 panel.
 - ESPHome Device Builder in Home Assistant, or the ESPHome command line on your computer.
 - A USB-C data cable for the first install.
-- Your WiFi name and password, unless you are using the advanced wired Ethernet option for the 7-inch Ethernet model.
+- Your WiFi name and password, unless you are using an advanced wired Ethernet option.
 
 ::: tip First install or update?
 Use USB for a blank screen or a screen that is not already running EspControl. Once EspControl is installed and connected to WiFi, later ESPHome installs can usually be done wirelessly with OTA.
@@ -28,6 +28,7 @@ Each screen uses a different ESPHome package file. Pick the one that matches you
 | 10.1-inch JC8012P4A1 | `devices/guition-esp32-p4-jc8012p4a1/packages.yaml` |
 | 7-inch JC1060P470 | `devices/guition-esp32-p4-jc1060p470/packages.yaml` |
 | 4.3-inch JC4880P443 | `devices/guition-esp32-p4-jc4880p443/packages.yaml` |
+| 4-inch Waveshare ESP32-P4 86 Panel | `devices/waveshare-esp32-p4-86-panel/packages.yaml` |
 | 4-inch 4848S040 | `devices/guition-esp32-s3-4848s040/packages.yaml` |
 
 ## ESPHome Device Builder
@@ -63,11 +64,16 @@ wifi:
   password: "Your WiFi Password"
 ```
 
-## Advanced: 7-inch Ethernet Option
+## Advanced: Ethernet Options
 
-Some 7-inch JC1060P470 panels include wired Ethernet. ESPHome cannot run WiFi and Ethernet in the same firmware, so this option is Ethernet-only and is intended for manual installs.
+Some supported ESP32-P4 panels include wired Ethernet. ESPHome cannot run WiFi and Ethernet in the same firmware, so this option is Ethernet-only and is intended for manual installs.
 
-Use this template for the Ethernet model. Do not add a `wifi:` block.
+Use this template for Ethernet-capable models. Do not add a `wifi:` block. Change the `file` line to match your screen:
+
+| Panel | Ethernet package file |
+| --- | --- |
+| 7-inch JC1060P470 Ethernet model | `devices/guition-esp32-p4-jc1060p470/packages.yaml` |
+| Waveshare ESP32-P4 86 Panel ETH-2RO | `devices/waveshare-esp32-p4-86-panel/packages.yaml` |
 
 ```yaml
 substitutions:
@@ -79,7 +85,7 @@ substitutions:
 packages:
   setup:
     url: https://github.com/jtenniswood/espcontrol/
-    file: devices/guition-esp32-p4-jc1060p470/packages.yaml
+    file: devices/waveshare-esp32-p4-86-panel/packages.yaml
     refresh: 1d
 ```
 

@@ -38,7 +38,7 @@ If Home Assistant can see it, EspControl is designed to make it easier to put th
 
 ## How It Works
 
-1. **Buy a supported Guition touchscreen.**
+1. **Buy a supported ESP32 touchscreen.**
 2. **Install EspControl from your browser** using the web installer.
 3. **Connect the screen to WiFi** using the setup screen it creates.
 4. **Add it to Home Assistant** when Home Assistant discovers it.
@@ -51,17 +51,17 @@ Start here: [Install EspControl](https://jtenniswood.github.io/espcontrol/gettin
 
 ## Supported Screens
 
-EspControl supports several low-cost Guition ESP32 touchscreens. Larger screens give you more room for controls; smaller screens are useful beside doors, on desks, or in individual rooms.
+EspControl supports several low-cost ESP32 touchscreens. Larger screens give you more room for controls; smaller screens are useful beside doors, on desks, or in individual rooms.
 
-| 10.1" JC8012P4A1 | 7" JC1060P470 | 4.3" JC4880P443 | 4" 4848S040 |
-|:-:|:-:|:-:|:-:|
-| Image pending | ![7-inch JC1060P470](docs/public/images/jc1060p470-hero.jpg) | ![4.3-inch JC4880P443](docs/public/images/jc4880p443-hero.jpg) | ![4-inch 4848S040](docs/public/images/4848s040-hero.jpg) |
-| 1280x800 landscape · 20 card slots | 1024x600 landscape · 15 card slots | 480x800 portrait · 6 card slots | 480x480 square · 9 card slots |
-| ESP32-P4 | ESP32-P4 | ESP32-P4 | ESP32-S3 |
-| Guition / AliExpress | [AliExpress ~£40](https://s.click.aliexpress.com/e/_c335W0r5) | [AliExpress ~£24](https://s.click.aliexpress.com/e/_c32jr3eN) | [AliExpress ~£16](https://s.click.aliexpress.com/e/_c3sIhvBv) |
-| | [Desk stand (3D print)](https://makerworld.com/en/models/2387421-guition-esp32p4-jc1060p470-7inch-screen-desk-mount#profileId-2614995) | | [Case stand (3D print)](https://makerworld.com/en/models/2581572-guition-esp32s3-4848s040-case-stand#profileId-2847301) |
+| 10.1" JC8012P4A1 | 7" JC1060P470 | 4.3" JC4880P443 | 4" Waveshare P4 86 Panel | 4" 4848S040 |
+|:-:|:-:|:-:|:-:|:-:|
+| Image pending | ![7-inch JC1060P470](docs/public/images/jc1060p470-hero.jpg) | ![4.3-inch JC4880P443](docs/public/images/jc4880p443-hero.jpg) | Image pending | ![4-inch 4848S040](docs/public/images/4848s040-hero.jpg) |
+| 1280x800 landscape · 20 card slots | 1024x600 landscape · 15 card slots | 480x800 portrait · 6 card slots | 720x720 square · 9 card slots | 480x480 square · 9 card slots |
+| ESP32-P4 | ESP32-P4 | ESP32-P4 | ESP32-P4 | ESP32-S3 |
+| Guition / AliExpress | [AliExpress ~£40](https://s.click.aliexpress.com/e/_c335W0r5) | [AliExpress ~£24](https://s.click.aliexpress.com/e/_c32jr3eN) | [Waveshare](https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-4b.htm) | [AliExpress ~£16](https://s.click.aliexpress.com/e/_c3sIhvBv) |
+| | [Desk stand (3D print)](https://makerworld.com/en/models/2387421-guition-esp32p4-jc1060p470-7inch-screen-desk-mount#profileId-2614995) | | | [Case stand (3D print)](https://makerworld.com/en/models/2581572-guition-esp32s3-4848s040-case-stand#profileId-2847301) |
 
-See the [screen guides](https://jtenniswood.github.io/espcontrol/screens/4848s040) for full details on each model.
+See the [screen guides](https://jtenniswood.github.io/espcontrol/getting-started/install) for full details on each model.
 
 ## Built for Everyday Use
 
@@ -75,7 +75,7 @@ See the [screen guides](https://jtenniswood.github.io/espcontrol/screens/4848s04
 
 ## What You Need
 
-- A supported Guition ESP32 touchscreen
+- A supported ESP32 touchscreen
 - A USB-C data cable for the first install
 - A computer running Chrome or Edge for flashing the firmware
 - Home Assistant running on your home network

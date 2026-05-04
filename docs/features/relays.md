@@ -1,27 +1,29 @@
 ---
 title: Built-in Relay Controls
 description:
-  How EspControl exposes the built-in relays on the Guition 4848S040C relay variant in Home Assistant.
+  How EspControl exposes built-in panel relays in Home Assistant.
 ---
 
 # Built-in Relays
 
-Some Guition 4-inch 4848S040 panels are sold as a relay variant, often listed as **4848S040C**. These boards include three physical relays that can switch external low-voltage circuits.
+Some supported panels include physical relays that can switch external low-voltage circuits. The Guition 4-inch relay variant is often listed as **4848S040C** and includes three relays. The Waveshare **ESP32-P4-86-Panel-ETH-2RO** includes two relays.
 
-The relays have been confirmed working on the relay variant using the standard 4848S040 EspControl firmware.
+The relays are exposed by the standard firmware for each supported relay panel.
 
 ## Home Assistant Entities
 
-On the 4848S040 firmware, EspControl exposes each relay in two ways:
+EspControl exposes each relay in two ways:
 
 - **Relay switches** stay on until you turn them off again.
 - **Relay push buttons** turn the relay on for 200 ms, then turn it off again.
 
-| Relay | Switch entity | Push button entity | Relay pin |
-|---|---|---|---|
-| **Relay 1** | `switch.<device_name>_relay_1` | `button.<device_name>_relay_1_push` | GPIO40 |
-| **Relay 2** | `switch.<device_name>_relay_2` | `button.<device_name>_relay_2_push` | GPIO2 |
-| **Relay 3** | `switch.<device_name>_relay_3` | `button.<device_name>_relay_3_push` | GPIO1 |
+| Panel | Relay | Switch entity | Push button entity | Relay pin |
+|---|---|---|---|---|
+| 4848S040C | **Relay 1** | `switch.<device_name>_relay_1` | `button.<device_name>_relay_1_push` | GPIO40 |
+| 4848S040C | **Relay 2** | `switch.<device_name>_relay_2` | `button.<device_name>_relay_2_push` | GPIO2 |
+| 4848S040C | **Relay 3** | `switch.<device_name>_relay_3` | `button.<device_name>_relay_3_push` | GPIO1 |
+| Waveshare ETH-2RO | **Relay 1** | `switch.<device_name>_relay_1` | `button.<device_name>_relay_1_push` | GPIO32 |
+| Waveshare ETH-2RO | **Relay 2** | `switch.<device_name>_relay_2` | `button.<device_name>_relay_2_push` | GPIO46 |
 
 They appear as normal Home Assistant entities on the EspControl device. You can control them from Home Assistant dashboards, automations, scripts, and voice assistants.
 
@@ -52,7 +54,7 @@ Internal cards have two modes:
 1. Open the EspControl setup page in your browser.
 2. Choose an empty card slot.
 3. Change the type to **Internal**.
-4. Choose **Relay 1**, **Relay 2**, or **Relay 3**.
+4. Choose the relay you want to control.
 5. Choose **Switch** or **Push Button** mode.
 6. Save the card configuration.
 

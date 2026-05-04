@@ -106,6 +106,18 @@ const devices = [
     shape: 'portrait'
   },
   {
+    slug: 'waveshare-esp32-p4-86-panel',
+    name: 'Waveshare P4 86 Panel',
+    size: '4 in',
+    resolution: '720 x 720',
+    orientation: 'Square',
+    slots: 9,
+    cols: 3,
+    rows: 3,
+    aspect: '1 / 1',
+    shape: 'square'
+  },
+  {
     slug: 'guition-esp32-s3-4848s040',
     name: '4848S040',
     size: '4 in',

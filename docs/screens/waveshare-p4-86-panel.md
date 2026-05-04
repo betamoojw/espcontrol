@@ -1,0 +1,88 @@
+---
+title: 4-inch Waveshare ESP32-P4 86 Panel
+description:
+  EspControl on the Waveshare ESP32-P4 86 Panel - a 4-inch 720x720 square touchscreen with 9 cards, powered by ESP32-P4.
+---
+
+# 4-inch Waveshare ESP32-P4 86 Panel
+
+The **Waveshare ESP32-P4 86 Panel** is a 4-inch square touchscreen powered by an **ESP32-P4** processor. It uses the same 3x3 EspControl layout as the Guition 4848S040, but with a sharper 720x720 display and a faster P4 platform.
+
+EspControl targets the **ESP32-P4-86-Panel-ETH-2RO** model. That version includes WiFi through an ESP32-C6 co-processor, wired Ethernet hardware, and two built-in relays.
+
+## Specifications
+
+| | |
+|---|---|
+| **Screen size** | 4 inches |
+| **Resolution** | 720 x 720 |
+| **Orientation** | Square |
+| **Display interface** | MIPI DSI |
+| **Processor** | ESP32-P4 (360 MHz) |
+| **WiFi** | ESP32-C6 co-processor (2.4 GHz) |
+| **Ethernet** | Available on ETH-2RO, manual ESPHome install only |
+| **Flash** | 32 MB |
+| **PSRAM** | 32 MB, 200 MHz |
+| **Touch** | GT911 capacitive |
+| **Relays** | 2, on ETH-2RO |
+| **Power** | USB-C, or DC input on ETH-2RO |
+
+## Card Grid
+
+The home screen uses a **3-row x 3-column** grid, giving you **9 card slots**. Any home-screen card can be turned into a [Subpage](/features/subpages) folder containing up to 8 more cards.
+
+Flexible card sizes are supported: Single, Tall, Wide, and Large.
+
+The ETH-2RO relays are available as normal Home Assistant entities and as local [Internal](/card-types/internal-relays) cards.
+
+## Install
+
+Connect the display to your computer with a USB-C data cable, then click the button below.
+
+<EspInstallButton slug="waveshare-esp32-p4-86-panel" />
+
+For a full walkthrough including WiFi setup and Home Assistant pairing, see the [Install guide](/getting-started/install).
+
+## ESPHome Manual Setup
+
+If you use ESPHome and prefer to compile firmware yourself:
+
+```yaml
+substitutions:
+  name: "hallway-screen"
+  friendly_name: "Hallway Screen"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+packages:
+  setup:
+    url: https://github.com/jtenniswood/espcontrol/
+    file: devices/waveshare-esp32-p4-86-panel/packages.yaml
+    refresh: 1sec
+```
+
+For the Ethernet mode, use the advanced manual setup option instead:
+
+```yaml
+substitutions:
+  name: "hallway-screen"
+  friendly_name: "Hallway Screen"
+  network_transport: ethernet
+  disable_updates: "true"
+
+packages:
+  setup:
+    url: https://github.com/jtenniswood/espcontrol/
+    file: devices/waveshare-esp32-p4-86-panel/packages.yaml
+    refresh: 1d
+```
+
+The Ethernet option is for advanced manual installs only. It builds Ethernet-only firmware: WiFi, captive portal, the WiFi setup hotspot, and Bluetooth proxy are not included, and the ESP32-C6 hosted WiFi/Bluetooth co-processor is kept off.
+
+Use USB when switching between WiFi and Ethernet firmware variants. OTA updates can fail during that change because the network transport changes.
+
+## Where to Buy
+
+- **Waveshare:** [ESP32-P4 Smart 86 Box](https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-4b.htm)

@@ -1,0 +1,79 @@
+# =============================================================================
+# FONTS (DEVICE OVERRIDE) - Font variants for the 720x720 square display
+# =============================================================================
+# Supplements the common fonts with device-specific variants for the main UI.
+# The screen is the same physical size as the 480x480 4-inch panel, but uses
+# 1.5x pixel density, so these fonts scale the 4-inch square layout up.
+# =============================================================================
+
+font:
+  # Button icons (69px, scaled from the 4-inch 480x480 panel)
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: icon_font_md_square
+    size: 69
+    bpp: 4
+    glyphs: !include ../../../common/assets/icon_glyphs.yaml
+
+  # Button labels (33px)
+  - file: "gfonts://Roboto"
+    id: label_font_md_square
+    size: 33
+    bpp: 4
+    glyphs: !include ../../../common/assets/text_glyphs.yaml
+    extras:
+      - file: "gfonts://Heebo"
+        glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
+
+  # Sensor value large number (scaled for the higher-resolution square panel)
+  - file: "gfonts://Roboto@Light"
+    id: statistics_font_md_square
+    size: 78
+    bpp: 4
+    glyphs:
+      - "0123456789.-°/%kWhVA "
+      - ":"
+
+  # Climate detail controls (chevron-left, dots-horizontal, minus, plus, thermometer)
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: climate_control_icon_font_md_square
+    size: 66
+    bpp: 4
+    glyphs:
+      - "\U000F0141"  # mdi-chevron-left
+      - "\U000F01D8"  # mdi-dots-horizontal
+      - "\U000F0374"  # mdi-minus
+      - "\U000F0415"  # mdi-plus
+      - "\U000F050F"  # mdi-thermometer
+
+  # Climate detail page: oversized target temperature
+  - file: "gfonts://Roboto@Light"
+    id: climate_target_font_md_square
+    size: 159
+    bpp: 4
+    glyphs:
+      - "0123456789.-"
+
+  # Forecast high / low values
+  - file: "gfonts://Roboto@Light"
+    id: forecast_font_md_square
+    size: 51
+    bpp: 4
+    glyphs:
+      - "0123456789.- /"
+
+  # Forecast unit symbols
+  - file: "gfonts://Noto Sans"
+    id: forecast_unit_font_md_square
+    size: 33
+    bpp: 4
+    glyphs:
+      - "°CF"
+
+  # Top bar clock and temperature (30px)
+  - file: "gfonts://Roboto"
+    id: clockbar_font_md_square
+    size: 30
+    bpp: 4
+    extras:
+      - file: "gfonts://Heebo"
+        glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
