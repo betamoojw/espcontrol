@@ -58,6 +58,7 @@ function subpageTypeFromCode(code) {
     L: "slider",
     C: "cover",
     R: "garage",
+    K: "lock",
     M: "media",
     P: "push",
     I: "internal",
@@ -213,6 +214,17 @@ assertButtonRoundTrip(hooks, "garage label button", {
   sensor: "",
   unit: "",
   type: "garage",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "lock button", {
+  entity: "lock.front_door",
+  label: "Front Door",
+  icon: "Lock",
+  icon_on: "Lock Open",
+  sensor: "",
+  unit: "",
+  type: "lock",
   precision: "",
 }, false);
 
@@ -608,6 +620,13 @@ assertSubpageRoundTrip(hooks, "action subpage", {
   ],
 }, true);
 
+assertSubpageRoundTrip(hooks, "lock subpage", {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "lock.front_door", label: "Front Door", icon: "Lock", icon_on: "Lock Open", type: "lock" }),
+  ],
+}, true);
+
 assertSubpageRoundTrip(hooks, "media subpage", {
   order: ["1", "B", "2", "3"],
   buttons: [
@@ -709,6 +728,13 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|A,scene.movie
     buttonShape({ entity: "scene.movie_mode", label: "Movie Mode", icon: "Flash", icon_on: "Auto", sensor: "scene.turn_on", type: "action" }),
   ],
 }, "compact action subpage parse");
+
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|K,lock.front_door,Front%20Door,Lock,Lock%20Open")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "lock.front_door", label: "Front Door", icon: "Lock", icon_on: "Lock Open", type: "lock" }),
+  ],
+}, "compact lock subpage parse");
 
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|M,media_player.living_room,Living%20Room,Speaker,,controls")), {
   order: ["1", "B"],

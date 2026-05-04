@@ -100,7 +100,7 @@ struct ParsedCfg {
   std::string icon_on;     // 3  icon name for on state (blank = no swap)
   std::string sensor;      // 4  sensor entity, cover mode, or action name for Action cards
   std::string unit;        // 5  unit suffix for sensor display
-  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, media, push, internal, subpage
+  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, lock, media, push, internal, subpage
   std::string precision;   // 7  decimal places for sensors; "text" = text sensor mode
 };
 
@@ -176,7 +176,9 @@ inline bool parse_float_ref(esphome::StringRef value, float &out) {
 }
 
 inline bool is_entity_on_ref(esphome::StringRef state) {
-  return state == "on" || state == "home" || state == "playing" || state == "open";
+  return state == "on" || state == "home" || state == "playing" ||
+         state == "open" || state == "opening" || state == "closing" ||
+         state == "unlocked" || state == "unlocking" || state == "jammed";
 }
 
 inline std::string sentence_cap_text(const std::string &state) {
@@ -470,6 +472,14 @@ inline const char* garage_open_icon(const std::string &icon_on) {
   return (icon_on.empty() || icon_on == "Auto") ? find_icon("Garage Open") : find_icon(icon_on.c_str());
 }
 
+inline const char* lock_locked_icon(const std::string &icon) {
+  return (icon.empty() || icon == "Auto") ? find_icon("Lock") : find_icon(icon.c_str());
+}
+
+inline const char* lock_unlocked_icon(const std::string &icon_on) {
+  return (icon_on.empty() || icon_on == "Auto") ? find_icon("Lock Open") : find_icon(icon_on.c_str());
+}
+
 // ── Internal relay controls ───────────────────────────────────────────
 //
 // Only devices that actually have relays register entries here. The shared
@@ -678,6 +688,30 @@ inline bool garage_state_uses_open_icon(const std::string &state) {
 
 inline bool garage_state_releases_label(const std::string &state) {
   return state == "open" || state == "closed";
+}
+
+struct LockCardCtx {
+  std::string entity_id;
+  std::string state;
+};
+
+inline std::string lock_state_label(const std::string &state) {
+  if (state.empty()) return "--";
+  return sentence_cap_text(state);
+}
+
+inline bool lock_state_is_active(const std::string &state) {
+  return state == "unlocked" || state == "unlocking" ||
+         state == "open" || state == "opening" ||
+         state == "jammed";
+}
+
+inline bool lock_state_uses_unlocked_icon(const std::string &state) {
+  return lock_state_is_active(state);
+}
+
+inline bool lock_state_releases_label(const std::string &state) {
+  return state == "locked" || state == "unlocked" || state == "open";
 }
 
 // Reusable label helper: show changed status, then optionally return to steady text.
@@ -2528,6 +2562,11 @@ inline void setup_garage_card(BtnSlot &s, const ParsedCfg &p) {
   lv_label_set_text(s.text_lbl, p.label.empty() ? "Garage Door" : p.label.c_str());
 }
 
+inline void setup_lock_card(BtnSlot &s, const ParsedCfg &p) {
+  lv_label_set_text(s.icon_lbl, lock_locked_icon(p.icon));
+  lv_label_set_text(s.text_lbl, p.label.empty() ? "Lock" : p.label.c_str());
+}
+
 inline void apply_push_button_transition(lv_obj_t *btn) {
   static const lv_style_prop_t push_props[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
   static lv_style_transition_dsc_t push_trans;
@@ -2748,6 +2787,28 @@ inline void subscribe_cover_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   );
 }
 
+inline void subscribe_lock_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
+                                 TransientStatusLabel *status_label,
+                                 const char *locked_icon, const char *unlocked_icon,
+                                 LockCardCtx *ctx) {
+  if (!ctx) return;
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    ctx->entity_id, {},
+    std::function<void(esphome::StringRef)>(
+      [btn_ptr, icon_lbl, status_label, locked_icon, unlocked_icon, ctx](esphome::StringRef state) {
+        std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
+        ctx->state = state_text;
+        bool active = lock_state_is_active(state_text);
+        if (active) lv_obj_add_state(btn_ptr, LV_STATE_CHECKED);
+        else lv_obj_clear_state(btn_ptr, LV_STATE_CHECKED);
+        lv_label_set_text(icon_lbl,
+          lock_state_uses_unlocked_icon(state_text) ? unlocked_icon : locked_icon);
+        transient_status_label_show_if_changed(
+          status_label, lock_state_label(state_text), lock_state_releases_label(state_text));
+      })
+  );
+}
+
 // Subscribe to an entity's friendly_name attribute and use it as the button label
 inline void subscribe_friendly_name(TransientStatusLabel *status_label,
                                     const std::string &entity_id) {
@@ -2857,6 +2918,7 @@ inline bool action_card_action_allowed(const std::string &action) {
          action == "automation.trigger" ||
          action == "button.press" ||
          action == "input_button.press" ||
+         action == "lock.open" ||
          action == "input_boolean.toggle" ||
          action == "input_boolean.turn_on" ||
          action == "input_boolean.turn_off" ||
@@ -2881,6 +2943,23 @@ inline void send_action_card_action(const ParsedCfg &p) {
     value_kv.value = decltype(value_kv.value)(p.unit.c_str());
   }
   esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline void send_lock_action(const std::string &entity_id, const std::string &state) {
+  if (entity_id.empty()) return;
+  esphome::api::HomeassistantActionRequest req;
+  req.service = decltype(req.service)(state == "locked" ? "lock.unlock" : "lock.lock");
+  req.is_event = false;
+  req.data.init(1);
+  auto &kv = req.data.emplace_back();
+  kv.key = decltype(kv.key)("entity_id");
+  kv.value = decltype(kv.value)(entity_id.c_str());
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline void send_lock_action(LockCardCtx *ctx) {
+  if (!ctx) return;
+  send_lock_action(ctx->entity_id, ctx->state);
 }
 
 // ── Slider card helpers ────────────────────────────────────────────────
@@ -3092,6 +3171,10 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
       lv_obj_add_state(btn_obj, LV_STATE_CHECKED);
       send_toggle_action(p.entity);
     }
+  } else if (p.type == "lock") {
+    LockCardCtx *ctx = (LockCardCtx *)lv_obj_get_user_data(btn_obj);
+    if (ctx) send_lock_action(ctx);
+    else send_lock_action(p.entity, "");
   } else if (p.type == "cover" && cover_command_mode(p.sensor)) {
     send_cover_command_action(p);
   } else if (p.type == "cover" && cover_toggle_mode(p.sensor)) {
@@ -3729,7 +3812,7 @@ struct SubpageBtn {
   std::string icon_on;
   std::string sensor;     // sensor entity, cover/internal mode, or action name
   std::string unit;
-  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, media, push, internal, subpage
+  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, climate, weather_forecast, slider, cover, garage, lock, media, push, internal, subpage
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
@@ -3756,6 +3839,7 @@ inline std::string compact_subpage_type(const std::string &code) {
   if (code == "L") return "slider";
   if (code == "C") return "cover";
   if (code == "R") return "garage";
+  if (code == "K") return "lock";
   if (code == "M") return "media";
   if (code == "P") return "push";
   if (code == "I") return "internal";
@@ -4133,6 +4217,10 @@ inline void grid_phase1(
       setup_subpage_parent_state_card(s, p, cfg.sp_sensor_font);
       continue;
     }
+    if (p.type == "lock") {
+      setup_lock_card(s, p);
+      continue;
+    }
     if (p.type == "cover" && cover_command_mode(p.sensor)) {
       setup_cover_command_card(s, p);
       continue;
@@ -4287,6 +4375,20 @@ inline void grid_phase2(
         subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision));
         if (p.label.empty())
           subscribe_friendly_name(s.text_lbl, p.sensor);
+      }
+      continue;
+    }
+    if (p.type == "lock") {
+      if (!p.entity.empty()) {
+        LockCardCtx *ctx = new LockCardCtx();
+        ctx->entity_id = p.entity;
+        lv_obj_set_user_data(s.btn, ctx);
+        TransientStatusLabel *status_label = create_transient_status_label(
+          s.text_lbl, p.label.empty() ? "Lock" : p.label);
+        subscribe_lock_state(s.btn, s.icon_lbl, status_label,
+          lock_locked_icon(p.icon), lock_unlocked_icon(p.icon_on), ctx);
+        if (p.label.empty())
+          subscribe_friendly_name(status_label, p.entity);
       }
       continue;
     }
@@ -4856,6 +4958,42 @@ inline void grid_phase2(
               if (en && !en->empty()) send_toggle_action(*en);
             }, LV_EVENT_CLICKED, &sp_entity_ids[eid_idx]);
           }
+        }
+
+      } else if (sb.type == "lock") {
+        lv_label_set_text(sil, lock_locked_icon(sb.icon));
+        lv_label_set_text(stl, sb.label.empty() ? "Lock" : sb.label.c_str());
+        if (!sb.entity.empty()) {
+          LockCardCtx *lock_ctx = new LockCardCtx();
+          lock_ctx->entity_id = sb.entity;
+          lv_obj_set_user_data(sb_btn, lock_ctx);
+          TransientStatusLabel *status_label = create_transient_status_label(
+            stl, sb.label.empty() ? "Lock" : sb.label);
+          subscribe_lock_state(sb_btn, sil, status_label,
+            lock_locked_icon(sb.icon), lock_unlocked_icon(sb.icon_on), lock_ctx);
+          if (sb.label.empty())
+            subscribe_friendly_name(status_label, sb.entity);
+
+          if (sp_indicator) {
+            lv_obj_t *parent_btn = slots[si].btn;
+            lv_obj_t *parent_icon = slots[si].icon_lbl;
+            int parent_idx = si;
+            int cwi = sp_child_alloc_idx++;
+            if (cwi >= MAX_SUBPAGE_ITEMS) {
+              ESP_LOGW("sensors", "Too many subpage state indicators; skipping %s", sb.entity.c_str());
+            } else {
+              sp_child_was_on[cwi] = false;
+              subscribe_subpage_parent_indicator(
+                sb.entity, parent_btn, parent_icon, parent_idx,
+                &sp_child_was_on[cwi], sp_has_icon_on,
+                sp_icon_off_glyph, sp_icon_on_glyph, sp_on_count);
+            }
+          }
+
+          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+            LockCardCtx *ctx = (LockCardCtx *)lv_event_get_user_data(e);
+            if (ctx) send_lock_action(ctx);
+          }, LV_EVENT_CLICKED, lock_ctx);
         }
 
       } else if (sb.type == "push") {
