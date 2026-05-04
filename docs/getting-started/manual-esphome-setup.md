@@ -91,7 +91,8 @@ The Ethernet firmware is intentionally different from the normal WiFi firmware:
 
 - It uses the panel's built-in wired Ethernet port instead of WiFi.
 - It does not include WiFi, the captive portal, or the first-boot WiFi setup hotspot.
-- It keeps the ESP32-C6 hosted WiFi co-processor disabled because it is not needed for wired networking.
+- It keeps the ESP32-C6 hosted WiFi/Bluetooth co-processor disabled because it is not needed for wired networking.
+- It does not support Bluetooth proxy.
 - It uses a higher backlight PWM frequency on this panel to avoid the visible shimmer that can appear when Ethernet is active.
 
 When switching a display between WiFi firmware and Ethernet firmware, install the new firmware over USB. OTA updates can fail during this change because the currently running firmware and the new firmware use different network hardware.

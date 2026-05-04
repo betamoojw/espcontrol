@@ -1,0 +1,42 @@
+# =============================================================================
+# BLUETOOTH PROXY - Optional Home Assistant Bluetooth proxy support
+# =============================================================================
+# The firmware includes BLE proxy support, but the BLE stack is disabled on boot
+# and only starts when the user enables the Bluetooth Proxy setting.
+# =============================================================================
+
+esp32_ble:
+  enable_on_boot: false
+
+esp32_ble_tracker:
+
+bluetooth_proxy:
+  active: true
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - if:
+          condition:
+            switch.is_on: bluetooth_proxy_enabled
+          then:
+            - ble.enable:
+          else:
+            - ble.disable:
+
+switch:
+  - platform: template
+    name: "Bluetooth Proxy"
+    id: bluetooth_proxy_enabled
+    internal: true
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    icon: "mdi:bluetooth"
+    web_server:
+      sorting_group_id: sg_connectivity
+    on_turn_on:
+      - ble.enable:
+    on_turn_off:
+      - ble.disable:

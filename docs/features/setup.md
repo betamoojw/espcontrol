@@ -69,6 +69,10 @@ Right-click a card and open **Size** to choose:
 
 If a card already occupies the space needed for a larger size, the setup page tries to move it to the next available slot. If there is not enough room, the size change is not applied.
 
+## Device Settings
+
+The **Settings** tab also includes display, brightness, screensaver, Bluetooth proxy, backup, and firmware update controls. Bluetooth proxy is off by default; see [Bluetooth Proxy](/features/bluetooth-proxy) for details.
+
 ## Apply Configuration
 
 After making changes, tap **Apply Configuration** at the bottom of the page. The panel restarts and loads your new settings — you'll see a message while it reconnects.

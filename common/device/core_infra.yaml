@@ -56,6 +56,9 @@ web_server:
     - id: sg_screensaver
       name: "Screensaver"
       sorting_weight: 30
+    - id: sg_connectivity
+      name: "Connectivity"
+      sorting_weight: 35
     - id: sg_firmware
       name: "Firmware"
       sorting_weight: 40
