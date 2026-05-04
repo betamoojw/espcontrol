@@ -828,6 +828,15 @@
     }
   }
 
+  function applyScreensaverTimeoutState(d) {
+    if (!d) return;
+    syncScreensaverTimeoutLimits(d);
+    var n = parseFloat(d.value != null ? d.value : d.state);
+    if (!isFinite(n)) return;
+    state.screensaverTimeout = n;
+    syncScreensaverTimeoutUi();
+  }
+
   function setSelectValue(select, value, label) {
     if (!select) return;
     value = String(value);
@@ -1616,6 +1625,15 @@
     });
     getJsonQuietly("/update/" + encodeURIComponent("Firmware: Update") + "?detail=all", function (d) {
       setFirmwareUpdateInfo(d);
+    });
+  }
+
+  function refreshScreensaverTimeout() {
+    [
+      "Screensaver Timeout",
+      "screensaver_timeout",
+    ].forEach(function (id) {
+      getJsonQuietly("/number/" + encodeURIComponent(id) + "?detail=all", applyScreensaverTimeoutState);
     });
   }
 
@@ -2755,6 +2773,8 @@
     timeoutSelect.className = "sp-select";
     timeoutSelect.id = "sp-set-ss-timeout";
     timeoutSelect.addEventListener("change", function () {
+      var n = parseFloat(this.value);
+      if (isFinite(n)) state.screensaverTimeout = n;
       postScreensaverTimeout(this.value);
     });
     timeoutField.appendChild(timeoutSelect);
@@ -5595,6 +5615,7 @@
       clearTimeout(sliderMigrationTimer);
       pendingSliderSubpageMigrations = {};
       refreshFirmwareVersion();
+      refreshScreensaverTimeout();
     });
 
     source.addEventListener("error", function () {
@@ -5679,10 +5700,14 @@
         updateTempPreview();
         renderPreview();
       },
-      "number-screensaver_timeout": function (val) {
-        syncScreensaverTimeoutLimits(d);
-        state.screensaverTimeout = parseFloat(val) || 300;
-        syncScreensaverTimeoutUi();
+      "number-screensaver_timeout": function (val, d) {
+        applyScreensaverTimeoutState(d);
+      },
+      "number-screen_saver__timeout": function (val, d) {
+        applyScreensaverTimeoutState(d);
+      },
+      "number-screen_saver_timeout": function (val, d) {
+        applyScreensaverTimeoutState(d);
       },
       "number-home_screen_timeout": function (val) {
         state.homeScreenTimeout = parseFloat(val) || 0;
