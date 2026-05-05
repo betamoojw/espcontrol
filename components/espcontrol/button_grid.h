@@ -112,6 +112,18 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.type = "weather";
     p.precision = "tomorrow";
   }
+  if (p.type == "media") {
+    if (p.sensor == "controls") {
+      if (p.icon.empty() || p.icon == "Speaker") p.icon = "Auto";
+      p.sensor = "play_pause";
+    } else if (p.sensor.empty()) {
+      p.sensor = "play_pause";
+    } else if (p.sensor != "play_pause" && p.sensor != "previous" &&
+               p.sensor != "next" && p.sensor != "volume" &&
+               p.sensor != "position") {
+      p.sensor = "play_pause";
+    }
+  }
   return p;
 }
 
@@ -3096,8 +3108,21 @@ inline void send_slider_action(const std::string &entity_id, int value, bool cov
 }
 
 inline std::string media_card_mode(const std::string &sensor) {
-  if (sensor == "volume" || sensor == "position") return sensor;
-  return "controls";
+  if (sensor == "volume" || sensor == "position" ||
+      sensor == "play_pause" || sensor == "previous" || sensor == "next")
+    return sensor;
+  if (sensor == "controls") return "play_pause";
+  return "play_pause";
+}
+
+inline bool media_playback_button_mode(const std::string &mode) {
+  return mode == "play_pause" || mode == "previous" || mode == "next";
+}
+
+inline const char *media_service_for_mode(const std::string &mode) {
+  if (mode == "previous") return "media_player.media_previous_track";
+  if (mode == "next") return "media_player.media_next_track";
+  return "media_player.media_play_pause";
 }
 
 inline void send_media_player_action(const std::string &entity_id,
@@ -3136,6 +3161,12 @@ inline void send_media_seek_action(const std::string &entity_id, int value, floa
   char buf[16];
   snprintf(buf, sizeof(buf), "%d", seconds);
   send_media_player_action(entity_id, "media_player.media_seek", "seek_position", buf);
+}
+
+inline void send_media_playback_action(const std::string &entity_id,
+                                       const std::string &mode) {
+  if (entity_id.empty()) return;
+  send_media_player_action(entity_id, media_service_for_mode(mode));
 }
 
 // ── Button click dispatch ─────────────────────────────────────────────
@@ -3200,8 +3231,9 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
   } else if (p.type == "action") {
     send_action_card_action(p, developer_experimental_features);
   } else if (p.type == "media") {
-    if (!p.entity.empty() && media_card_mode(p.sensor) == "controls")
-      send_media_player_action(p.entity, "media_player.media_play_pause");
+    std::string mode = media_card_mode(p.sensor);
+    if (media_playback_button_mode(mode))
+      send_media_playback_action(p.entity, mode);
   } else if (p.type == "slider" || p.type == "cover") {
     if (!p.entity.empty()) send_slider_action(p.entity, -1, cover_tilt_mode(p.sensor));
   } else {
@@ -3489,21 +3521,30 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
 
 // ── Media player card helpers ─────────────────────────────────────────
 
-struct MediaActionCtx {
-  std::string entity_id;
-  const char *service;
-};
-
 inline const char *media_default_icon(const std::string &mode,
                                       const std::string &icon) {
   if (!icon.empty() && icon != "Auto") return find_icon(icon.c_str());
+  if (mode == "previous") return find_icon("Skip Previous");
+  if (mode == "next") return find_icon("Skip Next");
+  if (mode == "play_pause") return find_icon("Play Pause");
   if (mode == "volume") return find_icon("Volume High");
   if (mode == "position") return find_icon("Progress Clock");
-  return find_icon("Speaker");
+  return find_icon("Play Pause");
+}
+
+inline std::string media_default_label(const std::string &mode) {
+  if (mode == "previous") return "Previous";
+  if (mode == "next") return "Next";
+  if (mode == "play_pause") return "Play/Pause";
+  return "Media";
 }
 
 inline std::string media_label(const ParsedCfg &p) {
   return p.label.empty() ? std::string("Media") : p.label;
+}
+
+inline std::string media_action_label(const ParsedCfg &p, const std::string &mode) {
+  return p.label.empty() ? media_default_label(mode) : p.label;
 }
 
 inline void media_format_time(float seconds, char *buf, size_t size) {
@@ -3564,57 +3605,22 @@ inline void media_position_timer_cb(lv_timer_t *timer) {
   media_apply_position(ctx);
 }
 
-inline lv_obj_t *media_create_control_button(lv_obj_t *parent,
-                                             const char *icon,
-                                             lv_align_t align,
-                                             const lv_font_t *icon_font,
-                                             const std::string &entity_id,
-                                             const char *service) {
-  lv_obj_t *ctrl = lv_btn_create(parent);
-  lv_obj_set_size(ctrl, lv_pct(30), lv_pct(56));
-  lv_obj_align(ctrl, align, 0, -2);
-  lv_obj_set_style_bg_opa(ctrl, LV_OPA_TRANSP, LV_PART_MAIN);
-  lv_obj_set_style_bg_opa(ctrl, LV_OPA_20,
-    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
-  lv_obj_set_style_border_width(ctrl, 0, LV_PART_MAIN);
-  lv_obj_set_style_shadow_width(ctrl, 0, LV_PART_MAIN);
-  lv_obj_set_style_pad_all(ctrl, 0, LV_PART_MAIN);
-
-  lv_obj_t *lbl = lv_label_create(ctrl);
-  if (icon_font) lv_obj_set_style_text_font(lbl, icon_font, LV_PART_MAIN);
-  lv_label_set_text(lbl, icon);
-  lv_obj_center(lbl);
-
-  MediaActionCtx *ctx = new MediaActionCtx();
-  ctx->entity_id = entity_id;
-  ctx->service = service;
-  lv_obj_add_event_cb(ctrl, [](lv_event_t *e) {
-    MediaActionCtx *ctx = static_cast<MediaActionCtx *>(lv_event_get_user_data(e));
-    if (ctx) send_media_player_action(ctx->entity_id, ctx->service);
-  }, LV_EVENT_CLICKED, ctx);
-  return ctrl;
-}
-
-inline void setup_media_controls_layout(lv_obj_t *btn, lv_obj_t *icon_lbl,
-                                        lv_obj_t *text_lbl,
-                                        const ParsedCfg &p,
-                                        lv_coord_t pad) {
-  lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICKABLE);
-  if (icon_lbl) lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
-  if (text_lbl) {
-    lv_label_set_text(text_lbl, media_label(p).c_str());
-    lv_obj_align(text_lbl, LV_ALIGN_BOTTOM_LEFT, pad, -pad);
-    configure_button_label_wrap(text_lbl);
-    lv_obj_move_foreground(text_lbl);
+inline void setup_media_action_layout(lv_obj_t *btn, lv_obj_t *icon_lbl,
+                                      lv_obj_t *text_lbl,
+                                      const ParsedCfg &p) {
+  std::string mode = media_card_mode(p.sensor);
+  if (icon_lbl) {
+    lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(icon_lbl, media_default_icon(mode, p.icon));
+    lv_obj_align(icon_lbl, LV_ALIGN_TOP_LEFT, 0, 0);
   }
-
-  const lv_font_t *icon_font = icon_lbl ? lv_obj_get_style_text_font(icon_lbl, LV_PART_MAIN) : nullptr;
-  media_create_control_button(btn, find_icon("Skip Previous"), LV_ALIGN_LEFT_MID,
-    icon_font, p.entity, "media_player.media_previous_track");
-  media_create_control_button(btn, find_icon("Play Pause"), LV_ALIGN_CENTER,
-    icon_font, p.entity, "media_player.media_play_pause");
-  media_create_control_button(btn, find_icon("Skip Next"), LV_ALIGN_RIGHT_MID,
-    icon_font, p.entity, "media_player.media_next_track");
+  if (text_lbl) {
+    std::string label = media_action_label(p, mode);
+    lv_label_set_text(text_lbl, label.c_str());
+    lv_obj_align(text_lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    configure_button_label_wrap(text_lbl);
+  }
+  apply_push_button_transition(btn);
 }
 
 inline lv_obj_t *setup_media_slider_layout(lv_obj_t *btn, lv_obj_t *icon_lbl,
@@ -3704,8 +3710,8 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color) 
   lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
   std::string mode = media_card_mode(p.sensor);
-  if (mode == "controls") {
-    setup_media_controls_layout(s.btn, s.icon_lbl, s.text_lbl, p, pad);
+  if (media_playback_button_mode(mode)) {
+    setup_media_action_layout(s.btn, s.icon_lbl, s.text_lbl, p);
     return;
   }
   if (mode == "position") {
@@ -3869,6 +3875,18 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
   if (b.type == "weather_forecast") {
     b.type = "weather";
     b.precision = "tomorrow";
+  }
+  if (b.type == "media") {
+    if (b.sensor == "controls") {
+      if (b.icon.empty() || b.icon == "Speaker") b.icon = "Auto";
+      b.sensor = "play_pause";
+    } else if (b.sensor.empty()) {
+      b.sensor = "play_pause";
+    } else if (b.sensor != "play_pause" && b.sensor != "previous" &&
+               b.sensor != "next" && b.sensor != "volume" &&
+               b.sensor != "position") {
+      b.sensor = "play_pause";
+    }
   }
   return b;
 }
@@ -4441,14 +4459,16 @@ inline void grid_phase2(
     if (p.type == "media") {
       if (!p.entity.empty()) {
         std::string mode = media_card_mode(p.sensor);
-        if (mode == "controls") {
+        if (mode == "play_pause") {
           subscribe_media_state(s.btn, nullptr, p.entity);
+        } else if (media_playback_button_mode(mode)) {
+          // Previous/next are momentary actions and do not reflect player state.
         } else {
           lv_obj_t *slider = (lv_obj_t *)lv_obj_get_user_data(s.sensor_container);
           if (slider) subscribe_media_slider_state(s.btn, slider, p.entity);
+          if (p.label.empty() && mode != "position")
+            subscribe_friendly_name(s.text_lbl, p.entity);
         }
-        if (p.label.empty())
-          subscribe_friendly_name(s.text_lbl, p.entity);
       }
       continue;
     }
@@ -5064,18 +5084,25 @@ inline void grid_phase2(
         mp.label = sb.label;
         mp.icon = sb.icon;
         mp.icon_on = sb.icon_on;
-        mp.sensor = media_card_mode(sb.sensor);
+        mp.sensor = sb.sensor;
         mp.unit = sb.unit;
         mp.type = sb.type;
         mp.precision = sb.precision;
 
         std::string mode = media_card_mode(mp.sensor);
-        if (mode == "controls") {
-          setup_media_controls_layout(sb_btn, sil, stl, mp, sp_pad);
+        if (media_playback_button_mode(mode)) {
+          mp.sensor = mode;
+          setup_media_action_layout(sb_btn, sil, stl, mp);
           if (!mp.entity.empty()) {
-            subscribe_media_state(sb_btn, nullptr, mp.entity);
-            if (mp.label.empty())
-              subscribe_friendly_name(stl, mp.entity);
+            ParsedCfg *ctx = new ParsedCfg();
+            ctx->entity = mp.entity;
+            ctx->sensor = mode;
+            lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+              ParsedCfg *c = (ParsedCfg *)lv_event_get_user_data(e);
+              if (c) send_media_playback_action(c->entity, media_card_mode(c->sensor));
+            }, LV_EVENT_CLICKED, ctx);
+            if (mode == "play_pause")
+              subscribe_media_state(sb_btn, nullptr, mp.entity);
           }
         } else {
           lv_obj_t *svl = nullptr;

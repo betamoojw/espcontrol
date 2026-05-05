@@ -1,7 +1,7 @@
 ---
 title: Media Cards
 description:
-  How to use media cards on your EspControl panel for playback controls, volume, and track position.
+  How to use media cards on your EspControl panel for playback buttons, volume, and track position.
 ---
 
 # Media
@@ -19,11 +19,15 @@ Media cards control Home Assistant `media_player` entities from the panel.
 3. Enter a **Media Player Entity** such as `media_player.living_room`.
 4. Set a **Label** and **Icon** if you want to override the Home Assistant name.
 
+For playback controls, add one Media card for each button you want, using the same media player entity on each card.
+
 ## Media Modes
 
 | Mode | What it does |
 | --- | --- |
-| **Playback Controls** | Shows previous, play/pause, and next controls inside one card. This works best as a **Wide** card. |
+| **Play/Pause Button** | Shows one normal button that sends play/pause. |
+| **Previous Button** | Shows one normal button that skips to the previous track. |
+| **Next Button** | Shows one normal button that skips to the next track. |
 | **Volume Slider** | Shows a horizontal slider for volume. Dragging it sets the media player's volume from 0 to 100 percent. |
 | **Track Position** | Shows a vertical progress slider, the current time position, and the playing or paused state. Dragging it seeks within the current track when Home Assistant reports a duration. |
 

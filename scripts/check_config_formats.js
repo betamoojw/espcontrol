@@ -338,12 +338,34 @@ assertButtonRoundTrip(hooks, "weather tomorrow card", {
   precision: "tomorrow",
 }, false);
 
-assertButtonRoundTrip(hooks, "media controls card", {
+assertButtonRoundTrip(hooks, "media play pause card", {
   entity: "media_player.living_room",
-  label: "Living Room",
-  icon: "Speaker",
+  label: "Play/Pause",
+  icon: "Auto",
   icon_on: "Auto",
-  sensor: "controls",
+  sensor: "play_pause",
+  unit: "",
+  type: "media",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "media previous card", {
+  entity: "media_player.living_room",
+  label: "Previous",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "previous",
+  unit: "",
+  type: "media",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "media next card", {
+  entity: "media_player.living_room",
+  label: "Next",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "next",
   unit: "",
   type: "media",
   precision: "",
@@ -628,9 +650,11 @@ assertSubpageRoundTrip(hooks, "lock subpage", {
 }, true);
 
 assertSubpageRoundTrip(hooks, "media subpage", {
-  order: ["1", "B", "2", "3"],
+  order: ["1", "B", "2", "3", "4", "5"],
   buttons: [
-    buttonShape({ entity: "media_player.living_room", label: "Living Room", icon: "Speaker", sensor: "controls", type: "media" }),
+    buttonShape({ entity: "media_player.living_room", label: "Play/Pause", icon: "Auto", sensor: "play_pause", type: "media" }),
+    buttonShape({ entity: "media_player.living_room", label: "Previous", icon: "Auto", sensor: "previous", type: "media" }),
+    buttonShape({ entity: "media_player.living_room", label: "Next", icon: "Auto", sensor: "next", type: "media" }),
     buttonShape({ entity: "media_player.kitchen", label: "Kitchen", icon: "Volume High", sensor: "volume", type: "media" }),
     buttonShape({ entity: "media_player.office", label: "Office", icon: "Progress Clock", sensor: "position", type: "media" }),
   ],
@@ -736,12 +760,19 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|K,lock.front_
   ],
 }, "compact lock subpage parse");
 
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|M,media_player.living_room,Play%2FPause,,,play_pause")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "media_player.living_room", label: "Play/Pause", icon: "Auto", icon_on: "Auto", sensor: "play_pause", type: "media" }),
+  ],
+}, "compact media subpage parse");
+
 assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|M,media_player.living_room,Living%20Room,Speaker,,controls")), {
   order: ["1", "B"],
   buttons: [
-    buttonShape({ entity: "media_player.living_room", label: "Living Room", icon: "Speaker", icon_on: "Auto", sensor: "controls", type: "media" }),
+    buttonShape({ entity: "media_player.living_room", label: "Living Room", icon: "Auto", icon_on: "Auto", sensor: "play_pause", type: "media" }),
   ],
-}, "compact media subpage parse");
+}, "legacy media controls subpage parse");
 
 const largeSubpage = {
   order: Array.from({ length: 25 }, (_, i) => (i === 4 ? "B" : String(i + 1))),

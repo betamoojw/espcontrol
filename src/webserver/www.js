@@ -234,11 +234,6 @@
     ".sp-slider-track{width:100%;height:100%;position:relative}" +
     ".sp-slider-fill{position:absolute;left:0;bottom:0;width:100%;height:80%;background:var(--accent);" +
     "border-radius:var(--r)}" +
-    ".sp-media-controls-preview{display:grid;grid-template-columns:repeat(3,1fr);align-items:center;gap:.6cqw;" +
-    "width:100%;height:58%;margin:auto 0;color:#fff;pointer-events:none}" +
-    ".sp-media-control{display:flex;align-items:center;justify-content:center;font-size:calc(var(--btn-icon)*.72);" +
-    "line-height:1;min-width:0;opacity:.95}" +
-    ".sp-media-control-primary{font-size:calc(var(--btn-icon)*.86)}" +
     ".sp-media-h-slider{position:absolute;left:8%;right:8%;top:46%;height:12%;border-radius:999px;" +
     "background:rgba(255,255,255,.18);overflow:hidden;pointer-events:none}" +
     ".sp-media-h-slider span{display:block;width:62%;height:100%;background:var(--accent);border-radius:999px}" +
@@ -1715,6 +1710,17 @@
       b.unit = "";
       b.icon_on = "Auto";
       if (!b.icon) b.icon = "Auto";
+    }
+    if (b && b.type === "media") {
+      if (b.sensor === "controls") {
+        if (!b.icon || b.icon === "Speaker") b.icon = "Auto";
+        b.sensor = "play_pause";
+      } else if (!b.sensor) {
+        b.sensor = "play_pause";
+      }
+      if (["play_pause", "previous", "next", "volume", "position"].indexOf(b.sensor) < 0) {
+        b.sensor = "play_pause";
+      }
     }
     return b;
   }
