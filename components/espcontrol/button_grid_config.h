@@ -30,7 +30,7 @@ struct BtnSlot {
   lv_obj_t *text_lbl;               // entity name / custom label
   lv_obj_t *sensor_container;       // flex row shown when sensor overlay is active
   lv_obj_t *sensor_lbl;             // numeric sensor value
-  lv_obj_t *unit_lbl;               // unit suffix (°, %, etc.)
+  lv_obj_t *unit_lbl;               // unit suffix (°C, %, etc.)
 };
 
 // Extract the Nth semicolon-delimited field from a config string
@@ -391,16 +391,7 @@ inline std::string trim_display_unit(const std::string &unit) {
          std::isspace(static_cast<unsigned char>(unit[end - 1]))) {
     end--;
   }
-  std::string display = unit.substr(start, end - start);
-  std::string lower = temperature_unit_lower(display);
-  if (lower == "\u00B0c" || lower == "\u00B0f" ||
-      lower == "deg c" || lower == "deg f" ||
-      lower == "degree c" || lower == "degree f" ||
-      lower == "degrees c" || lower == "degrees f" ||
-      lower == "celsius" || lower == "fahrenheit") {
-    return "\u00B0";
-  }
-  return display;
+  return unit.substr(start, end - start);
 }
 
 inline bool is_text_sensor_card(const std::string &type, const std::string &precision) {

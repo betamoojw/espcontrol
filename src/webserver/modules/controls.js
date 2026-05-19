@@ -1443,7 +1443,7 @@ function renderPreview() {
       if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
       var slotSz = c.sizes[slot];
       var typePreview = previewTypeDef && previewTypeDef.renderPreview
-        ? previewTypeDef.renderPreview(b, { escHtml: escHtml, displayUnitText: displayUnitText, cardSize: slotSz || 1 })
+        ? previewTypeDef.renderPreview(b, { escHtml: escHtml, cardSize: slotSz || 1 })
         : null;
 
       var btn = document.createElement("div");
@@ -2019,7 +2019,6 @@ function renderButtonSettings(forceOpen) {
     requireField: requireField,
     clearFieldError: clearFieldError,
     toggleRow: toggleRow,
-    displayUnitText: displayUnitText,
     cardSize: c.sizes[slot] || 1,
     idPrefix: idPrefix,
   };

@@ -1281,7 +1281,6 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     buttonConfigNeedsMigration: buttonConfigNeedsMigration,
     subpageConfigNeedsMigration: subpageConfigNeedsMigration,
     normalizeTemperatureUnit: normalizeTemperatureUnit,
-    displayUnitText: displayUnitText,
     normalizeScreensaverAction: normalizeScreensaverAction,
     screensaverActionOption: screensaverActionOption,
     normalizeScreensaverDimmedBrightness: normalizeScreensaverDimmedBrightness,
