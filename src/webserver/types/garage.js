@@ -115,7 +115,7 @@ registerButtonType("garage", {
         setLabelVisible(value);
         scheduleRender();
       });
-      panel.appendChild(helpers.fieldWithControl("Label Display", null, labelDisplayField.segment));
+      panel.appendChild(helpers.fieldWithControl("Display", null, labelDisplayField.segment));
       setLabelVisible(labelMode);
     }
 
