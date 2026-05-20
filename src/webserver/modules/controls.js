@@ -3109,28 +3109,12 @@ function addCtxSubmenu(icon, text, buildFn) {
   sub.className = "sp-ctx-submenu";
   buildFn(sub);
   wrapper.appendChild(sub);
-  function openSubmenu() {
-    if (ctxMenu) {
-      Array.prototype.forEach.call(ctxMenu.querySelectorAll(".sp-ctx-sub.sp-ctx-open"), function (item) {
-        if (item !== wrapper) item.classList.remove("sp-ctx-open");
-      });
-    }
-    wrapper.classList.add("sp-ctx-open");
+  wrapper.addEventListener("mouseenter", function () {
     sub.style.left = "100%"; sub.style.right = "auto";
     var r = sub.getBoundingClientRect();
     if (r.right > window.innerWidth - 4) { sub.style.left = "auto"; sub.style.right = "100%"; }
-  }
-  wrapper.addEventListener("mouseenter", openSubmenu);
-  wrapper.addEventListener("mousedown", function (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-    openSubmenu();
   });
-  wrapper.addEventListener("click", function (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-    openSubmenu();
-  });
+  wrapper.addEventListener("mousedown", function (ev) { ev.preventDefault(); ev.stopPropagation(); });
   ctxMenu.appendChild(wrapper);
 }
 
