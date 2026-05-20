@@ -99,15 +99,22 @@ jobs:
 
       - name: Prepare local ESPHome cache
         run: |
-          CACHE_DIR="${HOME}/.cache/espcontrol-actions/esphome/ci/${{ matrix.slug }}"
-          mkdir -p "${CACHE_DIR}" builds
+          CACHE_ROOT="${HOME}/.cache/espcontrol-actions/esphome"
+          PLATFORMIO_CACHE="${CACHE_ROOT}/shared"
+          BUILD_CACHE="${CACHE_ROOT}/ci/${{ matrix.slug }}"
+          mkdir -p "${PLATFORMIO_CACHE}" "${BUILD_CACHE}" builds
+          rm -rf .esphome
           rm -rf builds/.esphome
-          ln -s "${CACHE_DIR}" builds/.esphome
+          ln -s "${PLATFORMIO_CACHE}" .esphome
+          ln -s "${BUILD_CACHE}" builds/.esphome
 
       - name: Compile firmware
         run: >-
           ${DOCKER} run --rm
           --user "$(id -u):$(id -g)"
+          -e HOME=/config
+          -e PLATFORMIO_CORE_DIR=/config/.esphome/platformio
+          -e PLATFORMIO_SETTING_ENABLE_TELEMETRY=false
           -v "${PWD}:/config"
           -v "${HOME}/.cache/espcontrol-actions:${HOME}/.cache/espcontrol-actions"
           ghcr.io/esphome/esphome:2026.4.3
