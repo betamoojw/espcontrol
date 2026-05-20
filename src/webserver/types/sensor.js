@@ -14,6 +14,13 @@ registerButtonType("sensor", {
     var isTextMode = b.precision === "text";
     var isLargeCard = helpers.cardSize === 4;
 
+    var sensorField = helpers.entityField(
+      "Sensor Entity", helpers.idPrefix + "sensor", b.sensor,
+      "e.g. sensor.living_room_temperature",
+      ["sensor", "binary_sensor", "text_sensor"], "sensor", true,
+      "Add a sensor entity before saving.");
+    panel.appendChild(sensorField.field);
+
     var mode = helpers.segmentControl([
       ["numeric", "Numeric"],
       ["text", "Text"],
@@ -21,13 +28,6 @@ registerButtonType("sensor", {
     var numericBtn = mode.buttons.numeric;
     var textBtn = mode.buttons.text;
     panel.appendChild(helpers.fieldWithControl("Type", null, mode.segment));
-
-    var sensorField = helpers.entityField(
-      "Sensor Entity", helpers.idPrefix + "sensor", b.sensor,
-      "e.g. sensor.living_room_temperature",
-      ["sensor", "binary_sensor", "text_sensor"], "sensor", true,
-      "Add a sensor entity before saving.");
-    panel.appendChild(sensorField.field);
 
     var numericSection = condField();
 
