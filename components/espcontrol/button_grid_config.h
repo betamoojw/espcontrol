@@ -4,10 +4,19 @@
 
 constexpr int COLOR_CORRECTION_GREEN_PERCENT = 100;
 
-constexpr uint32_t correct_display_color(uint32_t rgb) {
-  return (rgb & 0xFF00FFFF) |
-    ((((rgb >> 8) & 0xFF) * COLOR_CORRECTION_GREEN_PERCENT / 100) << 8);
+constexpr uint32_t correct_display_color(uint32_t rgb, int green_percent) {
+  return (rgb & 0xFFFF00FF) |
+    ((((rgb >> 8) & 0xFF) * green_percent / 100) << 8);
 }
+
+constexpr uint32_t correct_display_color(uint32_t rgb) {
+  return correct_display_color(rgb, COLOR_CORRECTION_GREEN_PERCENT);
+}
+
+static_assert(correct_display_color(0x123456, 100) == 0x123456,
+              "neutral colour correction must not change RGB values");
+static_assert(correct_display_color(0x123456, 0) == 0x120056,
+              "colour correction must only adjust the green channel");
 
 constexpr uint32_t DEFAULT_SLIDER_COLOR = correct_display_color(0xFF8C00);
 constexpr uint32_t DEFAULT_OFF_COLOR = correct_display_color(0x313131);
