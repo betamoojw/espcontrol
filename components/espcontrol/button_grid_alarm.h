@@ -12,11 +12,13 @@ struct AlarmCardCtx {
   std::string options;
   std::string state;
   std::string arm_mode;
+  std::string pending_action_mode;
   lv_obj_t *btn = nullptr;
   lv_obj_t *icon_lbl = nullptr;
   lv_obj_t *grid_page = nullptr;
   lv_obj_t *page = nullptr;
   TransientStatusLabel *status_label = nullptr;
+  lv_timer_t *pending_action_timer = nullptr;
   const lv_font_t *label_font = nullptr;
   const lv_font_t *pin_label_font = nullptr;
   const lv_font_t *key_label_font = nullptr;
@@ -27,6 +29,7 @@ struct AlarmCardCtx {
   int width_compensation_percent = 100;
   int grid_cols = 3;
   bool available = false;
+  bool pending_action_had_code = false;
 };
 
 struct AlarmActionCtx {
@@ -215,6 +218,12 @@ inline bool alarm_action_state_matches(const std::string &mode, const std::strin
   return !achieved_state.empty() && alarm_effective_state(state, arm_mode) == achieved_state;
 }
 
+inline bool alarm_action_state_progressed(const std::string &mode, const std::string &state,
+                                          const std::string &arm_mode = "") {
+  if (alarm_action_state_matches(mode, state, arm_mode)) return true;
+  return mode != "disarm" && (state == "arming" || state == "pending");
+}
+
 inline bool alarm_state_releases_label(const std::string &state) {
   return state == "disarmed" || alarm_state_is_armed(state);
 }
@@ -227,6 +236,22 @@ inline std::string alarm_state_control_mode(const std::string &state) {
 }
 
 inline void alarm_control_update_modal(AlarmCardCtx *ctx);
+
+inline void alarm_clear_pending_action(AlarmCardCtx *ctx) {
+  if (!ctx) return;
+  if (ctx->pending_action_timer) {
+    lv_timer_del(ctx->pending_action_timer);
+    ctx->pending_action_timer = nullptr;
+  }
+  ctx->pending_action_mode.clear();
+  ctx->pending_action_had_code = false;
+}
+
+inline void alarm_clear_pending_action_if_progressed(AlarmCardCtx *ctx) {
+  if (!ctx || ctx->pending_action_mode.empty()) return;
+  if (!alarm_action_state_progressed(ctx->pending_action_mode, ctx->state, ctx->arm_mode)) return;
+  alarm_clear_pending_action(ctx);
+}
 
 inline void alarm_set_card_state_colors(AlarmCardCtx *ctx, uint32_t checked_color) {
   if (!ctx || !ctx->btn) return;
@@ -255,12 +280,14 @@ inline void alarm_apply_home_state(AlarmCardCtx *ctx, const std::string &state) 
     ctx->status_label,
     alarm_state_label(state),
     alarm_state_releases_label(state) && !unavailable && !triggered);
+  alarm_clear_pending_action_if_progressed(ctx);
   alarm_control_update_modal(ctx);
 }
 
 inline void alarm_apply_home_arm_mode(AlarmCardCtx *ctx, const std::string &arm_mode) {
   if (!ctx) return;
   ctx->arm_mode = arm_mode;
+  alarm_clear_pending_action_if_progressed(ctx);
   alarm_control_update_modal(ctx);
 }
 
@@ -296,6 +323,7 @@ inline void alarm_apply_action_state(AlarmCardCtx *ctx, const std::string &mode,
   bool active = !unavailable && alarm_action_state_matches(mode, state, ctx->arm_mode);
   if (active) lv_obj_add_state(ctx->btn, LV_STATE_CHECKED);
   else lv_obj_clear_state(ctx->btn, LV_STATE_CHECKED);
+  alarm_clear_pending_action_if_progressed(ctx);
 }
 
 inline void alarm_apply_action_arm_mode(AlarmCardCtx *ctx, const std::string &mode,
@@ -306,6 +334,7 @@ inline void alarm_apply_action_arm_mode(AlarmCardCtx *ctx, const std::string &mo
   bool active = !unavailable && alarm_action_state_matches(mode, ctx->state, ctx->arm_mode);
   if (active) lv_obj_add_state(ctx->btn, LV_STATE_CHECKED);
   else lv_obj_clear_state(ctx->btn, LV_STATE_CHECKED);
+  alarm_clear_pending_action_if_progressed(ctx);
 }
 
 inline void subscribe_alarm_action_availability(AlarmCardCtx *ctx) {
@@ -407,14 +436,53 @@ inline void alarm_show_failure(AlarmCardCtx *ctx, const std::string &message) {
   lv_obj_move_foreground(ui.box);
 }
 
+inline void alarm_pending_action_timer_cb(lv_timer_t *timer) {
+  AlarmCardCtx *ctx = static_cast<AlarmCardCtx *>(lv_timer_get_user_data(timer));
+  if (ctx && ctx->pending_action_timer == timer) {
+    bool had_code = ctx->pending_action_had_code;
+    std::string mode = ctx->pending_action_mode;
+    ctx->pending_action_timer = nullptr;
+    ctx->pending_action_mode.clear();
+    ctx->pending_action_had_code = false;
+    if (!alarm_action_state_progressed(mode, ctx->state, ctx->arm_mode)) {
+      alarm_show_failure(ctx, had_code ? "PIN was not accepted" : "Alarm did not change");
+    }
+  }
+  lv_timer_del(timer);
+}
+
+inline void alarm_start_pending_action(AlarmCardCtx *ctx,
+                                       const std::string &mode,
+                                       bool had_code) {
+  if (!ctx) return;
+  alarm_clear_pending_action(ctx);
+  ctx->pending_action_mode = mode;
+  ctx->pending_action_had_code = had_code;
+  ctx->pending_action_timer = lv_timer_create(alarm_pending_action_timer_cb, 3500, ctx);
+}
+
 inline uint32_t next_alarm_call_id() {
   static uint32_t call_id = 300000;
   return call_id++;
 }
 
+inline std::string alarm_lower_text(std::string value) {
+  for (char &ch : value) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  return value;
+}
+
 inline std::string alarm_action_failure_message(const esphome::api::ActionResponse &response) {
   std::string error = response.get_error_message().str();
   if (error.empty()) return "Alarm action failed";
+
+  std::string lower = alarm_lower_text(error);
+  bool mentions_code = lower.find("code") != std::string::npos ||
+                       lower.find("pin") != std::string::npos;
+  bool looks_rejected = lower.find("invalid") != std::string::npos ||
+                        lower.find("incorrect") != std::string::npos ||
+                        lower.find("wrong") != std::string::npos ||
+                        lower.find("not accepted") != std::string::npos;
+  if (mentions_code && looks_rejected) return "PIN was not accepted";
 
   const std::string prefix = "Alarm action failed: ";
   const size_t max_len = 120;
@@ -448,10 +516,12 @@ inline void send_alarm_action(AlarmActionCtx *action, const std::string &code) {
   std::string entity_id = action->card->entity_id;
   std::string service_name = service;
   AlarmCardCtx *card = action->card;
+  alarm_start_pending_action(card, action->mode, !code.empty());
   esphome::api::global_api_server->register_action_response_callback(
     req.call_id,
     [entity_id, service_name, card](const esphome::api::ActionResponse &response) {
       if (response.is_success()) return;
+      alarm_clear_pending_action(card);
       std::string message = alarm_action_failure_message(response);
       ESP_LOGW("alarm", "%s failed for %s: %s",
         service_name.c_str(), entity_id.c_str(), message.c_str());
