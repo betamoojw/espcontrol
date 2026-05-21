@@ -144,11 +144,7 @@ inline const char *alarm_action_label(const std::string &mode) {
 }
 
 inline const char *alarm_action_icon(const std::string &mode) {
-  if (mode == "away") return find_icon("Security");
-  if (mode == "home") return find_icon("Home");
-  if (mode == "night") return find_icon("Weather Night");
-  if (mode == "disarm") return find_icon("Lock Open");
-  return find_icon("Alarm");
+  return find_icon(alarm_action_icon_name(mode));
 }
 
 inline void setup_alarm_action_card(BtnSlot &s, const ParsedCfg &p) {
@@ -227,10 +223,10 @@ inline std::string alarm_effective_state(const std::string &state,
 inline const char *alarm_state_icon(const std::string &state,
                                     const std::string &arm_mode = "") {
   std::string effective = alarm_effective_state(state, arm_mode);
-  if (effective == "armed_home") return find_icon("Home");
-  if (effective == "armed_away" || effective == "armed_custom_bypass") return find_icon("Security");
+  if (effective == "armed_home") return find_icon("Shield Home");
+  if (effective == "armed_away" || effective == "armed_custom_bypass") return find_icon("Shield Lock");
   if (effective == "armed_night") return find_icon("Weather Night");
-  if (effective == "disarmed") return find_icon("Lock Open");
+  if (effective == "disarmed") return find_icon("Shield Off");
   if (effective == "triggered") return find_icon("Alarm Light");
   return find_icon("Alarm");
 }
@@ -1297,9 +1293,9 @@ inline AlarmCardCtx *create_alarm_card_context(
     if (target) lv_scr_load_anim(target, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
   }, LV_EVENT_CLICKED, main_page_obj);
 
-  const char *modes[4] = {"away", "home", "night", "disarm"};
+  const char *modes[3] = {"away", "home", "disarm"};
   int page_pos = 1;
-  for (int i = 0; i < 4 && page_pos < NS; i++) {
+  for (int i = 0; i < 3 && page_pos < NS; i++) {
     std::string mode = modes[i];
     if (!alarm_action_visible(p.options, mode)) continue;
 

@@ -85,7 +85,9 @@ function normalizeButtonConfig(b) {
     b.precision = "";
     b.icon_on = "Auto";
     if (!b.label) b.label = alarmActionInfo(b.sensor).label;
-    if (!b.icon || b.icon === "Auto") b.icon = alarmActionInfo(b.sensor).icon;
+    if (!b.icon || b.icon === "Auto" || b.icon === alarmActionLegacyIcon(b.sensor)) {
+      b.icon = alarmActionInfo(b.sensor).icon;
+    }
     b.options = normalizeAlarmOptions(b.options);
   }
   if (b && b.type === "light_switch") {
@@ -170,12 +172,25 @@ var GARAGE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_NUMBER_DISPLAY_OPTION = "number_display";
 var ALARM_ACTIONS = [
-  { value: "away", label: "Arm Away", service: "alarm_control_panel.alarm_arm_away", icon: "Security" },
-  { value: "home", label: "Arm Home", service: "alarm_control_panel.alarm_arm_home", icon: "Home" },
+  { value: "away", label: "Arm Away", service: "alarm_control_panel.alarm_arm_away", icon: "Shield Lock" },
+  { value: "home", label: "Arm Home", service: "alarm_control_panel.alarm_arm_home", icon: "Shield Home" },
   { value: "night", label: "Arm Night", service: "alarm_control_panel.alarm_arm_night", icon: "Weather Night" },
-  { value: "disarm", label: "Disarm", service: "alarm_control_panel.alarm_disarm", icon: "Lock Open" },
+  { value: "disarm", label: "Disarm", service: "alarm_control_panel.alarm_disarm", icon: "Shield Off" },
 ];
-var ALARM_DEFAULT_ACTIONS = ["away", "home", "night", "disarm"];
+var ALARM_DEFAULT_ACTIONS = ["away", "home", "disarm"];
+
+function alarmActionLegacyIcon(value) {
+  if (value === "away") return "Security";
+  if (value === "home") return "Home";
+  if (value === "disarm") return "Lock Open";
+  if (value === "night") return "Weather Night";
+  return "";
+}
+
+function alarmActionIconIsGenerated(value, icon) {
+  var info = alarmActionInfo(value);
+  return !!info && (icon === info.icon || icon === alarmActionLegacyIcon(value));
+}
 
 function configOptionEnabled(options, name) {
   var parts = String(options || "").split(",");
@@ -509,11 +524,11 @@ function setAlarmVisibleActions(b, actions) {
 }
 
 function normalizeAlarmIconDisplayMode(value) {
-  return String(value || "").trim() === "status" ? "status" : "static";
+  return String(value || "").trim() === "static" ? "static" : "status";
 }
 
 function normalizeAlarmLabelDisplayMode(value) {
-  return String(value || "").trim() === "status" ? "status" : "name";
+  return String(value || "").trim() === "name" ? "name" : "status";
 }
 
 function alarmIconDisplayMode(b) {
@@ -527,7 +542,7 @@ function setAlarmIconDisplayMode(b, mode) {
   b.options = setConfigOptionValue(
     b.options,
     ALARM_ICON_DISPLAY_OPTION,
-    normalized === "static" ? "" : normalized
+    normalized === "status" ? "" : normalized
   );
   b.options = normalizeAlarmOptions(b.options);
   return b.options;
@@ -544,7 +559,7 @@ function setAlarmLabelDisplayMode(b, mode) {
   b.options = setConfigOptionValue(
     b.options,
     ALARM_LABEL_DISPLAY_OPTION,
-    normalized === "name" ? "" : normalized
+    normalized === "status" ? "" : normalized
   );
   b.options = normalizeAlarmOptions(b.options);
   return b.options;
@@ -567,12 +582,12 @@ function normalizeAlarmOptions(options) {
   }
   var iconMode = normalizeAlarmIconDisplayMode(
     configOptionValue(options, ALARM_ICON_DISPLAY_OPTION));
-  if (iconMode !== "static") {
+  if (iconMode !== "status") {
     out = setConfigOptionValue(out, ALARM_ICON_DISPLAY_OPTION, iconMode);
   }
   var labelMode = normalizeAlarmLabelDisplayMode(
     configOptionValue(options, ALARM_LABEL_DISPLAY_OPTION));
-  if (labelMode !== "name") {
+  if (labelMode !== "status") {
     out = setConfigOptionValue(out, ALARM_LABEL_DISPLAY_OPTION, labelMode);
   }
   return out;

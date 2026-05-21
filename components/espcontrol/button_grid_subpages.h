@@ -141,11 +141,8 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
       else if (b.sensor == "disarm") b.label = "Disarm";
       else b.label = "Arm Away";
     }
-    if (b.icon.empty() || b.icon == "Auto") {
-      if (b.sensor == "home") b.icon = "Home";
-      else if (b.sensor == "night") b.icon = "Weather Night";
-      else if (b.sensor == "disarm") b.icon = "Lock Open";
-      else b.icon = "Security";
+    if (b.icon.empty() || b.icon == "Auto" || alarm_action_legacy_icon_name(b.sensor, b.icon)) {
+      b.icon = alarm_action_icon_name(b.sensor);
     }
   }
   if (b.type == "light_switch") {

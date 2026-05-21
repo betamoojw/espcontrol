@@ -916,6 +916,21 @@
       "mdi": "shield-home"
     },
     {
+      "name": "Shield Home",
+      "codepoint": "F068A",
+      "mdi": "shield-home"
+    },
+    {
+      "name": "Shield Lock",
+      "codepoint": "F099D",
+      "mdi": "shield-lock"
+    },
+    {
+      "name": "Shield Off",
+      "codepoint": "F099E",
+      "mdi": "shield-off"
+    },
+    {
       "name": "Shower",
       "codepoint": "F09A0",
       "mdi": "shower"

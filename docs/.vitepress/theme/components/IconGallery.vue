@@ -153,6 +153,9 @@ const ICON_GROUPS = {
   'Lock Outline': 'Security & Access',
   'Motion Sensor': 'Security & Access',
   'Security': 'Security & Access',
+  'Shield Home': 'Security & Access',
+  'Shield Lock': 'Security & Access',
+  'Shield Off': 'Security & Access',
   'Smoke Detector': 'Security & Access',
 
   'Battery': 'Power & Energy',

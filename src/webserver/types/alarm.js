@@ -2,7 +2,7 @@
 var ALARM_CONTROL_PANEL_VALUE = "control_panel";
 
 function alarmUsesDefaultIcon(icon) {
-  return !icon || icon === "Auto" || icon === "Security" || icon === "Alarm";
+  return !icon || icon === "Auto" || icon === "Security" || icon === "Shield Home" || icon === "Alarm";
 }
 
 function alarmCardTypeOptions() {
@@ -24,7 +24,7 @@ function alarmLabelIsGenerated(label) {
 function alarmIconIsGenerated(icon) {
   if (!icon || icon === "Auto" || alarmUsesDefaultIcon(icon)) return true;
   for (var i = 0; i < ALARM_ACTIONS.length; i++) {
-    if (icon === ALARM_ACTIONS[i].icon) return true;
+    if (alarmActionIconIsGenerated(ALARM_ACTIONS[i].value, icon)) return true;
   }
   return false;
 }
@@ -61,7 +61,7 @@ function setAlarmCardType(b, value, helpers) {
   var oldInfo = alarmActionInfo(b.sensor);
   var shouldUseGeneratedLabel = !wasAlarmAction || alarmLabelIsGenerated(b.label);
   var shouldUseGeneratedIcon = !wasAlarmAction || alarmIconIsGenerated(b.icon) ||
-    (oldInfo && b.icon === oldInfo.icon);
+    (oldInfo && alarmActionIconIsGenerated(oldInfo.value, b.icon));
 
   b.type = "alarm_action";
   b.sensor = info.value;
@@ -222,7 +222,7 @@ registerButtonType("alarm", {
     var label = (b.label && b.label.trim()) || (b.entity && b.entity.trim()) || "Alarm";
     if (alarmLabelDisplayMode(b) === "status") label = "Disarmed";
     var iconName = iconSlug(b.icon && b.icon !== "Auto" ? b.icon : "Security");
-    if (alarmIconDisplayMode(b) === "status") iconName = iconSlug("Lock Open");
+    if (alarmIconDisplayMode(b) === "status") iconName = iconSlug("Shield Off");
     return {
       iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>',
       labelHtml: '<span class="sp-btn-label">' + helpers.escHtml(label) + '</span>',

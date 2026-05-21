@@ -479,9 +479,9 @@ const defaultAlarmCard = {
 assertButtonRoundTrip(hooks, "alarm card default options", defaultAlarmCard, false);
 assert.strictEqual(hooks.alarmPinRequired(defaultAlarmCard, "arm"), true, "alarm arm PIN default");
 assert.strictEqual(hooks.alarmPinRequired(defaultAlarmCard, "disarm"), true, "alarm disarm PIN default");
-assert.strictEqual(hooks.alarmIconDisplayMode(defaultAlarmCard), "static", "alarm icon display default");
-assert.strictEqual(hooks.alarmLabelDisplayMode(defaultAlarmCard), "name", "alarm label display default");
-assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(defaultAlarmCard)), ["away", "home", "night", "disarm"], "alarm default visible actions");
+assert.strictEqual(hooks.alarmIconDisplayMode(defaultAlarmCard), "status", "alarm icon display default");
+assert.strictEqual(hooks.alarmLabelDisplayMode(defaultAlarmCard), "status", "alarm label display default");
+assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(defaultAlarmCard)), ["away", "home", "disarm"], "alarm default visible actions");
 
 const customAlarmCard = {
   entity: "alarm_control_panel.house",
@@ -509,12 +509,28 @@ const statusAlarmCard = {
   unit: "",
   type: "alarm",
   precision: "",
-  options: "icon_display=status,label_display=status",
+  options: "",
 };
 assertButtonRoundTrip(hooks, "alarm card status icon and label options", statusAlarmCard, false);
 const parsedStatusAlarm = hooks.parseButtonConfig(hooks.serializeButtonConfig(statusAlarmCard));
 assert.strictEqual(hooks.alarmIconDisplayMode(parsedStatusAlarm), "status", "alarm status icon option");
 assert.strictEqual(hooks.alarmLabelDisplayMode(parsedStatusAlarm), "status", "alarm status label option");
+
+const staticAlarmCard = {
+  entity: "alarm_control_panel.house",
+  label: "House Alarm",
+  icon: "Security",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "alarm",
+  precision: "",
+  options: "icon_display=static,label_display=name",
+};
+assertButtonRoundTrip(hooks, "alarm card static icon and name label options", staticAlarmCard, false);
+const parsedStaticAlarm = hooks.parseButtonConfig(hooks.serializeButtonConfig(staticAlarmCard));
+assert.strictEqual(hooks.alarmIconDisplayMode(parsedStaticAlarm), "static", "alarm static icon option");
+assert.strictEqual(hooks.alarmLabelDisplayMode(parsedStaticAlarm), "name", "alarm name label option");
 
 assertButtonMigration(hooks, "alarm clears ignored fields", "alarm_control_panel.house;House;Auto;Alarm;sensor.temp;W;alarm;2;pin_disarm=0,actions=home%7Cnight", {
   entity: "alarm_control_panel.house",
@@ -531,7 +547,7 @@ assertButtonMigration(hooks, "alarm clears ignored fields", "alarm_control_panel
 assertButtonRoundTrip(hooks, "alarm action button", {
   entity: "alarm_control_panel.house",
   label: "Arm Home",
-  icon: "Home",
+  icon: "Shield Home",
   icon_on: "Auto",
   sensor: "home",
   unit: "",
@@ -1495,8 +1511,8 @@ assertSubpageRoundTrip(hooks, "lock command subpage", {
 assertSubpageRoundTrip(hooks, "alarm action subpage", {
   order: ["B", "1", "2"],
   buttons: [
-    buttonShape({ entity: "alarm_control_panel.house", label: "Arm Away", icon: "Security", icon_on: "Auto", sensor: "away", type: "alarm_action", options: "pin_arm=0" }),
-    buttonShape({ entity: "alarm_control_panel.house", label: "Disarm", icon: "Lock Open", icon_on: "Auto", sensor: "disarm", type: "alarm_action" }),
+    buttonShape({ entity: "alarm_control_panel.house", label: "Arm Away", icon: "Shield Lock", icon_on: "Auto", sensor: "away", type: "alarm_action", options: "pin_arm=0" }),
+    buttonShape({ entity: "alarm_control_panel.house", label: "Disarm", icon: "Shield Off", icon_on: "Auto", sensor: "disarm", type: "alarm_action" }),
   ],
 }, true);
 

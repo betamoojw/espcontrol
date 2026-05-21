@@ -257,12 +257,28 @@ inline bool alarm_action_mode_valid(const std::string &mode) {
   return mode == "away" || mode == "home" || mode == "night" || mode == "disarm";
 }
 
+inline const char *alarm_action_icon_name(const std::string &mode) {
+  if (mode == "away") return "Shield Lock";
+  if (mode == "home") return "Shield Home";
+  if (mode == "night") return "Weather Night";
+  if (mode == "disarm") return "Shield Off";
+  return "Alarm";
+}
+
+inline bool alarm_action_legacy_icon_name(const std::string &mode, const std::string &icon) {
+  if (mode == "away") return icon == "Security";
+  if (mode == "home") return icon == "Home";
+  if (mode == "night") return icon == "Weather Night";
+  if (mode == "disarm") return icon == "Lock Open";
+  return false;
+}
+
 inline std::string normalize_alarm_icon_display(const std::string &value) {
-  return value == "status" ? "status" : "static";
+  return value == "static" ? "static" : "status";
 }
 
 inline std::string normalize_alarm_label_display(const std::string &value) {
-  return value == "status" ? "status" : "name";
+  return value == "name" ? "name" : "status";
 }
 
 inline std::string alarm_card_options_normalized(const std::string &options) {
@@ -288,20 +304,20 @@ inline std::string alarm_card_options_normalized(const std::string &options) {
       }
       start = end + 1;
     }
-    if (saw_valid && filtered != "away|home|night|disarm") {
+    if (saw_valid && filtered != "away|home|disarm") {
       if (!out.empty()) out += ",";
       out += "actions=" + filtered;
     }
   }
   std::string icon_display = normalize_alarm_icon_display(
     cfg_option_value(options, "icon_display"));
-  if (icon_display != "static") {
+  if (icon_display != "status") {
     if (!out.empty()) out += ",";
     out += "icon_display=" + icon_display;
   }
   std::string label_display = normalize_alarm_label_display(
     cfg_option_value(options, "label_display"));
-  if (label_display != "name") {
+  if (label_display != "status") {
     if (!out.empty()) out += ",";
     out += "label_display=" + label_display;
   }
@@ -381,6 +397,9 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.unit.clear();
     p.precision.clear();
     p.icon_on.clear();
+    if (p.icon.empty() || p.icon == "Auto" || alarm_action_legacy_icon_name(p.sensor, p.icon)) {
+      p.icon = alarm_action_icon_name(p.sensor);
+    }
     p.options = alarm_card_options_normalized(p.options);
   }
   if (p.type == "light_switch") {
