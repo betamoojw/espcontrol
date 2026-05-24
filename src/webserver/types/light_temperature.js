@@ -35,6 +35,38 @@ var LIGHT_CONTROL_TYPE_OPTIONS = [
   ["light_temperature", "Colour Temperature"],
 ];
 
+var LIGHT_CONTROL_TYPE_METADATA = {
+  mode: {
+    label: "Type",
+    idSuffix: "light-control-type",
+    options: LIGHT_CONTROL_TYPE_OPTIONS,
+    value: function (b) { return normalizeLightControlType(b.type); },
+    onChange: function (b, helpers) {
+      setLightControlType(b, this.value, helpers);
+    },
+  },
+};
+
+var LIGHT_TEMPERATURE_CARD_METADATA = {
+  mode: LIGHT_CONTROL_TYPE_METADATA.mode,
+  entity: {
+    label: "Entity",
+    placeholder: "e.g. light.living_room",
+    domains: ["light"],
+  },
+  labelField: {
+    label: "Label",
+    placeholder: "e.g. Living Room",
+  },
+  icon: {
+    field: "icon",
+    fallback: "Auto",
+  },
+  preview: {
+    badge: "lightbulb",
+  },
+};
+
 function normalizeLightControlType(type) {
   if (type === "light_switch") return "light_switch";
   return type === "light_temperature" ? "light_temperature" : "light_brightness";
@@ -56,11 +88,7 @@ function setLightControlType(b, type, helpers) {
 }
 
 function renderLightControlTypeField(panel, b, helpers) {
-  panel.appendChild(helpers.selectField(
-    "Type", helpers.idPrefix + "light-control-type",
-    LIGHT_CONTROL_TYPE_OPTIONS, normalizeLightControlType(b.type), function () {
-      setLightControlType(b, this.value, helpers);
-    }).field);
+  return helpers.renderCardModeSelector(panel, b, helpers, LIGHT_CONTROL_TYPE_METADATA);
 }
 
 registerButtonType("light_temperature", {
@@ -72,6 +100,7 @@ registerButtonType("light_temperature", {
     return false;
   },
   labelPlaceholder: "e.g. Living Room",
+  cardMetadata: LIGHT_TEMPERATURE_CARD_METADATA,
   onSelect: function (b) {
     b.sensor = "";
     b.unit = "2000-6500";
@@ -82,13 +111,8 @@ registerButtonType("light_temperature", {
   renderSettings: function (panel, b, slot, helpers) {
     renderLightControlTypeField(panel, b, helpers);
 
-    // Entity
-    panel.appendChild(helpers.entityField(
-      "Entity", helpers.idPrefix + "entity", b.entity, "e.g. light.living_room",
-      ["light"], "entity", true).field);
-
-    panel.appendChild(helpers.textField(
-      "Label", helpers.idPrefix + "label", b.label, "e.g. Living Room", "label", true).field);
+    helpers.renderCardEntityField(panel, b, helpers, LIGHT_TEMPERATURE_CARD_METADATA);
+    helpers.renderCardTextField(panel, b, helpers, LIGHT_TEMPERATURE_CARD_METADATA.labelField);
 
     if (b.sensor === "kelvin") {
       b.sensor = "";
@@ -146,14 +170,7 @@ registerButtonType("light_temperature", {
     minInp.addEventListener("blur", onRangeChange);
     maxInp.addEventListener("blur", onRangeChange);
 
-    // Icon
-    panel.appendChild(helpers.iconPickerField(
-      helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
-      b.icon || "Auto", function (opt) {
-        b.icon = opt;
-        helpers.saveField("icon", opt);
-      }
-    ));
+    helpers.renderCardIconPicker(panel, b, helpers, LIGHT_TEMPERATURE_CARD_METADATA.icon);
   },
   renderPreview: function (b, helpers) {
     var label = b.label || b.entity || "Light Temp";
@@ -164,9 +181,7 @@ registerButtonType("light_temperature", {
         '<span class="sp-slider-preview"><span class="sp-slider-track">' +
           '<span class="sp-slider-fill"></span>' +
         '</span></span>',
-      labelHtml:
-        '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +
-        '<span class="sp-type-badge mdi mdi-lightbulb"></span></span>',
+      labelHtml: cardBadgeLabelHtml(helpers, label, LIGHT_TEMPERATURE_CARD_METADATA.preview.badge),
     };
   },
 });

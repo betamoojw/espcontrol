@@ -1,64 +1,147 @@
 // Default button type: HA entity toggle (on/off switch)
+var SWITCH_CARD_METADATA = {
+  entity: {
+    label: "Entity",
+    placeholder: "e.g. light.kitchen",
+    domains: ["light", "switch", "input_boolean", "fan"],
+    requiredMessage: "Add an entity before saving.",
+  },
+  iconOff: {
+    field: "icon",
+    fallback: "Auto",
+    label: "Off Icon",
+  },
+  iconOn: {
+    field: "icon_on",
+    fallback: "Auto",
+    label: "On Icon",
+  },
+  activeDisplay: {
+    label: "Active Display",
+    idSuffix: "sensor-when-on-toggle",
+    checked: function (b) { return !!b.sensor; },
+  },
+  sensorMode: {
+    label: "Type",
+    options: [
+      ["numeric", "Numeric"],
+      ["text", "Text"],
+    ],
+  },
+  sensorEntity: {
+    label: "Sensor Entity",
+    idSuffix: "sensor",
+    placeholder: "e.g. sensor.printer_percent_complete",
+    domains: ["sensor", "binary_sensor", "text_sensor"],
+    bindName: "sensor",
+  },
+  unitField: {
+    label: "Unit",
+    idSuffix: "unit",
+    placeholder: "e.g. %",
+    bindName: "unit",
+    rerender: false,
+  },
+  confirmationToggle: {
+    label: "Confirmation Required",
+    idSuffix: "confirm-toggle",
+    checked: function (b) { return switchConfirmationEnabled(b); },
+  },
+  confirmationMode: {
+    label: "When",
+    options: [
+      ["off", "Off"],
+      ["on", "On"],
+      ["both", "Both"],
+    ],
+  },
+  confirmationMessage: {
+    label: "Message",
+    idSuffix: "confirm-message",
+    placeholder: SWITCH_CONFIRM_DEFAULT_MESSAGE,
+    bindName: null,
+    value: function (b) { return switchConfirmationMessage(b); },
+  },
+  confirmationYes: {
+    label: "Confirm Button",
+    idSuffix: "confirm-yes",
+    placeholder: SWITCH_CONFIRM_DEFAULT_YES,
+    bindName: null,
+    value: function (b) { return switchConfirmationYesText(b); },
+  },
+  confirmationNo: {
+    label: "Cancel Button",
+    idSuffix: "confirm-no",
+    placeholder: SWITCH_CONFIRM_DEFAULT_NO,
+    bindName: null,
+    value: function (b) { return switchConfirmationNoText(b); },
+  },
+  preview: {
+    switchBadge: "toggle-switch-variant-off",
+    numericBadge: "gauge",
+    textBadge: "format-text",
+  },
+};
+
+var LIGHT_SWITCH_CARD_METADATA = {
+  mode: LIGHT_CONTROL_TYPE_METADATA.mode,
+  entity: {
+    label: "Entity",
+    placeholder: "e.g. light.living_room",
+    domains: ["light"],
+    requiredMessage: "Add a light entity before saving.",
+  },
+  labelField: {
+    label: "Label",
+    placeholder: "e.g. Living Room",
+  },
+  iconOff: {
+    field: "icon",
+    fallback: "Auto",
+    label: "Off Icon",
+  },
+  iconOn: {
+    field: "icon_on",
+    fallback: "Auto",
+    label: "On Icon",
+  },
+  preview: {
+    badge: "lightbulb",
+  },
+};
+
 registerButtonType("", {
   label: "Switch",
   allowInSubpage: true,
+  cardMetadata: SWITCH_CARD_METADATA,
   renderSettings: function (panel, b, slot, helpers) {
     var showSensor = !!b.sensor;
     var sensorMode = b.precision === "text" ? "text" : "numeric";
 
-    var entityField = helpers.entityField(
-      "Entity", helpers.idPrefix + "entity", b.entity, "e.g. light.kitchen",
-      ["light", "switch", "input_boolean", "fan"], "entity", true,
-      "Add an entity before saving.");
-    panel.appendChild(entityField.field);
+    helpers.renderCardEntityField(panel, b, helpers, SWITCH_CARD_METADATA);
+    helpers.renderCardIconPicker(panel, b, helpers, SWITCH_CARD_METADATA.iconOff);
+    helpers.renderCardIconPicker(panel, b, helpers, SWITCH_CARD_METADATA.iconOn);
 
-    panel.appendChild(helpers.iconPickerField(
-      helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
-      b.icon || "Auto", function (opt) {
-        b.icon = opt;
-        helpers.saveField("icon", opt);
-      }, "Off Icon"
-    ));
-
-    panel.appendChild(helpers.iconPickerField(
-      helpers.idPrefix + "icon-on-picker", helpers.idPrefix + "icon-on",
-      b.icon_on || "Auto", function (opt) {
-        b.icon_on = opt;
-        helpers.saveField("icon_on", opt);
-      }, "On Icon"
-    ));
-
-    var sensorToggleSection = helpers.toggleSection(
-      "Active Display",
-      helpers.idPrefix + "sensor-when-on-toggle",
-      showSensor
-    );
-    var sensorToggle = sensorToggleSection.toggle;
-    var sensorSection = sensorToggleSection.section;
-    panel.appendChild(sensorToggle.row);
+    var sensorToggle = helpers.renderCardOptionToggle(panel, b, helpers, SWITCH_CARD_METADATA.activeDisplay);
+    var sensorSection = condField();
     if (showSensor) sensorSection.classList.add("sp-visible");
 
-    var mode = helpers.segmentControl([
-      ["numeric", "Numeric"],
-      ["text", "Text"],
-    ], sensorMode, function (value) { setSensorMode(value, true); });
+    var mode = helpers.renderCardSegmentControl(sensorSection, b, helpers, Object.assign({}, SWITCH_CARD_METADATA.sensorMode, {
+      value: function () { return sensorMode; },
+      onSelect: function (b, helpers, value) { setSensorMode(value, true); },
+    }));
     var numericBtn = mode.buttons.numeric;
     var textBtn = mode.buttons.text;
-    sensorSection.appendChild(helpers.fieldWithControl("Type", null, mode.segment));
 
-    var sensorField = helpers.entityField(
-      "Sensor Entity", helpers.idPrefix + "sensor", b.sensor,
-      "e.g. sensor.printer_percent_complete",
-      ["sensor", "binary_sensor", "text_sensor"], "sensor", true);
+    var sensorField = helpers.renderCardEntityField(sensorSection, b, helpers, {
+      entity: SWITCH_CARD_METADATA.sensorEntity,
+    });
     var sensorInp = sensorField.input;
-    sensorSection.appendChild(sensorField.field);
 
     var numericSection = condField();
 
-    var unitField = helpers.textField("Unit", helpers.idPrefix + "unit", b.unit, "e.g. %", "unit", false);
+    var unitField = helpers.renderCardTextField(numericSection, b, helpers, SWITCH_CARD_METADATA.unitField);
     var unitInp = unitField.input;
-    unitInp.className = "sp-input";
-    numericSection.appendChild(unitField.field);
 
     var precisionField = helpers.precisionField(helpers.idPrefix + "precision",
       sensorMode === "numeric" ? (b.precision || "0") : "0", function () {
@@ -113,59 +196,33 @@ registerButtonType("", {
 
     var confirmOn = switchConfirmationEnabled(b);
     var confirmMode = switchConfirmationMode(b) || "off";
-    var confirmToggleSection = helpers.toggleSection(
-      "Confirmation Required",
-      helpers.idPrefix + "confirm-toggle",
-      confirmOn
-    );
-    var confirmToggle = confirmToggleSection.toggle;
-    var confirmSection = confirmToggleSection.section;
-    panel.appendChild(confirmToggle.row);
+    var confirmToggle = helpers.renderCardOptionToggle(panel, b, helpers, SWITCH_CARD_METADATA.confirmationToggle);
+    var confirmSection = condField();
     if (confirmOn) confirmSection.classList.add("sp-visible");
 
-    var directionMode = helpers.segmentControl([
-      ["off", "Off"],
-      ["on", "On"],
-      ["both", "Both"],
-    ], confirmMode, function (value) {
-      var previousDefault = switchConfirmationDefaultMessageForMode(confirmMode);
-      confirmMode = value;
-      if (!messageInput.value || messageInput.value === previousDefault) {
-        messageInput.value = switchConfirmationDefaultMessageForMode(confirmMode);
-      }
-      saveConfirmationOptions();
-    });
-    confirmSection.appendChild(helpers.fieldWithControl("When", null, directionMode.segment));
+    helpers.renderCardSegmentControl(confirmSection, b, helpers, Object.assign({}, SWITCH_CARD_METADATA.confirmationMode, {
+      value: function () { return confirmMode; },
+      onSelect: function (b, helpers, value) {
+        var previousDefault = switchConfirmationDefaultMessageForMode(confirmMode);
+        confirmMode = value;
+        if (!messageInput.value || messageInput.value === previousDefault) {
+          messageInput.value = switchConfirmationDefaultMessageForMode(confirmMode);
+        }
+        saveConfirmationOptions();
+      },
+    }));
 
-    var messageField = helpers.textField(
-      "Message",
-      helpers.idPrefix + "confirm-message",
-      switchConfirmationMessage(b),
-      SWITCH_CONFIRM_DEFAULT_MESSAGE
-    );
+    var messageField = helpers.renderCardTextField(confirmSection, b, helpers, SWITCH_CARD_METADATA.confirmationMessage);
     var messageInput = messageField.input;
     messageInput.maxLength = 72;
-    confirmSection.appendChild(messageField.field);
 
-    var yesField = helpers.textField(
-      "Confirm Button",
-      helpers.idPrefix + "confirm-yes",
-      switchConfirmationYesText(b),
-      SWITCH_CONFIRM_DEFAULT_YES
-    );
+    var yesField = helpers.renderCardTextField(confirmSection, b, helpers, SWITCH_CARD_METADATA.confirmationYes);
     var yesInput = yesField.input;
     yesInput.maxLength = 20;
-    confirmSection.appendChild(yesField.field);
 
-    var noField = helpers.textField(
-      "Cancel Button",
-      helpers.idPrefix + "confirm-no",
-      switchConfirmationNoText(b),
-      SWITCH_CONFIRM_DEFAULT_NO
-    );
+    var noField = helpers.renderCardTextField(confirmSection, b, helpers, SWITCH_CARD_METADATA.confirmationNo);
     var noInput = noField.input;
     noInput.maxLength = 20;
-    confirmSection.appendChild(noField.field);
 
     panel.appendChild(confirmSection);
 
@@ -199,12 +256,10 @@ registerButtonType("", {
   renderPreview: function (b, helpers) {
     var label = b.label || b.entity || "Configure";
     var badgeIcon = b.sensor
-      ? (b.precision === "text" ? "format-text" : "gauge")
-      : "toggle-switch-variant-off";
+      ? (b.precision === "text" ? SWITCH_CARD_METADATA.preview.textBadge : SWITCH_CARD_METADATA.preview.numericBadge)
+      : SWITCH_CARD_METADATA.preview.switchBadge;
     return {
-      labelHtml:
-        '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +
-        '<span class="sp-type-badge mdi mdi-' + badgeIcon + '"></span></span>',
+      labelHtml: cardBadgeLabelHtml(helpers, label, badgeIcon),
     };
   },
 });
@@ -218,6 +273,7 @@ registerButtonType("light_switch", {
     return false;
   },
   labelPlaceholder: "e.g. Living Room",
+  cardMetadata: LIGHT_SWITCH_CARD_METADATA,
   onSelect: function (b) {
     b.sensor = "";
     b.unit = "";
@@ -229,48 +285,15 @@ registerButtonType("light_switch", {
   renderSettings: function (panel, b, slot, helpers) {
     renderLightControlTypeField(panel, b, helpers);
 
-    panel.appendChild(helpers.entityField(
-      "Entity",
-      helpers.idPrefix + "entity",
-      b.entity,
-      "e.g. light.living_room",
-      ["light"],
-      "entity",
-      true,
-      "Add a light entity before saving."
-    ).field);
-
-    panel.appendChild(helpers.textField(
-      "Label",
-      helpers.idPrefix + "label",
-      b.label,
-      "e.g. Living Room",
-      "label",
-      true
-    ).field);
-
-    panel.appendChild(helpers.iconPickerField(
-      helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
-      b.icon || "Auto", function (opt) {
-        b.icon = opt;
-        helpers.saveField("icon", opt);
-      }, "Off Icon"
-    ));
-
-    panel.appendChild(helpers.iconPickerField(
-      helpers.idPrefix + "icon-on-picker", helpers.idPrefix + "icon-on",
-      b.icon_on || "Auto", function (opt) {
-        b.icon_on = opt;
-        helpers.saveField("icon_on", opt);
-      }, "On Icon"
-    ));
+    helpers.renderCardEntityField(panel, b, helpers, LIGHT_SWITCH_CARD_METADATA);
+    helpers.renderCardTextField(panel, b, helpers, LIGHT_SWITCH_CARD_METADATA.labelField);
+    helpers.renderCardIconPicker(panel, b, helpers, LIGHT_SWITCH_CARD_METADATA.iconOff);
+    helpers.renderCardIconPicker(panel, b, helpers, LIGHT_SWITCH_CARD_METADATA.iconOn);
   },
   renderPreview: function (b, helpers) {
     var label = b.label || b.entity || "Configure";
     return {
-      labelHtml:
-        '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +
-        '<span class="sp-type-badge mdi mdi-lightbulb"></span></span>',
+      labelHtml: cardBadgeLabelHtml(helpers, label, LIGHT_SWITCH_CARD_METADATA.preview.badge),
     };
   },
 });

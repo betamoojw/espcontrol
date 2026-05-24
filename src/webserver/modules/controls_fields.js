@@ -193,7 +193,8 @@ function renderCardEntityField(panel, b, helpers, metadata) {
 function renderCardTextField(panel, b, helpers, metadata) {
   metadata = metadata || {};
   var text = metadata.text || metadata;
-  var bindName = text.bindName || text.field || "label";
+  var hasBindName = Object.prototype.hasOwnProperty.call(text, "bindName");
+  var bindName = hasBindName ? text.bindName : (text.field || "label");
   var value = text.value != null ? cardMetadataValue(text.value, b, helpers) : b[bindName];
   var control = helpers.textField(
     text.label || "Label",

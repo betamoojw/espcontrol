@@ -378,6 +378,30 @@ const fanSwitchPreview = hooks.buttonTypePreviewFor("fan_switch", {
 });
 assert(fanSwitchPreview.labelHtml.includes("mdi-fan"), "fan switch preview uses the fan badge");
 
+const switchPreview = hooks.buttonTypePreviewFor("", {
+  entity: "switch.printer",
+  label: "Printer",
+  icon: "Power Plug",
+  icon_on: "Power",
+});
+assert(switchPreview.labelHtml.includes("mdi-toggle-switch-variant-off"), "switch preview uses the switch badge");
+
+const switchNumericPreview = hooks.buttonTypePreviewFor("", {
+  entity: "switch.washing_machine",
+  label: "Washer",
+  sensor: "sensor.washer_power",
+  unit: "W",
+});
+assert(switchNumericPreview.labelHtml.includes("mdi-gauge"), "switch numeric active display preview uses the gauge badge");
+
+const switchTextPreview = hooks.buttonTypePreviewFor("", {
+  entity: "switch.washing_machine",
+  label: "Washer",
+  sensor: "sensor.washer_state",
+  precision: "text",
+});
+assert(switchTextPreview.labelHtml.includes("mdi-format-text"), "switch text active display preview uses the text badge");
+
 const sliderPreview = hooks.buttonTypePreviewFor("slider", {
   entity: "light.strip",
   label: "Strip",
@@ -397,6 +421,24 @@ const lightBrightnessPreview = hooks.buttonTypePreviewFor("light_brightness", {
 });
 assert(lightBrightnessPreview.iconHtml.includes("sp-slider-preview"), "light brightness preview uses the slider track");
 assert(lightBrightnessPreview.labelHtml.includes("mdi-tune-vertical-variant"), "light brightness preview uses the tune badge");
+
+const lightSwitchPreview = hooks.buttonTypePreviewFor("light_switch", {
+  entity: "light.living_room",
+  label: "Living Room",
+  icon: "Lightbulb Outline",
+  icon_on: "Lightbulb",
+  type: "light_switch",
+});
+assert(lightSwitchPreview.labelHtml.includes("mdi-lightbulb"), "light switch preview uses the lightbulb badge");
+
+const lightTemperaturePreview = hooks.buttonTypePreviewFor("light_temperature", {
+  entity: "light.living_room",
+  label: "Living Room",
+  icon: "Lightbulb",
+  type: "light_temperature",
+});
+assert(lightTemperaturePreview.iconHtml.includes("sp-slider-preview"), "light temperature preview uses the slider track");
+assert(lightTemperaturePreview.labelHtml.includes("mdi-lightbulb"), "light temperature preview uses the lightbulb badge");
 
 const coverSliderPreview = hooks.buttonTypePreviewFor("cover", {
   entity: "cover.office_blind",
