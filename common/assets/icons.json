@@ -656,6 +656,11 @@
       "mdi": "light-switch"
     },
     {
+      "name": "Flood Light Down",
+      "codepoint": "F1987",
+      "mdi": "light-flood-down"
+    },
+    {
       "name": "Lightbulb",
       "codepoint": "F0335",
       "mdi": "lightbulb"

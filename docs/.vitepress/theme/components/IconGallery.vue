@@ -53,6 +53,7 @@ const ICON_GROUPS = {
   'Desk Lamp': 'Lighting',
   'Downlight': 'Lighting',
   'Floor Lamp': 'Lighting',
+  'Flood Light Down': 'Lighting',
   'Lamp': 'Lighting',
   'Lamp Outline': 'Lighting',
   'LED Strip': 'Lighting',

@@ -143,6 +143,7 @@ static const IconEntry ICON_ENTRIES[] = {
     {"LED Strip Variant",          "\U000F1051"},
     {"LED Strip Variant Off",      "\U000F1A4B"},
     {"Light Switch",               "\U000F097E"},
+    {"Flood Light Down",           "\U000F1987"},
     {"Lightbulb",                  "\U000F0335"},
     {"Lightbulb Group",            "\U000F1253"},
     {"Lightbulb Group Outline",    "\U000F1254"},
