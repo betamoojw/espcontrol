@@ -8,26 +8,50 @@ const path = require("path");
 const { chromium } = require("playwright");
 
 const ROOT = path.resolve(__dirname, "..");
+const MANIFEST_PATH = path.join(ROOT, "devices", "manifest.json");
 const WEB_OUTPUT_DIR = path.join(ROOT, "docs", "public", "webserver");
 const FAILURE_DIR = path.join(ROOT, ".cache", "web-browser-smoke");
 
-const CASES = [
-  {
-    name: "landscape",
-    slug: "guition-esp32-p4-jc8012p4a1",
-    viewport: { width: 1280, height: 900 },
-  },
-  {
-    name: "portrait",
-    slug: "guition-esp32-p4-jc4880p443",
-    viewport: { width: 1100, height: 1000 },
-  },
-  {
-    name: "square",
-    slug: "esp32-p4-86",
-    viewport: { width: 1000, height: 900 },
-  },
-];
+function readManifest() {
+  return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+}
+
+function parseAspect(aspect) {
+  const parts = String(aspect || "").split("/");
+  assert.strictEqual(parts.length, 2, `invalid web screen aspect: ${aspect}`);
+  const width = Number(parts[0]);
+  const height = Number(parts[1]);
+  assert(width > 0 && height > 0, `invalid web screen aspect: ${aspect}`);
+  return { width, height, ratio: width / height };
+}
+
+function orientationFor(ratio) {
+  if (Math.abs(ratio - 1) < 0.05) return "square";
+  return ratio > 1 ? "landscape" : "portrait";
+}
+
+function viewportFor(ratio) {
+  const orientation = orientationFor(ratio);
+  if (orientation === "square") return { width: 1000, height: 900 };
+  if (orientation === "portrait") return { width: 1100, height: 1000 };
+  return { width: 1280, height: 900 };
+}
+
+function casesFromManifest() {
+  const manifest = readManifest();
+  return Object.entries(manifest.devices || {}).map(([slug, device]) => {
+    const aspect = parseAspect(device.web && device.web.screen && device.web.screen.aspect);
+    const orientation = orientationFor(aspect.ratio);
+    return {
+      name: `${orientation}-${slug}`,
+      slug,
+      viewport: viewportFor(aspect.ratio),
+      exerciseInteractions: slug === "guition-esp32-p4-jc8012p4a1",
+    };
+  });
+}
+
+const CASES = casesFromManifest();
 
 const BUTTON_FIXTURES = [
   "light.kitchen;Kitchen;Lightbulb;Lightbulb",
@@ -535,7 +559,7 @@ async function runCase(browser, testCase) {
     await assertSettingsPage(page, testCase.name);
     assertNoLayoutBreaks(await measureCoreLayout(page), `${testCase.name} after settings`);
     await assertEmptyCellSettings(page, testCase.name);
-    if (testCase.name === "landscape") {
+    if (testCase.exerciseInteractions) {
       await assertBackupImportSmoke(page, posts, testCase.slug);
       await assertEditAndApplySmoke(page, posts);
     }

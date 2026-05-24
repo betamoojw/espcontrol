@@ -90,6 +90,14 @@ See the [screen guides](https://jtenniswood.github.io/espcontrol/getting-started
 - [FAQ](https://jtenniswood.github.io/espcontrol/reference/faq)
 - [Report a bug or request a feature](https://github.com/jtenniswood/espcontrol/issues)
 
+## Contributor Checks
+
+After changing card configuration, the web setup page, or generated device files, run:
+
+- `npm run check:fast`
+- `npm run check:web-browser-smoke`
+- `npm run docs:build`
+
 ## License
 
 EspControl is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
