@@ -304,6 +304,12 @@ display:
     pclk_frequency: 8MHz
     update_interval: never
     auto_clear_enabled: False
+    # Keep the ST7701S panel init sequence on the non-mirrored path. The
+    # ESPHome model default mirrors this panel, which causes visible scan-line
+    # streaking on some 4848S040 units during LVGL updates.
+    transform:
+      mirror_x: false
+      mirror_y: false
 
 # ---------------------------------------------------------------------------
 # LVGL base (display binding, must be before any page definitions)
