@@ -750,17 +750,15 @@ inline void alarm_control_update_modal(AlarmCardCtx *ctx) {
 
 inline void alarm_control_hide_modal() {
   AlarmControlModalUi &ui = alarm_control_modal_ui();
-  if (ui.overlay) lv_obj_del(ui.overlay);
+  control_modal_delete_overlay(ControlModalKind::ALARM_CONTROL, ui.overlay);
   ui = AlarmControlModalUi();
-  control_modal_clear_active(ControlModalKind::ALARM_CONTROL);
 }
 
 inline void alarm_pin_hide_modal() {
   AlarmPinModalUi &ui = alarm_pin_modal_ui();
   ui.pin.clear();
-  if (ui.overlay) lv_obj_del(ui.overlay);
+  control_modal_delete_overlay(ControlModalKind::ALARM_PIN, ui.overlay);
   ui = AlarmPinModalUi();
-  control_modal_clear_active(ControlModalKind::ALARM_PIN);
 }
 
 inline void alarm_action_activate(AlarmActionCtx *action);
