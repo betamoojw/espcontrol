@@ -64,8 +64,11 @@ var EspControlModel = (() => {
     normalizeScreensaverDimmedBrightness: () => normalizeScreensaverDimmedBrightness,
     normalizeTemperatureUnit: () => normalizeTemperatureUnit,
     parseBackOrderToken: () => parseBackOrderToken,
+    parseCompactSubpageConfig: () => parseCompactSubpageConfig,
     parseGridOrder: () => parseGridOrder,
+    parseLegacySubpageConfig: () => parseLegacySubpageConfig,
     parseRawButtonConfig: () => parseRawButtonConfig,
+    parseRawSubpageConfig: () => parseRawSubpageConfig,
     parseSubpageOrder: () => parseSubpageOrder,
     planBackupButtonLayout: () => planBackupButtonLayout,
     scheduleModeOption: () => scheduleModeOption,
@@ -511,6 +514,60 @@ var EspControlModel = (() => {
       }
     }
     return out;
+  }
+  function parseLegacySubpageConfig(value) {
+    if (!value || !value.trim()) return { order: [], buttons: [], backLabel: "Back" };
+    const parts = value.split("|");
+    const parsedOrder = parseSubpageOrder(parts[0] || "");
+    const buttons = [];
+    for (let i = 1; i < parts.length; i += 1) {
+      const fields = (parts[i] || "").split(":");
+      buttons.push({
+        entity: fields[0] || "",
+        label: fields[1] || "",
+        icon: fields[2] || "Auto",
+        icon_on: fields[3] || "Auto",
+        sensor: fields[4] || "",
+        unit: fields[5] || "",
+        type: fields[6] || "",
+        precision: fields[7] || "",
+        options: fields[8] || ""
+      });
+    }
+    return {
+      order: parsedOrder.order,
+      buttons,
+      backLabel: parsedOrder.backLabel
+    };
+  }
+  function parseCompactSubpageConfig(value, typeFromCode) {
+    if (!value || value.length < 2) return { order: [], buttons: [], backLabel: "Back" };
+    const parts = value.substring(1).split("|");
+    const parsedOrder = parseSubpageOrder(parts[0] || "");
+    const buttons = [];
+    for (let i = 1; i < parts.length; i += 1) {
+      const fields = (parts[i] || "").split(",");
+      buttons.push({
+        type: typeFromCode(fields[0] || ""),
+        entity: decodeConfigField(fields[1]),
+        label: decodeConfigField(fields[2]),
+        icon: decodeConfigField(fields[3]) || "Auto",
+        icon_on: decodeConfigField(fields[4]) || "Auto",
+        sensor: decodeConfigField(fields[5]),
+        unit: decodeConfigField(fields[6]),
+        precision: decodeConfigField(fields[7]),
+        options: decodeConfigField(fields[8])
+      });
+    }
+    return {
+      order: parsedOrder.order,
+      buttons,
+      backLabel: parsedOrder.backLabel
+    };
+  }
+  function parseRawSubpageConfig(value, typeFromCode) {
+    if (value && value.charAt(0) === "~") return parseCompactSubpageConfig(value, typeFromCode);
+    return parseLegacySubpageConfig(value);
   }
   function buildSubpageGrid(subpage, maxSlots, gridCols) {
     const grid = Array(maxSlots).fill(0);

@@ -781,29 +781,12 @@ function subpageSerializedOrder(sp) {
 }
 
 function parseSubpageConfig(str, raw) {
-  if (str && str.charAt(0) === "~") return parseCompactSubpageConfig(str, raw);
-  if (!str || !str.trim()) return { order: [], buttons: [], backLabel: "Back" };
-  var parts = str.split("|");
-  var parsedOrder = parseSubpageOrder(parts[0] || "");
-  var order = parsedOrder.order;
-  var backLabel = parsedOrder.backLabel;
-  var buttons = [];
-  for (var i = 1; i < parts.length; i++) {
-    var f = parts[i].split(":");
-    var button = {
-      entity: f[0] || "",
-      label: f[1] || "",
-      icon: f[2] || "Auto",
-      icon_on: f[3] || "Auto",
-      sensor: f[4] || "",
-      unit: f[5] || "",
-      type: f[6] || "",
-      precision: f[7] || "",
-      options: f[8] || "",
-    };
-    buttons.push(raw ? button : normalizeButtonConfig(button));
-  }
-  return { order: order, buttons: buttons, backLabel: backLabel };
+  var parsed = EspControlModel.parseRawSubpageConfig(str, subpageTypeFromCode);
+  if (raw) return parsed;
+  parsed.buttons = parsed.buttons.map(function (button) {
+    return normalizeButtonConfig(button);
+  });
+  return parsed;
 }
 
 function subpageTypeCode(type) {
@@ -823,28 +806,12 @@ function decodeSubpageField(value) {
 }
 
 function parseCompactSubpageConfig(str, raw) {
-  if (!str || str.length < 2) return { order: [], buttons: [], backLabel: "Back" };
-  var parts = str.substring(1).split("|");
-  var parsedOrder = parseSubpageOrder(parts[0] || "");
-  var order = parsedOrder.order;
-  var backLabel = parsedOrder.backLabel;
-  var buttons = [];
-  for (var i = 1; i < parts.length; i++) {
-    var f = parts[i].split(",");
-    var button = {
-      type: subpageTypeFromCode(f[0] || ""),
-      entity: decodeSubpageField(f[1]),
-      label: decodeSubpageField(f[2]),
-      icon: decodeSubpageField(f[3]) || "Auto",
-      icon_on: decodeSubpageField(f[4]) || "Auto",
-      sensor: decodeSubpageField(f[5]),
-      unit: decodeSubpageField(f[6]),
-      precision: decodeSubpageField(f[7]),
-      options: decodeSubpageField(f[8]),
-    };
-    buttons.push(raw ? button : normalizeButtonConfig(button));
-  }
-  return { order: order, buttons: buttons, backLabel: backLabel };
+  var parsed = EspControlModel.parseCompactSubpageConfig(str, subpageTypeFromCode);
+  if (raw) return parsed;
+  parsed.buttons = parsed.buttons.map(function (button) {
+    return normalizeButtonConfig(button);
+  });
+  return parsed;
 }
 
 function subpageConfigHasLegacySliderDirection(str) {

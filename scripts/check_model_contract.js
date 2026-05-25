@@ -47,11 +47,29 @@ assert.deepStrictEqual(plain(subpageGrid.grid), [1, -2, 2, -1, 0, 0, 0, 0], "sub
 assert.deepStrictEqual(plain(subpageGrid.sizes), { 2: 3 }, "subpage grid preserves button sizes");
 assert.deepStrictEqual(
   plain(
-  model.serializeSubpageGrid(subpageGrid.grid, subpageGrid.sizes, "Return"),
+    model.serializeSubpageGrid(subpageGrid.grid, subpageGrid.sizes, "Return"),
   ),
   ["1", "B=Return", "2w"],
   "subpage grid serializes back label and size tokens"
 );
+assert.deepStrictEqual(plain(model.parseRawSubpageConfig(
+  "~1,B|M,media_player.living,Living,Speaker,,play_pause,,,",
+  (code) => ({ M: "media" }[code] || code)
+)), {
+  order: ["1", "B"],
+  buttons: [{
+    type: "media",
+    entity: "media_player.living",
+    label: "Living",
+    icon: "Speaker",
+    icon_on: "Auto",
+    sensor: "play_pause",
+    unit: "",
+    precision: "",
+    options: "",
+  }],
+  backLabel: "Back",
+}, "raw compact subpage parsing decodes fields and type codes");
 
 const layoutPlan = model.planBackupButtonLayout([
   { entity: "light.kitchen", label: "Kitchen" },

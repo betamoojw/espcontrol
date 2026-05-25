@@ -43,6 +43,9 @@ export {
   buildSubpageGrid,
   isBackOrderToken,
   parseBackOrderToken,
+  parseCompactSubpageConfig,
+  parseLegacySubpageConfig,
+  parseRawSubpageConfig,
   parseSubpageOrder,
   serializeSubpageGrid,
   subpageOrderForSerialize,
@@ -96,6 +99,7 @@ export type {
 
 export type {
   BackOrderToken,
+  ParsedSubpageConfig,
   ParsedSubpageOrder,
   SubpageGridSource,
 } from "./subpage";

@@ -1,3 +1,4 @@
+import type { CardConfig } from "../contracts/types";
 import { decodeConfigField, encodeConfigField } from "./card";
 import { applySpans, sizeFromToken, sizeToken, type SlotSizeMap } from "./grid";
 
@@ -8,6 +9,12 @@ export interface BackOrderToken {
 
 export interface ParsedSubpageOrder {
   order: string[];
+  backLabel: string;
+}
+
+export interface ParsedSubpageConfig {
+  order: string[];
+  buttons: CardConfig[];
   backLabel: string;
 }
 
@@ -82,6 +89,69 @@ export function subpageOrderForSerialize(
     }
   }
   return out;
+}
+
+export function parseLegacySubpageConfig(value: string | null | undefined): ParsedSubpageConfig {
+  if (!value || !value.trim()) return { order: [], buttons: [], backLabel: "Back" };
+  const parts = value.split("|");
+  const parsedOrder = parseSubpageOrder(parts[0] || "");
+  const buttons: CardConfig[] = [];
+  for (let i = 1; i < parts.length; i += 1) {
+    const fields = (parts[i] || "").split(":");
+    buttons.push({
+      entity: fields[0] || "",
+      label: fields[1] || "",
+      icon: fields[2] || "Auto",
+      icon_on: fields[3] || "Auto",
+      sensor: fields[4] || "",
+      unit: fields[5] || "",
+      type: fields[6] || "",
+      precision: fields[7] || "",
+      options: fields[8] || "",
+    });
+  }
+  return {
+    order: parsedOrder.order,
+    buttons,
+    backLabel: parsedOrder.backLabel,
+  };
+}
+
+export function parseCompactSubpageConfig(
+  value: string | null | undefined,
+  typeFromCode: (code: string) => string,
+): ParsedSubpageConfig {
+  if (!value || value.length < 2) return { order: [], buttons: [], backLabel: "Back" };
+  const parts = value.substring(1).split("|");
+  const parsedOrder = parseSubpageOrder(parts[0] || "");
+  const buttons: CardConfig[] = [];
+  for (let i = 1; i < parts.length; i += 1) {
+    const fields = (parts[i] || "").split(",");
+    buttons.push({
+      type: typeFromCode(fields[0] || ""),
+      entity: decodeConfigField(fields[1]),
+      label: decodeConfigField(fields[2]),
+      icon: decodeConfigField(fields[3]) || "Auto",
+      icon_on: decodeConfigField(fields[4]) || "Auto",
+      sensor: decodeConfigField(fields[5]),
+      unit: decodeConfigField(fields[6]),
+      precision: decodeConfigField(fields[7]),
+      options: decodeConfigField(fields[8]),
+    });
+  }
+  return {
+    order: parsedOrder.order,
+    buttons,
+    backLabel: parsedOrder.backLabel,
+  };
+}
+
+export function parseRawSubpageConfig(
+  value: string | null | undefined,
+  typeFromCode: (code: string) => string,
+): ParsedSubpageConfig {
+  if (value && value.charAt(0) === "~") return parseCompactSubpageConfig(value, typeFromCode);
+  return parseLegacySubpageConfig(value);
 }
 
 export function buildSubpageGrid(
