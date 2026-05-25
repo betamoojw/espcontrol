@@ -4,73 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
 
+from device_profiles import slot_devices
 
 ROOT = Path(__file__).resolve().parents[1]
-DEVICE_MANIFEST = ROOT / "devices" / "manifest.json"
-
-
-def load_manifest_data() -> dict:
-    with DEVICE_MANIFEST.open(encoding="utf-8") as f:
-        return json.load(f)
-
-
-def load_manifest() -> dict:
-    return load_manifest_data()["devices"]
-
-
-def slot_device(slug: str, device: dict, settings: dict) -> dict:
-    layout = device["layout"]
-    fonts = device["firmware"]["fonts"]
-    display = device["firmware"]["display"]
-    rotation = device.get("rotation") or {}
-    slot = {
-        "slug": slug,
-        "slots": device["slots"],
-        "cols": layout["cols"],
-        "grid": layout["firmwareGrid"],
-        "icon_font": fonts["icon"],
-        "sensor_font": fonts["sensor"],
-        "large_sensor_font": fonts["largeSensor"],
-        "large_sensor_unit_offset_percent": settings["largeSensorUnitOffsetPercent"],
-        "media_title_font": fonts["mediaTitle"],
-        "volume_number_font": fonts["volumeNumber"],
-        "volume_label_font": fonts["volumeLabel"],
-        "climate_card_icon_font": fonts.get("climateCardIcon"),
-        "climate_option_title_font": fonts.get("climateOptionTitle"),
-        "climate_option_value_font": fonts.get("climateOptionValue"),
-        "wrap_tall_labels": display["wrapTallLabels"],
-        "package": device["firmware"].get("package"),
-    }
-    if "portraitCols" in layout:
-        slot["portrait_cols"] = layout["portraitCols"]
-    if display.get("widthCompensationPercent", 100) != 100:
-        slot["width_compensation_percent"] = display["widthCompensationPercent"]
-    if display.get("volumeWidthCompensationPercent", 100) != 100:
-        slot["volume_width_compensation_percent"] = display["volumeWidthCompensationPercent"]
-    if display.get("colorCorrection"):
-        correction = display["colorCorrection"]
-        slot["color_correction"] = {
-            "red": correction.get("redPercent", 100),
-            "green": correction.get("greenPercent", 100),
-            "blue": correction.get("bluePercent", 100),
-        }
-    if rotation.get("rotateWidthCompensation"):
-        slot["rotate_width_compensation"] = True
-    return slot
-
-
-def load_devices() -> list[dict]:
-    data = load_manifest_data()
-    settings = {
-        "largeSensorUnitOffsetPercent": -10,
-        **data.get("settings", {}),
-    }
-    return [slot_device(slug, device, settings) for slug, device in data["devices"].items()]
 
 
 PACKAGE_HEADER = """# =============================================================================
@@ -478,7 +418,7 @@ def main() -> int:
     args = parser.parse_args()
 
     changed: list[Path] = []
-    for device in load_devices():
+    for device in slot_devices():
         slug = device["slug"]
         package_path = ROOT / "devices" / slug / "packages.yaml"
         sensor_path = ROOT / "devices" / slug / "device" / "sensors.yaml"

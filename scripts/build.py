@@ -11,7 +11,6 @@ Usage:
     python scripts/build.py www           # build www.js only
     python scripts/build.py icons --check # check icons only
 """
-import copy
 import json
 import re
 import shutil
@@ -20,6 +19,8 @@ import sys
 import urllib.request
 from pathlib import Path
 
+from device_profiles import load_device_profiles, web_config
+
 ROOT = Path(__file__).resolve().parent.parent
 MDI_VERSION = "7.4.47"
 MDI_CSS_URL = f"https://cdn.jsdelivr.net/npm/@mdi/font@{MDI_VERSION}/css/materialdesignicons.css"
@@ -27,7 +28,6 @@ MDI_CSS_URL = f"https://cdn.jsdelivr.net/npm/@mdi/font@{MDI_VERSION}/css/materia
 # ---------------------------------------------------------------------------
 # Shared paths
 # ---------------------------------------------------------------------------
-DEVICE_MANIFEST = ROOT / "devices" / "manifest.json"
 ICONS_JSON = ROOT / "common" / "assets" / "icons.json"
 ENTITY_NAMES_JSON = ROOT / "common" / "config" / "entity_names.json"
 ENTITY_NAMES_YAML = ROOT / "common" / "config" / "entity_names.yaml"
@@ -44,14 +44,6 @@ class BuildError(RuntimeError):
 def load_json(path):
     with open(path) as f:
         return json.load(f)
-
-
-def load_device_manifest():
-    return load_json(DEVICE_MANIFEST)["devices"]
-
-
-def load_device_manifest_data():
-    return load_json(DEVICE_MANIFEST)
 
 
 def load_entity_names_data():
@@ -932,45 +924,11 @@ def build_config_block(slug, cfg):
     )
 
 
-def web_features(device):
-    features = {}
-    rotation = device.get("rotation") or {}
-    if rotation.get("enabled"):
-        features["screenRotation"] = True
-        features["screenRotationOptions"] = rotation.get("options", [])
-        if "default" in rotation:
-            features["screenRotationDefault"] = rotation["default"]
-        if "displayOffset" in rotation:
-            features["screenRotationDisplayOffset"] = rotation["displayOffset"]
-    if device.get("internalRelays"):
-        features["internalRelays"] = device["internalRelays"]
-    return features
-
-
 def build_web_devices():
-    devices = {}
-    manifest = load_device_manifest_data()
-    settings = {
-        "largeSensorUnitOffsetPercent": -10,
-        **manifest.get("settings", {}),
+    return {
+        slug: web_config(profile)
+        for slug, profile in load_device_profiles().items()
     }
-    for slug, device in manifest["devices"].items():
-        layout = device["layout"]
-        features = web_features(device)
-        cfg = {
-            "slots": device["slots"],
-            "cols": layout["cols"],
-            "rows": layout["rows"],
-            "largeSensorUnitOffsetPercent": settings["largeSensorUnitOffsetPercent"],
-        }
-        for key, value in device["web"].items():
-            cfg[key] = copy.deepcopy(value)
-            if key == "dragAnimation" and features:
-                cfg["features"] = copy.deepcopy(features)
-        if features and "features" not in cfg:
-            cfg["features"] = copy.deepcopy(features)
-        devices[slug] = cfg
-    return devices
 
 
 def load_button_types():

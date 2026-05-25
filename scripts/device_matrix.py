@@ -9,72 +9,46 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
-ROOT = Path(__file__).resolve().parent.parent
-DEVICE_MANIFEST = ROOT / "devices" / "manifest.json"
-VALID_CHIP_FAMILIES = {"ESP32-P4", "ESP32-S3"}
-
+from device_profiles import (
+    DEVICE_MANIFEST,
+    VALID_CHIP_FAMILIES,
+    DeviceProfileError,
+    load_device_profiles,
+    load_manifest_data,
+    validate_manifest_data,
+)
 
 class DeviceMatrixError(RuntimeError):
     pass
 
 
 def load_manifest(path: Path = DEVICE_MANIFEST) -> dict[str, Any]:
-    try:
-        with path.open(encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError as exc:
-        raise DeviceMatrixError(f"manifest not found: {path}") from exc
-    except json.JSONDecodeError as exc:
-        raise DeviceMatrixError(f"{path} is not valid JSON: {exc}") from exc
-
-    devices = data.get("devices")
-    if not isinstance(devices, dict) or not devices:
-        raise DeviceMatrixError(f"{path} must contain a non-empty devices object")
+    data = load_manifest_data(path)
+    errors = validate_manifest_data(data)
+    if errors:
+        raise DeviceMatrixError("\n".join(errors))
     return data
 
 
-def chip_family(slug: str, device: Any) -> str:
-    if not isinstance(device, dict):
-        raise DeviceMatrixError(f"{slug}: device entry must be an object")
-
-    firmware = device.get("firmware")
-    if not isinstance(firmware, dict):
-        raise DeviceMatrixError(f"{slug}: missing firmware object")
-
-    build = firmware.get("build")
-    if not isinstance(build, dict):
-        raise DeviceMatrixError(f"{slug}: missing firmware.build object")
-
-    chip = build.get("chip")
-    if not isinstance(chip, str) or not chip:
-        raise DeviceMatrixError(f"{slug}: missing firmware.build.chip")
-    if chip not in VALID_CHIP_FAMILIES:
-        valid = ", ".join(sorted(VALID_CHIP_FAMILIES))
-        raise DeviceMatrixError(f"{slug}: firmware.build.chip must be one of {valid}")
-    return chip
-
-
-def release_matrix(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
-    devices = data["devices"]
+def release_matrix(profiles: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
     return {
         "include": [
             {
                 "device": slug,
                 "slug": slug,
-                "chip": chip_family(slug, device),
+                "chip": profile["firmware"]["build"]["chip"],
             }
-            for slug, device in devices.items()
+            for slug, profile in profiles.items()
         ]
     }
 
 
-def nightly_matrix(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
-    return {"include": [{"slug": slug} for slug in data["devices"].keys()]}
+def nightly_matrix(profiles: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
+    return {"include": [{"slug": slug} for slug in profiles.keys()]}
 
 
-def pr_matrix(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
-    return nightly_matrix(data)
+def pr_matrix(profiles: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
+    return nightly_matrix(profiles)
 
 
 def write_json(data: Any) -> None:
@@ -108,8 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        write_json(args.matrix(load_manifest(args.manifest)))
-    except DeviceMatrixError as exc:
+        write_json(args.matrix(load_device_profiles(args.manifest)))
+    except (DeviceMatrixError, DeviceProfileError) as exc:
         print(f"::error::{exc}", file=sys.stderr)
         return 1
     return 0
