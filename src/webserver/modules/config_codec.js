@@ -832,187 +832,60 @@ function subpageConfigNeedsMigration(str) {
 
 function serializeSubpageConfig(sp) {
   var order = subpageSerializedOrder(sp);
-  if ((!sp || !sp.buttons || sp.buttons.length === 0) && order.length > 0) {
-    return order.join(",");
-  }
   var legacy = legacySubpageConfigSafe(sp) ? serializeLegacySubpageConfig(sp) : "";
   var compact = serializeCompactSubpageConfig(sp);
-  if (!compact) return legacy;
-  if (!legacy) return compact;
-  return compact.length < legacy.length ? compact : legacy;
+  return EspControlModel.chooseSerializedSubpageConfig(
+    order,
+    sp && sp.buttons ? sp.buttons.length : 0,
+    legacy,
+    compact
+  );
+}
+
+function subpageLegacyButtonFields(b) {
+  var fields = buttonConfigFields(b || {});
+  if (fields.length > 1 && fields[fields.length - 1] === "Auto") {
+    while (fields.length > 1 && (fields[fields.length - 1] === "Auto" || !fields[fields.length - 1])) fields.pop();
+  }
+  return fields;
+}
+
+function subpageCompactButtonFields(b) {
+  var fields = buttonConfigFields(b || {});
+  var compact = [
+    subpageTypeCode(fields[6] || ""),
+    encodeSubpageField(fields[0]),
+    encodeSubpageField(fields[1]),
+    fields[2] && fields[2] !== "Auto" ? encodeSubpageField(fields[2]) : "",
+    fields[3] && fields[3] !== "Auto" ? encodeSubpageField(fields[3]) : "",
+    encodeSubpageField(fields[4]),
+    encodeSubpageField(fields[5]),
+    encodeSubpageField(fields[7]),
+    encodeSubpageField(fields[8]),
+  ];
+  while (compact.length > 1 && !compact[compact.length - 1]) compact.pop();
+  return compact;
 }
 
 function legacySubpageConfigSafe(sp) {
-  if (!sp || !sp.buttons) return true;
-  for (var i = 0; i < sp.buttons.length; i++) {
-    var b = sp.buttons[i];
-    var type = isOptionSelectType(b.type) ? "action" : (b.type || "");
-    var isActionOptionSelect = actionCardIsOptionSelect(b) || isOptionSelectType(b.type);
-    var sensor = isActionOptionSelect ? ACTION_CARD_OPTION_SELECT_ACTION :
-      (type === "climate" || type === "light_switch" || type === "alarm" || isFanCardType(type)) ? "" : (b.sensor || "");
-    var unit = (isActionOptionSelect || type === "climate" || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.unit || "");
-    var icon = b.icon || "Auto";
-    if (isActionOptionSelect && (!icon || icon === "Auto" || icon === "Chevron Down")) icon = "Flash";
-    if (type === "alarm" && (!icon || icon === "Auto")) icon = "Security";
-    if (type === "alarm_action" && (!icon || icon === "Auto")) icon = (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).icon;
-    if (isFanCardType(type) && (!icon || icon === "Auto")) icon = fanCardDefaultIcon(type);
-    var iconOn = (isActionOptionSelect || type === "alarm" || type === "alarm_action" || (isFanCardType(type) && type !== "fan_switch")) ? "Auto" : (b.icon_on || "Auto");
-    if (type === "fan_switch" && (!iconOn || iconOn === "Auto")) iconOn = "Fan";
-    var precision = (isActionOptionSelect || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.precision || "");
-    if (type === "climate") precision = normalizeClimatePrecisionConfig(precision);
-    if (type === "door_window") precision = normalizeDoorWindowSubtype(precision);
-    var options = b.options || "";
-    if (!type) {
-      options = normalizeSwitchConfirmationOptions(options);
-    } else if (type === "alarm" || type === "alarm_action") {
-      options = normalizeAlarmOptions(options);
-    } else if (type === "garage") {
-      options = normalizeGarageOptions(options, sensor);
-    } else if (type === "climate") {
-      options = normalizeClimateOptions(options);
-    } else if (type === "sensor") {
-      options = normalizeSensorOptions(options, precision);
-    } else if (type === "door_window") {
-      options = normalizeDoorWindowOptions(options);
-    } else if (isActionOptionSelect || isFanCardType(type)) {
-      options = "";
-    } else if (type !== "action" && type !== "alarm_action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
-      options = "";
-    }
-    if (type === "door_window") {
-      b = b || {};
-      b.entity = "";
-      unit = "";
-      if (!icon || icon === "Auto") icon = doorWindowClosedIcon(precision);
-      if (!iconOn || iconOn === "Auto") iconOn = doorWindowOpenIcon(precision);
-    }
-    var fields = [type === "door_window" ? "" : (b.entity || ""), b.label || "", icon, iconOn, sensor, unit, type, precision, options];
-    for (var j = 0; j < fields.length; j++) {
-      if (String(fields[j] || "").indexOf("|") >= 0 || String(fields[j] || "").indexOf(":") >= 0) {
-        return false;
-      }
-    }
-  }
-  return true;
+  var fields = ((sp && sp.buttons) || []).map(subpageLegacyButtonFields);
+  return EspControlModel.legacySubpageFieldsSafe(fields);
 }
 
 function serializeLegacySubpageConfig(sp) {
   if (!sp) return "";
-  var order = subpageSerializedOrder(sp);
-  if (!sp.buttons || sp.buttons.length === 0) return order.join(",");
-  var out = order.join(",");
-  for (var i = 0; i < sp.buttons.length; i++) {
-    var b = sp.buttons[i];
-    var type = isOptionSelectType(b.type) ? "action" : (b.type || "");
-    var isActionOptionSelect = actionCardIsOptionSelect(b) || isOptionSelectType(b.type);
-    var sensor = isActionOptionSelect ? ACTION_CARD_OPTION_SELECT_ACTION :
-      (isBrightnessSliderType(type) || type === "climate" || type === "light_switch" || type === "alarm" || isFanCardType(type)) ? "" : (b.sensor || "");
-    var unit = (isActionOptionSelect || type === "climate" || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.unit || "");
-    var icon = b.icon || "Auto";
-    if (isActionOptionSelect && (!icon || icon === "Auto" || icon === "Chevron Down")) icon = "Flash";
-    if (type === "alarm" && (!icon || icon === "Auto")) icon = "Security";
-    if (type === "alarm_action" && (!icon || icon === "Auto")) icon = (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).icon;
-    if (isFanCardType(type) && (!icon || icon === "Auto")) icon = fanCardDefaultIcon(type);
-    var iconOn = (isActionOptionSelect || type === "alarm" || type === "alarm_action" || (isFanCardType(type) && type !== "fan_switch")) ? "Auto" : (b.icon_on || "Auto");
-    if (type === "fan_switch" && (!iconOn || iconOn === "Auto")) iconOn = "Fan";
-    var precision = (isActionOptionSelect || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.precision || "");
-    if (type === "climate") precision = normalizeClimatePrecisionConfig(precision);
-    if (type === "door_window") precision = normalizeDoorWindowSubtype(precision);
-    var options = b.options || "";
-    if (!type) {
-      options = normalizeSwitchConfirmationOptions(options);
-    } else if (type === "alarm" || type === "alarm_action") {
-      options = normalizeAlarmOptions(options);
-    } else if (type === "garage") {
-      options = normalizeGarageOptions(options, sensor);
-    } else if (type === "climate") {
-      options = normalizeClimateOptions(options);
-    } else if (type === "sensor") {
-      options = normalizeSensorOptions(options, precision);
-    } else if (type === "door_window") {
-      options = normalizeDoorWindowOptions(options);
-    } else if (isActionOptionSelect || isFanCardType(type)) {
-      options = "";
-    } else if (type !== "action" && type !== "alarm_action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
-      options = "";
-    }
-    if (type === "door_window") {
-      b = b || {};
-      b.entity = "";
-      unit = "";
-      if (!icon || icon === "Auto") icon = doorWindowClosedIcon(precision);
-      if (!iconOn || iconOn === "Auto") iconOn = doorWindowOpenIcon(precision);
-    }
-    var fields = [type === "door_window" ? "" : (b.entity || ""), b.label || "", icon, iconOn, sensor, unit, type, precision, options];
-    while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
-    if (fields.length > 1 && fields[fields.length - 1] === "Auto") {
-      while (fields.length > 1 && (fields[fields.length - 1] === "Auto" || !fields[fields.length - 1])) fields.pop();
-    }
-    out += "|" + fields.join(":");
-  }
-  return out;
+  return EspControlModel.serializeLegacySubpageConfig(
+    subpageSerializedOrder(sp),
+    ((sp && sp.buttons) || []).map(subpageLegacyButtonFields)
+  );
 }
 
 function serializeCompactSubpageConfig(sp) {
   if (!sp || !sp.buttons || sp.buttons.length === 0) return "";
-  var out = "~" + subpageSerializedOrder(sp).join(",");
-  for (var i = 0; i < sp.buttons.length; i++) {
-    var b = sp.buttons[i];
-    var type = isOptionSelectType(b.type) ? "action" : (b.type || "");
-    var isActionOptionSelect = actionCardIsOptionSelect(b) || isOptionSelectType(b.type);
-    var sensor = isActionOptionSelect ? ACTION_CARD_OPTION_SELECT_ACTION :
-      (isBrightnessSliderType(type) || type === "climate" || type === "light_switch" || type === "alarm" || isFanCardType(type)) ? "" : (b.sensor || "");
-    var unit = (isActionOptionSelect || type === "climate" || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.unit || "");
-    var icon = b.icon || "Auto";
-    if (isActionOptionSelect && (!icon || icon === "Auto" || icon === "Chevron Down")) icon = "Flash";
-    if (type === "alarm" && (!icon || icon === "Auto")) icon = "Security";
-    if (type === "alarm_action" && (!icon || icon === "Auto")) icon = (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).icon;
-    if (isFanCardType(type) && (!icon || icon === "Auto")) icon = fanCardDefaultIcon(type);
-    var iconOn = (isActionOptionSelect || type === "alarm" || type === "alarm_action" || (isFanCardType(type) && type !== "fan_switch")) ? "Auto" : (b.icon_on || "Auto");
-    if (type === "fan_switch" && (!iconOn || iconOn === "Auto")) iconOn = "Fan";
-    var precision = (isActionOptionSelect || type === "light_switch" || type === "alarm" || type === "alarm_action" || isFanCardType(type)) ? "" : (b.precision || "");
-    if (type === "climate") precision = normalizeClimatePrecisionConfig(precision);
-    if (type === "door_window") precision = normalizeDoorWindowSubtype(precision);
-    var options = b.options || "";
-    if (!type) {
-      options = normalizeSwitchConfirmationOptions(options);
-    } else if (type === "alarm" || type === "alarm_action") {
-      options = normalizeAlarmOptions(options);
-    } else if (type === "garage") {
-      options = normalizeGarageOptions(options, sensor);
-    } else if (type === "climate") {
-      options = normalizeClimateOptions(options);
-    } else if (type === "sensor") {
-      options = normalizeSensorOptions(options, precision);
-    } else if (type === "door_window") {
-      options = normalizeDoorWindowOptions(options);
-    } else if (isActionOptionSelect || isFanCardType(type)) {
-      options = "";
-    } else if (type !== "action" && type !== "alarm_action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
-      options = "";
-    }
-    if (type === "door_window") {
-      b = b || {};
-      b.entity = "";
-      unit = "";
-      if (!icon || icon === "Auto") icon = doorWindowClosedIcon(precision);
-      if (!iconOn || iconOn === "Auto") iconOn = doorWindowOpenIcon(precision);
-    }
-    var fields = [
-      subpageTypeCode(type),
-      encodeSubpageField(type === "door_window" ? "" : b.entity),
-      encodeSubpageField(b.label),
-      icon && icon !== "Auto" ? encodeSubpageField(icon) : "",
-      iconOn && iconOn !== "Auto" ? encodeSubpageField(iconOn) : "",
-      encodeSubpageField(sensor),
-      encodeSubpageField(unit),
-      encodeSubpageField(precision),
-      encodeSubpageField(options),
-    ];
-    while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
-    out += "|" + fields.join(",");
-  }
-  return out;
+  return EspControlModel.serializeCompactSubpageConfig(
+    subpageSerializedOrder(sp),
+    sp.buttons.map(subpageCompactButtonFields)
+  );
 }
 
 function applySubpageRaw(slot) {

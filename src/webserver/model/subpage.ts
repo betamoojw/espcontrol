@@ -154,6 +154,52 @@ export function parseRawSubpageConfig(
   return parseLegacySubpageConfig(value);
 }
 
+export function legacySubpageFieldsSafe(buttonFields: readonly (readonly string[])[]): boolean {
+  for (const fields of buttonFields) {
+    for (const field of fields) {
+      const value = String(field || "");
+      if (value.indexOf("|") >= 0 || value.indexOf(":") >= 0) return false;
+    }
+  }
+  return true;
+}
+
+export function serializeLegacySubpageConfig(
+  order: readonly string[],
+  buttonFields: readonly (readonly string[])[],
+): string {
+  if (!buttonFields.length) return order.join(",");
+  let out = order.join(",");
+  for (const fields of buttonFields) {
+    out += "|" + fields.join(":");
+  }
+  return out;
+}
+
+export function serializeCompactSubpageConfig(
+  order: readonly string[],
+  buttonFields: readonly (readonly string[])[],
+): string {
+  if (!buttonFields.length) return "";
+  let out = "~" + order.join(",");
+  for (const fields of buttonFields) {
+    out += "|" + fields.join(",");
+  }
+  return out;
+}
+
+export function chooseSerializedSubpageConfig(
+  order: readonly string[],
+  buttonCount: number,
+  legacy: string,
+  compact: string,
+): string {
+  if (!buttonCount && order.length > 0) return order.join(",");
+  if (!compact) return legacy;
+  if (!legacy) return compact;
+  return compact.length < legacy.length ? compact : legacy;
+}
+
 export function buildSubpageGrid(
   subpage: SubpageGridSource,
   maxSlots: number,

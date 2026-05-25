@@ -37,6 +37,7 @@ var EspControlModel = (() => {
     backupSource: () => backupSource,
     buildSubpageGrid: () => buildSubpageGrid,
     cardConfigChanged: () => cardConfigChanged,
+    chooseSerializedSubpageConfig: () => chooseSerializedSubpageConfig,
     clearSpans: () => clearSpans,
     cloneCardConfig: () => cloneCardConfig,
     copyCardConfig: () => copyCardConfig,
@@ -47,6 +48,7 @@ var EspControlModel = (() => {
     encodeConfigField: () => encodeConfigField,
     isBackOrderToken: () => isBackOrderToken,
     legacyButtonConfigSafe: () => legacyButtonConfigSafe,
+    legacySubpageFieldsSafe: () => legacySubpageFieldsSafe,
     markSpannedCells: () => markSpannedCells,
     normalizeBackupEnvelope: () => normalizeBackupEnvelope,
     normalizeBackupPanelSettings: () => normalizeBackupPanelSettings,
@@ -73,7 +75,9 @@ var EspControlModel = (() => {
     planBackupButtonLayout: () => planBackupButtonLayout,
     scheduleModeOption: () => scheduleModeOption,
     screensaverActionOption: () => screensaverActionOption,
+    serializeCompactSubpageConfig: () => serializeCompactSubpageConfig,
     serializeGridOrder: () => serializeGridOrder,
+    serializeLegacySubpageConfig: () => serializeLegacySubpageConfig,
     serializeMonthNames: () => serializeMonthNames,
     serializeSubpageGrid: () => serializeSubpageGrid,
     sizeColSpan: () => sizeColSpan,
@@ -568,6 +572,37 @@ var EspControlModel = (() => {
   function parseRawSubpageConfig(value, typeFromCode) {
     if (value && value.charAt(0) === "~") return parseCompactSubpageConfig(value, typeFromCode);
     return parseLegacySubpageConfig(value);
+  }
+  function legacySubpageFieldsSafe(buttonFields) {
+    for (const fields of buttonFields) {
+      for (const field of fields) {
+        const value = String(field || "");
+        if (value.indexOf("|") >= 0 || value.indexOf(":") >= 0) return false;
+      }
+    }
+    return true;
+  }
+  function serializeLegacySubpageConfig(order, buttonFields) {
+    if (!buttonFields.length) return order.join(",");
+    let out = order.join(",");
+    for (const fields of buttonFields) {
+      out += "|" + fields.join(":");
+    }
+    return out;
+  }
+  function serializeCompactSubpageConfig(order, buttonFields) {
+    if (!buttonFields.length) return "";
+    let out = "~" + order.join(",");
+    for (const fields of buttonFields) {
+      out += "|" + fields.join(",");
+    }
+    return out;
+  }
+  function chooseSerializedSubpageConfig(order, buttonCount, legacy, compact) {
+    if (!buttonCount && order.length > 0) return order.join(",");
+    if (!compact) return legacy;
+    if (!legacy) return compact;
+    return compact.length < legacy.length ? compact : legacy;
   }
   function buildSubpageGrid(subpage, maxSlots, gridCols) {
     const grid = Array(maxSlots).fill(0);

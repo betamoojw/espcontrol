@@ -70,6 +70,26 @@ assert.deepStrictEqual(plain(model.parseRawSubpageConfig(
   }],
   backLabel: "Back",
 }, "raw compact subpage parsing decodes fields and type codes");
+assert.strictEqual(
+  model.legacySubpageFieldsSafe([["scene.movie", "Movie"], ["bad|entity"]]),
+  false,
+  "legacy subpage field safety rejects pipe characters"
+);
+assert.strictEqual(
+  model.serializeLegacySubpageConfig(["1", "B"], [["scene.movie", "Movie", "Flash"]]),
+  "1,B|scene.movie:Movie:Flash",
+  "legacy subpage serialization assembles field groups"
+);
+assert.strictEqual(
+  model.serializeCompactSubpageConfig(["1", "B"], [["A", "scene.movie", "Movie", "Flash"]]),
+  "~1,B|A,scene.movie,Movie,Flash",
+  "compact subpage serialization assembles field groups"
+);
+assert.strictEqual(
+  model.chooseSerializedSubpageConfig(["1", "B"], 1, "1,B|scene.movie:Movie", "~1,B|A,scene.movie,Movie"),
+  "1,B|scene.movie:Movie",
+  "subpage serialization chooses the shorter compatible format"
+);
 
 const layoutPlan = model.planBackupButtonLayout([
   { entity: "light.kitchen", label: "Kitchen" },
