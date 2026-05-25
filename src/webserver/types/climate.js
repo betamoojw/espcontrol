@@ -4,7 +4,7 @@ var CLIMATE_CARD_METADATA = {
     label: "Climate Entity",
     idSuffix: "entity",
     placeholder: "e.g. climate.living_room",
-    domains: ["climate"],
+    domains: function () { return cardContractDomains("climate"); },
     bindName: "entity",
     rerender: true,
     requiredMessage: "Add a climate entity before saving.",
@@ -32,10 +32,14 @@ var CLIMATE_CARD_METADATA = {
 };
 
 registerButtonType("climate", {
-  label: "Climate",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("climate"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("climate"); },
+  pickerKey: function () { return cardContractPickerKey("climate"); },
+  experimental: function () { return cardContractExperimental("climate"); },
+  hidden: function () { return cardContractHidden("climate"); },
   hideLabel: true,
   labelPlaceholder: "e.g. Living Room",
+  defaultConfig: function () { return cardContractDefaultConfig("climate"); },
   cardMetadata: CLIMATE_CARD_METADATA,
   onSelect: function (b) {
     b.entity = "";

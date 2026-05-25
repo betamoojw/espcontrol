@@ -45,7 +45,7 @@ var MEDIA_CARD_METADATA = {
     label: "Entity",
     idSuffix: "entity",
     placeholder: "e.g. media_player.living_room",
-    domains: ["media_player"],
+    domains: function () { return cardContractDomains("media"); },
     bindName: "entity",
     rerender: true,
     requiredMessage: "Add an entity before saving.",
@@ -73,10 +73,14 @@ var MEDIA_CARD_METADATA = {
 };
 
 registerButtonType("media", {
-  label: "Media",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("media"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("media"); },
+  pickerKey: function () { return cardContractPickerKey("media"); },
+  experimental: function () { return cardContractExperimental("media"); },
+  hidden: function () { return cardContractHidden("media"); },
   hideLabel: true,
   labelPlaceholder: "e.g. Living Room Speaker",
+  defaultConfig: function () { return cardContractDefaultConfig("media"); },
   cardMetadata: MEDIA_CARD_METADATA,
   onSelect: function (b) {
     b.entity = "";

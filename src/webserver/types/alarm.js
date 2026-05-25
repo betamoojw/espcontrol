@@ -101,7 +101,7 @@ var ALARM_CARD_METADATA = {
   entity: {
     label: "Alarm Entity",
     placeholder: "e.g. alarm_control_panel.house",
-    domains: ["alarm_control_panel"],
+    domains: function (b) { return cardContractDomains(b && b.type === "alarm_action" ? "alarm_action" : "alarm"); },
     bindName: "entity",
     rerender: true,
     requiredMessage: "Add an alarm_control_panel entity before saving.",
@@ -134,10 +134,14 @@ function renderAlarmCardTypeField(panel, b, helpers) {
 }
 
 registerButtonType("alarm", {
-  label: "Alarm",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("alarm"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("alarm"); },
+  pickerKey: function () { return cardContractPickerKey("alarm"); },
+  experimental: function () { return cardContractExperimental("alarm"); },
+  hidden: function () { return cardContractHidden("alarm"); },
   hideLabel: true,
   labelPlaceholder: "e.g. House Alarm",
+  defaultConfig: function () { return cardContractDefaultConfig("alarm"); },
   cardMetadata: ALARM_CARD_METADATA,
   onSelect: function (b) {
     b.entity = "";
@@ -256,10 +260,13 @@ registerButtonType("alarm", {
 });
 
 registerButtonType("alarm_action", {
-  label: "Alarm",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("alarm_action"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("alarm_action"); },
   labelPlaceholder: "e.g. Arm Away",
-  pickerKey: "alarm",
+  pickerKey: function () { return cardContractPickerKey("alarm_action"); },
+  experimental: function () { return cardContractExperimental("alarm_action"); },
+  hidden: function () { return cardContractHidden("alarm_action"); },
+  defaultConfig: function () { return cardContractDefaultConfig("alarm_action"); },
   cardMetadata: ALARM_CARD_METADATA,
   isAvailable: function () { return false; },
   onSelect: function (b) {

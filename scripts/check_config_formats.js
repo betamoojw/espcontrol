@@ -267,6 +267,10 @@ assertButtonTypeSpecBacked("push", "push card");
 assertButtonTypeSpecBacked("internal", "internal relay card");
 assertButtonTypeSpecBacked("garage", "garage card");
 assertButtonTypeSpecBacked("lock", "lock card");
+assertButtonTypeSpecBacked("media", "media card");
+assertButtonTypeSpecBacked("alarm", "alarm card");
+assertButtonTypeSpecBacked("alarm_action", "alarm action card");
+assertButtonTypeSpecBacked("climate", "climate card");
 assert.deepStrictEqual(
   Array.from(hooks.dateTimeModeOptionValues()),
   ["datetime", "", "timezone"],
