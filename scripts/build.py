@@ -301,6 +301,24 @@ def validate_card_contract(data):
                                         errors.append(f"{option_path}.supportedWhen.{key} must be a list of strings")
                                 if "never" in value and not isinstance(value.get("never"), bool):
                                     errors.append(f"{option_path}.supportedWhen.never must be a boolean")
+            behavior = card.get("behavior")
+            if behavior is not None:
+                if not isinstance(behavior, dict):
+                    errors.append(f"cards.{card_type or '<switch>'}.behavior must be an object")
+                else:
+                    light_temp = behavior.get("lightTemperature")
+                    if light_temp is not None:
+                        if not isinstance(light_temp, dict):
+                            errors.append(f"cards.{card_type or '<switch>'}.behavior.lightTemperature must be an object")
+                        else:
+                            if not isinstance(light_temp.get("defaultRange"), str) or "-" not in light_temp.get("defaultRange", ""):
+                                errors.append(f"cards.{card_type or '<switch>'}.behavior.lightTemperature.defaultRange must be a range string")
+                            for key in ("min", "max", "minMax", "step"):
+                                if not isinstance(light_temp.get(key), (int, float)):
+                                    errors.append(f"cards.{card_type or '<switch>'}.behavior.lightTemperature.{key} must be a number")
+                            legacy = light_temp.get("legacySensorValues", [])
+                            if not isinstance(legacy, list) or not all(isinstance(item, str) for item in legacy):
+                                errors.append(f"cards.{card_type or '<switch>'}.behavior.lightTemperature.legacySensorValues must be a list of strings")
             default = card.get("default")
             if not isinstance(default, dict):
                 errors.append(f"cards.{card_type or '<switch>'}.default must be an object")

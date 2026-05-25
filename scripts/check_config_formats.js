@@ -282,6 +282,15 @@ assert.strictEqual(hooks.normalizeCoverMode("set_position", false), "", "cover c
 assert.strictEqual(hooks.normalizeCoverPosition("-1"), "0", "cover position spec clamps minimum");
 assert.strictEqual(hooks.normalizeCoverPosition("101"), "100", "cover position spec clamps maximum");
 assert.strictEqual(hooks.normalizeCoverPosition("bad"), "50", "cover position spec provides fallback");
+assert.strictEqual(hooks.lightTempDefaultRange(), "2000-6500", "light temperature spec exposes default range");
+assert.deepStrictEqual(Array.from(hooks.lightTempParseRange("")), [2000, 6500], "light temperature default range is spec-backed");
+assert.deepStrictEqual(Array.from(hooks.lightTempParseRange("500-900")), [2000, 6500], "light temperature invalid range falls back to spec defaults");
+assert.strictEqual(hooks.lightTempClampMin("999", 1000), 1000, "light temperature spec clamps minimum input");
+assert.strictEqual(hooks.lightTempClampMin("10000", 1000), 9900, "light temperature spec clamps minimum below max input");
+assert.strictEqual(hooks.lightTempClampMax("10001", 9900), 10000, "light temperature spec clamps maximum input");
+assert.deepStrictEqual(Array.from(hooks.lightTempLegacySensorValues()), ["kelvin"], "light temperature spec exposes legacy sensor values");
+assert.strictEqual(hooks.lightTempSensorNeedsCleanup("kelvin"), true, "light temperature legacy sensor cleanup is spec-backed");
+assert.strictEqual(hooks.lightTempSensorNeedsCleanup(""), false, "light temperature empty sensor remains unchanged");
 const switchOptionSpecs = hooks.cardContractOptions("");
 const switchOptionByName = Object.fromEntries(switchOptionSpecs.map((option) => [option.name, option]));
 assert.deepStrictEqual(

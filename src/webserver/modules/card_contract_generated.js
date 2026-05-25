@@ -406,6 +406,18 @@ var CARD_CONTRACT_CARDS = {
     "domains": [
       "light"
     ],
+    "behavior": {
+      "lightTemperature": {
+        "defaultRange": "2000-6500",
+        "min": 1000,
+        "max": 10000,
+        "minMax": 9900,
+        "step": 100,
+        "legacySensorValues": [
+          "kelvin"
+        ]
+      }
+    },
     "default": {
       "entity": "",
       "label": "",

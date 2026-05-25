@@ -4,12 +4,55 @@
 // precision="color" (dynamic fill color by current temperature),
 // sensor is unused; legacy "kelvin" values are ignored by firmware.
 
+function lightTempSpec() {
+  var card = cardContractCard("light_temperature");
+  return card && card.behavior && card.behavior.lightTemperature || {};
+}
+
+function lightTempDefaultRange() {
+  return lightTempSpec().defaultRange || "2000-6500";
+}
+
+function lightTempMinLimit() {
+  var value = lightTempSpec().min;
+  return typeof value === "number" ? value : 1000;
+}
+
+function lightTempMaxLimit() {
+  var value = lightTempSpec().max;
+  return typeof value === "number" ? value : 10000;
+}
+
+function lightTempMinMaxLimit() {
+  var value = lightTempSpec().minMax;
+  return typeof value === "number" ? value : 9900;
+}
+
+function lightTempStep() {
+  var value = lightTempSpec().step;
+  return typeof value === "number" ? value : 100;
+}
+
+function lightTempLegacySensorValues() {
+  var values = lightTempSpec().legacySensorValues;
+  return values ? values.slice() : ["kelvin"];
+}
+
+function lightTempSensorNeedsCleanup(value) {
+  return lightTempLegacySensorValues().indexOf(value || "") >= 0;
+}
+
 function lightTempParseRange(unit) {
-  var parts = (unit || "2000-6500").split("-");
+  var defaults = lightTempDefaultRange().split("-");
+  var defaultMin = parseInt(defaults[0], 10);
+  var defaultMax = parseInt(defaults[1], 10);
+  if (!isFinite(defaultMin)) defaultMin = 2000;
+  if (!isFinite(defaultMax) || defaultMax <= defaultMin) defaultMax = 6500;
+  var parts = (unit || lightTempDefaultRange()).split("-");
   var mn = parseInt(parts[0], 10);
   var mx = parseInt(parts[1], 10);
-  if (!isFinite(mn) || mn < 1000) mn = 2000;
-  if (!isFinite(mx) || mx <= mn) mx = 6500;
+  if (!isFinite(mn) || mn < lightTempMinLimit()) mn = defaultMin;
+  if (!isFinite(mx) || mx <= mn) mx = defaultMax;
   return [mn, mx];
 }
 
@@ -17,15 +60,15 @@ function lightTempClampMin(v, absMin) {
   var n = parseInt(v, 10);
   if (!isFinite(n)) n = absMin;
   if (n < absMin) n = absMin;
-  if (n > 9900) n = 9900;
+  if (n > lightTempMinMaxLimit()) n = lightTempMinMaxLimit();
   return n;
 }
 
 function lightTempClampMax(v, mn) {
   var n = parseInt(v, 10);
-  if (!isFinite(n)) n = mn + 100;
-  if (n <= mn) n = mn + 100;
-  if (n > 10000) n = 10000;
+  if (!isFinite(n)) n = mn + lightTempStep();
+  if (n <= mn) n = mn + lightTempStep();
+  if (n > lightTempMaxLimit()) n = lightTempMaxLimit();
   return n;
 }
 
@@ -117,7 +160,7 @@ registerButtonType("light_temperature", {
     helpers.renderCardEntityField(panel, b, helpers, LIGHT_TEMPERATURE_CARD_METADATA);
     helpers.renderCardTextField(panel, b, helpers, LIGHT_TEMPERATURE_CARD_METADATA.labelField);
 
-    if (b.sensor === "kelvin") {
+    if (lightTempSensorNeedsCleanup(b.sensor)) {
       b.sensor = "";
       helpers.saveField("sensor", "");
     }
@@ -162,7 +205,7 @@ registerButtonType("light_temperature", {
     panel.appendChild(maxF);
 
     function onRangeChange() {
-      var mn = lightTempClampMin(minInp.value, 1000);
+      var mn = lightTempClampMin(minInp.value, lightTempMinLimit());
       var mx = lightTempClampMax(maxInp.value, mn);
       minInp.value = mn;
       maxInp.value = mx;

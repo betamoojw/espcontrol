@@ -41,6 +41,16 @@ export interface CardTypeSpec {
   experimental?: "developer";
   hidden?: boolean;
   options?: readonly CardOptionSpec[];
+  behavior?: {
+    lightTemperature?: {
+      defaultRange: string;
+      min: number;
+      max: number;
+      minMax: number;
+      step: number;
+      legacySensorValues?: readonly string[];
+    };
+  };
 }
 
 export interface GridLayout {
