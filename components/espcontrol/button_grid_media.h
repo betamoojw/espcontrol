@@ -183,7 +183,7 @@ inline void setup_media_now_playing_layout(lv_obj_t *btn, lv_obj_t *icon_lbl,
                                            lv_coord_t content_inset = 0,
                                            bool reset_text = true) {
   constexpr lv_coord_t TITLE_LINE_SPACE = -1;
-  lv_coord_t text_inset = content_inset > 0 ? content_inset : pad;
+  lv_coord_t text_inset = content_inset > 0 ? content_inset : 0;
   lv_coord_t text_width = lv_pct(100);
   if (btn && text_inset > 0) {
     lv_obj_update_layout(btn);
