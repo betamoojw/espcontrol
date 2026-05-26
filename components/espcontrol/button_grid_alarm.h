@@ -612,38 +612,6 @@ inline void alarm_start_pending_action(AlarmCardCtx *ctx,
   ctx->pending_action_timer = lv_timer_create(alarm_pending_action_timer_cb, 3500, ctx);
 }
 
-inline uint32_t next_alarm_call_id() {
-  static uint32_t call_id = 300000;
-  return call_id++;
-}
-
-inline std::string alarm_lower_text(std::string value) {
-  for (char &ch : value) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-  return value;
-}
-
-inline std::string alarm_action_failure_message(const esphome::api::ActionResponse &response) {
-  std::string error = response.get_error_message().str();
-  if (error.empty()) return "Alarm action failed";
-
-  std::string lower = alarm_lower_text(error);
-  bool mentions_code = lower.find("code") != std::string::npos ||
-                       lower.find("pin") != std::string::npos;
-  bool looks_rejected = lower.find("invalid") != std::string::npos ||
-                        lower.find("incorrect") != std::string::npos ||
-                        lower.find("wrong") != std::string::npos ||
-                        lower.find("not accepted") != std::string::npos;
-  if (mentions_code && looks_rejected) return "PIN was not accepted";
-
-  const std::string prefix = "Alarm action failed: ";
-  const size_t max_len = 120;
-  if (prefix.length() + error.length() > max_len) {
-    size_t keep = max_len > prefix.length() + 3 ? max_len - prefix.length() - 3 : 0;
-    error = error.substr(0, keep) + "...";
-  }
-  return prefix + error;
-}
-
 inline void send_alarm_action(AlarmActionCtx *action, const std::string &code) {
   if (!alarm_action_context_valid(action) || action->card->entity_id.empty() ||
       !ha_api_available()) return;
@@ -651,28 +619,16 @@ inline void send_alarm_action(AlarmActionCtx *action, const std::string &code) {
   if (service == nullptr) return;
 
   esphome::api::HomeassistantActionRequest req;
-  uint32_t call_id = next_alarm_call_id();
-  if (!ha_action_begin(req, service, false, code.empty() ? 1 : 2, call_id)) return;
+  if (!ha_action_begin(req, service, false, code.empty() ? 1 : 2)) return;
   ha_action_add_entity(req, action->card->entity_id);
   if (!code.empty()) {
     ha_action_add_data(req, "code", code.c_str());
   }
 
-  std::string entity_id = action->card->entity_id;
-  std::string service_name = service;
   AlarmCardCtx *card = action->card;
-  alarm_start_pending_action(card, action->mode, !code.empty());
-  ha_register_action_response_callback(
-    req.call_id,
-    [entity_id, service_name, card](const esphome::api::ActionResponse &response) {
-      if (response.is_success()) return;
-      alarm_clear_pending_action(card);
-      std::string message = alarm_action_failure_message(response);
-      ESP_LOGW("alarm", "%s failed for %s: %s",
-        service_name.c_str(), entity_id.c_str(), message.c_str());
-      alarm_show_failure(card, message);
-    });
-  ha_action_send(req);
+  if (ha_action_send(req)) {
+    alarm_start_pending_action(card, action->mode, !code.empty());
+  }
 }
 
 inline uint32_t alarm_control_active_color(AlarmCardCtx *ctx, const std::string &mode) {
