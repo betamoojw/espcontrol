@@ -272,6 +272,16 @@ function rememberedPostUrls(domain, name, objectIds, action) {
   return urls;
 }
 
+function entityPostUrls(domain, name, objectIds, action) {
+  var urls = rememberedPostUrls(domain, name, objectIds || [], action);
+  (objectIds || []).forEach(function (objectId) {
+    uniquePush(urls, "/" + domain + "/" + encodeURIComponent(objectId) + "/" + action);
+  });
+  uniquePush(urls, "/" + domain + "/" + encodeURIComponent(esphomeObjectId(name)) + "/" + action);
+  uniquePush(urls, "/" + domain + "/" + encodeURIComponent(name) + "/" + action);
+  return urls;
+}
+
 function post(url, fallbackUrl, errorMessage) {
   var urls = Array.isArray(url) ? url.slice() : [url];
   if (fallbackUrl) urls.push(fallbackUrl);
@@ -297,7 +307,8 @@ function post(url, fallbackUrl, errorMessage) {
 }
 
 function postText(name, value) {
-  post("/text/" + encodeURIComponent(name) + "/set?value=" + encodeURIComponent(value));
+  var encodedValue = encodeURIComponent(value);
+  return post(entityPostUrls("text", name, [], "set?value=" + encodedValue));
 }
 
 function saveButtonConfig(slot) {
@@ -333,11 +344,11 @@ function scheduleSliderSubpageMigration(slot) {
 }
 
 function postSelect(name, option) {
-  post("/select/" + encodeURIComponent(name) + "/set?option=" + encodeURIComponent(option));
+  return post(entityPostUrls("select", name, [], "set?option=" + encodeURIComponent(option)));
 }
 
 function postButtonPress(name) {
-  post("/button/" + encodeURIComponent(name) + "/press");
+  return post(entityPostUrls("button", name, [], "press"));
 }
 
 function postFirmwareUpdateInstall() {
@@ -440,7 +451,7 @@ function installPublicFirmwareViaWebOta() {
 }
 
 function postSwitch(name, on) {
-  post("/switch/" + encodeURIComponent(name) + "/" + (on ? "turn_on" : "turn_off"));
+  return post(entityPostUrls("switch", name, [], on ? "turn_on" : "turn_off"));
 }
 
 function postDeveloperExperimentalFeatures(on) {
@@ -448,7 +459,7 @@ function postDeveloperExperimentalFeatures(on) {
 }
 
 function postNumber(name, value) {
-  post("/number/" + encodeURIComponent(name) + "/set?value=" + encodeURIComponent(value));
+  return post(entityPostUrls("number", name, [], "set?value=" + encodeURIComponent(value)));
 }
 
 function postWithObjectId(domain, name, objectId, action, errorMessage) {
@@ -456,12 +467,7 @@ function postWithObjectId(domain, name, objectId, action, errorMessage) {
 }
 
 function postWithObjectIds(domain, name, objectIds, action, errorMessage) {
-  var urls = rememberedPostUrls(domain, name, objectIds, action);
-  uniquePush(urls, "/" + domain + "/" + encodeURIComponent(name) + "/" + action);
-  objectIds.forEach(function (objectId) {
-    uniquePush(urls, "/" + domain + "/" + encodeURIComponent(objectId) + "/" + action);
-  });
-  post(urls, null, errorMessage);
+  return post(entityPostUrls(domain, name, objectIds, action), null, errorMessage);
 }
 
 function postNumberWithObjectId(name, objectId, value, errorMessage) {

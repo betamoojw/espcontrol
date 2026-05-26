@@ -153,8 +153,13 @@ function buildApplyBar() {
     }
     setConfigLocked(true, "Restarting device\u2026");
     setTimeout(function () {
-      postButtonPress("Apply Configuration");
-      waitForReboot();
+      postButtonPress("Apply Configuration").then(function (response) {
+        if (response && response.ok) {
+          waitForReboot();
+        } else if (response) {
+          setConfigLocked(false);
+        }
+      });
     }, 600);
   });
   bar.appendChild(btn);
