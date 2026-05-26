@@ -8,7 +8,7 @@ import re
 import sys
 from pathlib import Path
 
-from device_profiles import slot_devices
+from product_schema import slot_devices
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -412,6 +412,29 @@ def update(path: Path, new_text: str, check: bool, changed: list[Path]) -> None:
         path.write_text(new_text, encoding="utf-8")
 
 
+def assert_marker_pair(text: str, path: Path, start: str, end: str) -> None:
+    start_count = text.count(start)
+    end_count = text.count(end)
+    if start_count != 1 or end_count != 1 or text.find(start) > text.find(end):
+        rel = path.relative_to(ROOT)
+        raise ValueError(f"{rel} must contain one ordered generated block: {start} / {end}")
+
+
+def assert_optional_marker_pair(text: str, path: Path, start: str, end: str) -> None:
+    if start not in text and end not in text:
+        return
+    assert_marker_pair(text, path, start, end)
+
+
+def assert_generated_block_markers(package_path: Path, sensor_path: Path) -> None:
+    package_text = package_path.read_text(encoding="utf-8")
+    sensor_text = sensor_path.read_text(encoding="utf-8")
+    assert_marker_pair(package_text, package_path, "BEGIN GENERATED BUTTON PACKAGES", "END GENERATED BUTTON PACKAGES")
+    assert_optional_marker_pair(sensor_text, sensor_path, "BEGIN GENERATED REFRESH GRID WIRING", "END GENERATED REFRESH GRID WIRING")
+    assert_marker_pair(sensor_text, sensor_path, "BEGIN GENERATED PHASE 1 GRID WIRING", "END GENERATED PHASE 1 GRID WIRING")
+    assert_marker_pair(sensor_text, sensor_path, "BEGIN GENERATED PHASE 2 GRID WIRING", "END GENERATED PHASE 2 GRID WIRING")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="fail if generated YAML is stale")
@@ -422,6 +445,11 @@ def main() -> int:
         slug = device["slug"]
         package_path = ROOT / "devices" / slug / "packages.yaml"
         sensor_path = ROOT / "devices" / slug / "device" / "sensors.yaml"
+        try:
+            assert_generated_block_markers(package_path, sensor_path)
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
 
         update(package_path, package_file_text(device), args.check, changed)
 

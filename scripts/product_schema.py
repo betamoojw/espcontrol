@@ -12,7 +12,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from device_profiles import DEVICE_MANIFEST, validate_manifest_data
+from device_profiles import (
+    DEVICE_MANIFEST,
+    load_device_profiles as load_normalized_device_profiles,
+    slot_devices as load_slot_devices,
+    validate_manifest_data,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -342,3 +347,12 @@ def validate_product_sources() -> dict[str, list[str]]:
     results[rel(ENTITY_NAMES_JSON)] = validate_entity_names(load_entity_names())
     return results
 
+
+def device_profiles(path: Path = DEVICE_MANIFEST) -> dict[str, dict[str, Any]]:
+    """Normalized device profiles for generators and checks."""
+    return load_normalized_device_profiles(path)
+
+
+def slot_devices(path: Path = DEVICE_MANIFEST) -> list[dict[str, Any]]:
+    """Device slot-generation profiles derived from the product schema."""
+    return load_slot_devices(path)
