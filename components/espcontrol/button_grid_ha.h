@@ -14,16 +14,15 @@ using HomeAssistantStateCallback = std::function<void(esphome::StringRef)>;
 using HomeAssistantActionResponseCallback =
   std::function<void(const esphome::api::ActionResponse &)>;
 
-inline bool ha_subscription_heap_available(const std::string &entity_id,
-                                           const std::string &attribute) {
+inline bool ha_attribute_subscription_heap_available(const std::string &entity_id,
+                                                     const std::string &attribute) {
 #ifdef ESP_PLATFORM
   constexpr size_t MIN_INTERNAL_HEAP_FOR_HA_SUBSCRIPTION = 28 * 1024;
   size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
   if (free_internal < MIN_INTERNAL_HEAP_FOR_HA_SUBSCRIPTION) {
-    ESP_LOGW("ha", "Skipping HA subscription for %s%s%s; low internal heap: %u bytes",
+    ESP_LOGW("ha", "Skipping HA attribute subscription for %s attribute %s; low internal heap: %u bytes",
       entity_id.c_str(),
-      attribute.empty() ? "" : " attribute ",
-      attribute.empty() ? "" : attribute.c_str(),
+      attribute.c_str(),
       (unsigned) free_internal);
     return false;
   }
@@ -101,7 +100,6 @@ inline bool ha_register_action_response_callback(uint32_t call_id,
 inline bool ha_subscribe_state(const std::string &entity_id,
                                HomeAssistantStateCallback callback) {
   if (!ha_api_available() || entity_id.empty()) return false;
-  if (!ha_subscription_heap_available(entity_id, {})) return false;
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {}, std::move(callback));
   return true;
@@ -111,7 +109,7 @@ inline bool ha_subscribe_attribute(const std::string &entity_id,
                                    const std::string &attribute,
                                    HomeAssistantStateCallback callback) {
   if (!ha_api_available() || entity_id.empty()) return false;
-  if (!ha_subscription_heap_available(entity_id, attribute)) return false;
+  if (!ha_attribute_subscription_heap_available(entity_id, attribute)) return false;
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, attribute, std::move(callback));
   return true;

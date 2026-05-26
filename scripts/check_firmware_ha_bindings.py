@@ -20,6 +20,14 @@ DIRECT_HA_PATTERNS = (
     (re.compile(r"->subscribe_home_assistant_state\s*\("), "subscribe to Home Assistant state through button_grid_ha.h helpers"),
     (re.compile(r"->register_action_response_callback\s*\("), "register action callbacks through button_grid_ha.h helpers"),
 )
+STATE_HELPER_PATTERN = re.compile(
+    r"inline\s+bool\s+ha_subscribe_state\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+    re.DOTALL,
+)
+ATTRIBUTE_HELPER_PATTERN = re.compile(
+    r"inline\s+bool\s+ha_subscribe_attribute\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+    re.DOTALL,
+)
 
 
 def firmware_ha_binding_errors(firmware_dir: Path, root: Path) -> list[str]:
@@ -36,8 +44,32 @@ def firmware_ha_binding_errors(firmware_dir: Path, root: Path) -> list[str]:
     return errors
 
 
+def firmware_ha_boundary_errors(firmware_dir: Path, root: Path) -> list[str]:
+    path = firmware_dir / "button_grid_ha.h"
+    if not path.exists():
+        return []
+    rel = path.relative_to(root)
+    text = path.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    state_helper = STATE_HELPER_PATTERN.search(text)
+    if not state_helper:
+        errors.append(f"{rel}: missing ha_subscribe_state helper")
+    elif "heap_available" in state_helper.group("body"):
+        errors.append(f"{rel}: keep core HA state subscriptions off the low-heap guard")
+
+    attribute_helper = ATTRIBUTE_HELPER_PATTERN.search(text)
+    if not attribute_helper:
+        errors.append(f"{rel}: missing ha_subscribe_attribute helper")
+    elif "ha_attribute_subscription_heap_available" not in attribute_helper.group("body"):
+        errors.append(f"{rel}: keep optional HA attribute subscriptions behind the low-heap guard")
+
+    return errors
+
+
 def run_scan() -> int:
     errors = firmware_ha_binding_errors(FIRMWARE_DIR, ROOT)
+    errors.extend(firmware_ha_boundary_errors(FIRMWARE_DIR, ROOT))
     if errors:
         print("Firmware Home Assistant binding check failed:")
         for error in errors:
