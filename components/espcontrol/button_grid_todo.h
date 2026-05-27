@@ -220,6 +220,72 @@ inline void send_todo_complete_action(TodoCardCtx *ctx, const std::string &key) 
   ha_action_send(req);
 }
 
+inline lv_obj_t *todo_modal_create_list_item_row(
+    lv_obj_t *parent,
+    const std::string &label,
+    bool clickable,
+    bool show_checkbox,
+    lv_coord_t height,
+    lv_coord_t content_width,
+    lv_coord_t checkbox_size,
+    lv_coord_t gap,
+    const lv_font_t *font,
+    int width_compensation_percent) {
+  lv_obj_t *row = lv_obj_create(parent);
+  lv_obj_set_width(row, lv_pct(100));
+  lv_obj_set_height(row, height);
+  lv_obj_set_style_radius(row, 0, LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_border_width(row, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(row, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(row, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+  if (clickable) {
+    lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
+    control_modal_apply_pressed_fill(row);
+  } else {
+    lv_obj_clear_flag(row, LV_OBJ_FLAG_CLICKABLE);
+  }
+
+  lv_coord_t label_x = 0;
+  lv_coord_t label_w = content_width;
+  if (show_checkbox) {
+    lv_obj_t *box = lv_obj_create(row);
+    lv_obj_set_size(box, checkbox_size, checkbox_size);
+    lv_obj_set_style_radius(box, checkbox_size / 4, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_border_color(box, lv_color_hex(DARK_TEXT_MUTED), LV_PART_MAIN);
+    lv_obj_set_style_border_width(box, 2, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(box, 0, LV_PART_MAIN);
+    lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(box, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(box, LV_ALIGN_LEFT_MID, 0, 0);
+    label_x = checkbox_size + gap;
+    label_w = content_width > label_x ? content_width - label_x : lv_pct(100);
+  }
+
+  lv_obj_t *value = lv_label_create(row);
+  lv_label_set_text(value, label.c_str());
+  lv_label_set_long_mode(value, LV_LABEL_LONG_DOT);
+  lv_obj_set_width(value, label_w);
+  lv_obj_set_style_text_color(value, lv_color_hex(show_checkbox ? DARK_TEXT_PRIMARY : DARK_TEXT_MUTED), LV_PART_MAIN);
+  lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN);
+  if (font) lv_obj_set_style_text_font(value, font, LV_PART_MAIN);
+  apply_width_compensation(value, width_compensation_percent);
+  lv_obj_align(value, LV_ALIGN_LEFT_MID, label_x, 0);
+
+  lv_obj_t *divider = lv_obj_create(row);
+  lv_obj_set_size(divider, lv_pct(100), 1);
+  lv_obj_set_style_bg_color(divider, lv_color_hex(DARK_BACKGROUND_SECONDARY), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(divider, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(divider, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(divider, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(divider, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_clear_flag(divider, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_align(divider, LV_ALIGN_BOTTOM_MID, 0, 0);
+  return row;
+}
+
 inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem> &items) {
   TodoModalUi &ui = todo_modal_ui();
   if (!todo_card_context_valid(ctx) || ui.active != ctx || !ui.list) return;
@@ -234,26 +300,29 @@ inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem
   ControlModalLayout layout = control_modal_calc_layout(ctx->width_compensation_percent);
   lv_coord_t row_h = control_modal_scaled_px(48, layout.short_side);
   if (row_h < 34) row_h = 34;
-  lv_coord_t row_radius = row_h / 3;
+  lv_coord_t checkbox_size = control_modal_scaled_px(22, layout.short_side);
+  if (checkbox_size < 16) checkbox_size = 16;
+  lv_coord_t item_gap = control_modal_scaled_px(12, layout.short_side);
+  if (item_gap < 8) item_gap = 8;
+  lv_coord_t content_w = ui.list ? lv_obj_get_width(ui.list) : layout.panel_w;
+  if (content_w <= 0) content_w = layout.panel_w - layout.inset * 2;
   int click_index = 0;
   for (const auto &item : items) {
     if (item.more) {
       std::string label = item.summary.empty() ? "More items" : item.summary + " more";
-      lv_obj_t *more = control_modal_create_list_row(
-        ui.list, label, false, row_h, row_radius,
-        ctx->accent_color, DARK_BACKGROUND_SECONDARY,
+      todo_modal_create_list_item_row(
+        ui.list, label, false, false, row_h, content_w, checkbox_size, item_gap,
         ctx->label_font, ctx->width_compensation_percent);
-      if (more) lv_obj_clear_flag(more, LV_OBJ_FLAG_CLICKABLE);
       continue;
     }
     if (click_index >= TODO_MAX_ITEMS) break;
-    lv_obj_t *btn = control_modal_create_list_row(
-      ui.list, item.summary.empty() ? "(untitled)" : item.summary, false,
-      row_h, row_radius, ctx->accent_color, DARK_BACKGROUND_SECONDARY,
+    lv_obj_t *row = todo_modal_create_list_item_row(
+      ui.list, item.summary.empty() ? "(untitled)" : item.summary, true, true,
+      row_h, content_w, checkbox_size, item_gap,
       ctx->label_font, ctx->width_compensation_percent);
     ui.item_clicks[click_index].ctx = ctx;
     ui.item_clicks[click_index].key = item.key.empty() ? item.summary : item.key;
-    lv_obj_add_event_cb(btn, [](lv_event_t *e) {
+    lv_obj_add_event_cb(row, [](lv_event_t *e) {
       TodoItemClick *click = (TodoItemClick *)lv_event_get_user_data(e);
       lv_obj_t *target = static_cast<lv_obj_t *>(lv_event_get_target(e));
       if (target) lv_obj_add_state(target, LV_STATE_DISABLED);
@@ -351,7 +420,7 @@ inline void todo_card_open_modal(TodoCardCtx *ctx) {
     ctx->label_font, ctx->width_compensation_percent);
   lv_obj_align(ui.title_lbl, LV_ALIGN_TOP_MID, 0, title_y - layout.back_size / 2);
 
-  ui.list = control_modal_create_scroll_list(ui.panel, content_w, list_h, gap);
+  ui.list = control_modal_create_scroll_list(ui.panel, content_w, list_h, 0);
   lv_obj_align(ui.list, LV_ALIGN_TOP_LEFT, layout.inset, list_y);
 
   lv_obj_move_foreground(ui.overlay);
