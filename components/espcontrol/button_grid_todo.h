@@ -277,7 +277,7 @@ inline lv_obj_t *todo_modal_create_list_item_row(
     bool clickable,
     bool show_checkbox,
     bool checked,
-    bool strike,
+    bool completed,
     lv_coord_t height,
     lv_coord_t content_width,
     lv_coord_t checkbox_size,
@@ -305,11 +305,12 @@ inline lv_obj_t *todo_modal_create_list_item_row(
   lv_coord_t label_x = 0;
   lv_coord_t label_w = content_width;
   if (show_checkbox) {
+    uint32_t checkbox_color = completed ? DARK_TEXT_MUTED : (checked ? accent_color : DARK_TEXT_MUTED);
     lv_obj_t *box = lv_obj_create(row);
     lv_obj_set_size(box, checkbox_size, checkbox_size);
     lv_obj_set_style_radius(box, checkbox_size / 4, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_set_style_border_color(box, lv_color_hex(checked ? accent_color : DARK_TEXT_MUTED), LV_PART_MAIN);
+    lv_obj_set_style_border_color(box, lv_color_hex(checkbox_color), LV_PART_MAIN);
     lv_obj_set_style_border_width(box, 2, LV_PART_MAIN);
     lv_obj_set_style_shadow_width(box, 0, LV_PART_MAIN);
     lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
@@ -318,11 +319,20 @@ inline lv_obj_t *todo_modal_create_list_item_row(
     if (checked) {
       lv_obj_t *check = lv_label_create(box);
       lv_label_set_text(check, find_icon("Check"));
-      lv_obj_set_style_text_color(check, lv_color_hex(accent_color), LV_PART_MAIN);
+      lv_label_set_long_mode(check, LV_LABEL_LONG_CLIP);
+      lv_obj_set_size(check, checkbox_size, checkbox_size);
+      lv_obj_set_style_text_color(check, lv_color_hex(checkbox_color), LV_PART_MAIN);
+      lv_obj_set_style_text_align(check, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
       if (icon_font) lv_obj_set_style_text_font(check, icon_font, LV_PART_MAIN);
-      lv_obj_set_style_transform_scale_x(check, 160, LV_PART_MAIN);
-      lv_obj_set_style_transform_scale_y(check, 160, LV_PART_MAIN);
-      lv_obj_center(check);
+      int check_scale = 128;
+      if (icon_font && icon_font->line_height > 0) {
+        check_scale = static_cast<int>(checkbox_size) * 230 / icon_font->line_height;
+        if (check_scale < 64) check_scale = 64;
+        if (check_scale > 128) check_scale = 128;
+      }
+      lv_obj_set_style_transform_scale_x(check, check_scale, LV_PART_MAIN);
+      lv_obj_set_style_transform_scale_y(check, check_scale, LV_PART_MAIN);
+      lv_obj_align(check, LV_ALIGN_CENTER, 0, 0);
     }
     label_x = checkbox_size + gap;
     label_w = content_width > label_x ? content_width - label_x : lv_pct(100);
@@ -332,22 +342,12 @@ inline lv_obj_t *todo_modal_create_list_item_row(
   lv_label_set_text(value, label.c_str());
   lv_label_set_long_mode(value, LV_LABEL_LONG_DOT);
   lv_obj_set_width(value, label_w);
-  lv_obj_set_style_text_color(value, lv_color_hex(show_checkbox ? DARK_TEXT_SOFT : DARK_TEXT_MUTED), LV_PART_MAIN);
+  lv_obj_set_style_text_color(value,
+    lv_color_hex(completed ? DARK_TEXT_MUTED : (show_checkbox ? DARK_TEXT_SOFT : DARK_TEXT_MUTED)), LV_PART_MAIN);
   lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN);
   if (font) lv_obj_set_style_text_font(value, font, LV_PART_MAIN);
   apply_width_compensation(value, width_compensation_percent);
   lv_obj_align(value, LV_ALIGN_LEFT_MID, label_x, 0);
-  if (strike) {
-    lv_obj_t *strike_line = lv_obj_create(row);
-    lv_obj_set_size(strike_line, label_w, 2);
-    lv_obj_set_style_bg_color(strike_line, lv_color_hex(DARK_TEXT_SOFT), LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(strike_line, LV_OPA_COVER, LV_PART_MAIN);
-    lv_obj_set_style_border_width(strike_line, 0, LV_PART_MAIN);
-    lv_obj_set_style_shadow_width(strike_line, 0, LV_PART_MAIN);
-    lv_obj_clear_flag(strike_line, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(strike_line, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_align(strike_line, LV_ALIGN_LEFT_MID, label_x, 0);
-  }
 
   lv_obj_t *divider = lv_obj_create(row);
   lv_obj_set_size(divider, lv_pct(100), 1);
