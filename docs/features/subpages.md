@@ -44,6 +44,34 @@ data:
   target: "Lights"
 ```
 
+### Test It in Home Assistant
+
+Before using the action in an automation or dashboard button, test it from Home Assistant:
+
+1. Go to **Developer Tools**.
+2. Open the **Actions** tab.
+3. Search for `navigate` or your panel name, such as `hall_panel`.
+4. Select the ESPHome action for your panel.
+5. Enter the target page and click **Perform action**.
+
+For example:
+
+```yaml
+action: esphome.hall_panel_navigate
+data:
+  target: "Lights"
+```
+
+To return to the home screen, use:
+
+```yaml
+action: esphome.hall_panel_navigate
+data:
+  target: "home"
+```
+
+The action is not an entity, so it will not appear in the entity list. It only appears in **Developer Tools** > **Actions** after the panel firmware has registered it with Home Assistant. If Home Assistant shows `Action not found` or `Unknown action selected`, update the panel firmware and reload or restart the ESPHome integration.
+
 The `target` value can be:
 
 - `home` or `main` to open the home screen.
