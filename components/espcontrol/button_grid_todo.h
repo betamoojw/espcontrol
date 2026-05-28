@@ -97,13 +97,15 @@ inline void todo_cancel_pending_request(const char *reason) {
   }
 }
 
-inline void todo_cancel_stale_request() {
+inline bool todo_cancel_stale_request() {
   TodoRequestState &state = todo_request_state();
-  if (state.call_id == 0) return;
+  if (state.call_id == 0) return false;
   if (esphome::millis() - state.started_ms >= TODO_REQUEST_TIMEOUT_MS) {
     uint32_t call_id = state.call_id;
     todo_cancel_request(call_id, "timeout");
+    return true;
   }
+  return false;
 }
 
 inline bool todo_card_context_valid(TodoCardCtx *ctx) {
@@ -567,6 +569,10 @@ inline void request_todo_items(TodoCardCtx *ctx) {
 inline void todo_reload_active_modal() {
   TodoModalUi &ui = todo_modal_ui();
   if (!todo_card_context_valid(ui.active) || ui.list == nullptr) return;
+  if (todo_cancel_stale_request() && !ha_api_state_connected()) {
+    ui.waiting_for_ha = true;
+    todo_modal_set_status("Waiting for Home Assistant");
+  }
   if (todo_request_state().call_id != 0 || !ha_api_state_connected()) return;
   ESP_LOGI("todo", "Reloading open todo modal after Home Assistant reconnect");
   request_todo_items(ui.active);
@@ -574,7 +580,12 @@ inline void todo_reload_active_modal() {
 
 inline void todo_retry_waiting_modal() {
   TodoModalUi &ui = todo_modal_ui();
-  if (!ui.waiting_for_ha) return;
+  bool stale_request_cancelled = todo_cancel_stale_request();
+  if (!ui.waiting_for_ha && !stale_request_cancelled) return;
+  if (stale_request_cancelled && !ha_api_state_connected()) {
+    ui.waiting_for_ha = true;
+    todo_modal_set_status("Waiting for Home Assistant");
+  }
   todo_reload_active_modal();
 }
 
