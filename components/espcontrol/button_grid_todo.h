@@ -38,6 +38,7 @@ struct TodoCardCtx {
   bool available = false;
   bool show_count = true;
   bool show_top_task = false;
+  bool top_task_limit_two_lines = false;
   bool label_shows_count = false;
   bool show_completed_items = true;
 };
@@ -104,6 +105,18 @@ inline void todo_apply_card_text(TodoCardCtx *ctx) {
   }
   if (ctx->value_lbl) lv_label_set_text(ctx->value_lbl, ctx->available ? ctx->count_text.c_str() : "--");
   if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, "");
+}
+
+inline void todo_apply_top_task_text_layout(TodoCardCtx *ctx) {
+  if (!todo_card_context_valid(ctx) || !ctx->show_top_task || !ctx->value_lbl) return;
+  if (ctx->list_font) lv_obj_set_style_text_font(ctx->value_lbl, ctx->list_font, LV_PART_MAIN);
+  lv_label_set_long_mode(ctx->value_lbl, LV_LABEL_LONG_DOT);
+  lv_obj_set_width(ctx->value_lbl, lv_pct(100));
+  if (ctx->top_task_limit_two_lines && ctx->list_font && ctx->list_font->line_height > 0) {
+    constexpr lv_coord_t TODO_TOP_TASK_LINE_SPACE = -1;
+    lv_obj_set_style_text_line_space(ctx->value_lbl, TODO_TOP_TASK_LINE_SPACE, LV_PART_MAIN);
+    lv_obj_set_height(ctx->value_lbl, ctx->list_font->line_height * 2 + TODO_TOP_TASK_LINE_SPACE);
+  }
 }
 
 inline void setup_todo_card(BtnSlot &s, const ParsedCfg &p, uint32_t secondary_color) {
@@ -653,7 +666,8 @@ inline TodoCardCtx *create_todo_card_context(
     const lv_font_t *label_font,
     const lv_font_t *list_font,
     const lv_font_t *icon_font,
-    int width_compensation_percent) {
+    int width_compensation_percent,
+    bool top_task_limit_two_lines = false) {
   TodoCardCtx *ctx = new TodoCardCtx();
   ctx->entity_id = p.entity;
   ctx->configured_label = p.label;
@@ -670,9 +684,8 @@ inline TodoCardCtx *create_todo_card_context(
   ctx->width_compensation_percent = width_compensation_percent;
   ctx->show_count = todo_card_show_count(p);
   ctx->show_top_task = todo_card_shows_top_task(p);
-  if (ctx->show_top_task && ctx->value_lbl && ctx->list_font) {
-    lv_obj_set_style_text_font(ctx->value_lbl, ctx->list_font, LV_PART_MAIN);
-  }
+  ctx->top_task_limit_two_lines = top_task_limit_two_lines;
+  todo_apply_top_task_text_layout(ctx);
   ctx->label_shows_count = todo_card_label_shows_count(p);
   ctx->show_completed_items = todo_card_shows_completed_items(p);
   lv_obj_set_user_data(s.btn, ctx);

@@ -682,6 +682,7 @@ inline void grid_phase2(
     std::string scfg = s.config->state;
 
     ParsedCfg p = parse_cfg(scfg);
+    bool is_1x1_card = parsed.row_span[idx - 1] == 1 && parsed.col_span[idx - 1] == 1;
     if (bind_basic_sensor_card(s, p, palette)) continue;
     if (bind_passive_card_sources(s, p)) continue;
     if (p.type == "garage") {
@@ -880,7 +881,8 @@ inline void grid_phase2(
           display_media_title_font_or(
             display, lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN)),
           display_icon_font(display),
-          display_main_width_percent(display));
+          display_main_width_percent(display),
+          is_1x1_card);
         subscribe_todo_state(ctx);
         subscribe_todo_friendly_name(ctx);
       }
@@ -1405,7 +1407,8 @@ inline void grid_phase2(
             display_media_title_font_or(
               display, lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN)),
             display_icon_font(display),
-            display_main_width_percent(display));
+            display_main_width_percent(display),
+            rs == 1 && cs == 1);
           subscribe_todo_state(ctx);
           subscribe_todo_friendly_name(ctx);
           lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
