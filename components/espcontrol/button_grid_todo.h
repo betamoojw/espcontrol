@@ -338,20 +338,21 @@ inline lv_obj_t *todo_modal_create_list_item_row(
     if (checked) {
       lv_obj_t *check = lv_label_create(box);
       lv_label_set_text(check, find_icon("Check"));
-      lv_label_set_long_mode(check, LV_LABEL_LONG_CLIP);
-      lv_obj_set_size(check, checkbox_size, checkbox_size);
       lv_obj_set_style_text_color(check, lv_color_hex(check_color), LV_PART_MAIN);
       lv_obj_set_style_text_align(check, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
       if (icon_font) lv_obj_set_style_text_font(check, icon_font, LV_PART_MAIN);
-      int check_scale = 128;
+      uint16_t check_zoom = 128;
       if (icon_font && icon_font->line_height > 0) {
-        check_scale = static_cast<int>(checkbox_size) * 230 / icon_font->line_height;
-        if (check_scale < 64) check_scale = 64;
-        if (check_scale > 128) check_scale = 128;
+        int fit_zoom = static_cast<int>(checkbox_size) * 360 / icon_font->line_height;
+        if (fit_zoom < 96) fit_zoom = 96;
+        if (fit_zoom > 150) fit_zoom = 150;
+        check_zoom = static_cast<uint16_t>(fit_zoom);
       }
-      lv_obj_set_style_transform_scale_x(check, check_scale, LV_PART_MAIN);
-      lv_obj_set_style_transform_scale_y(check, check_scale, LV_PART_MAIN);
-      lv_obj_align(check, LV_ALIGN_CENTER, 0, 0);
+      lv_obj_update_layout(check);
+      lv_coord_t offset_x = lv_obj_get_width(check) * (256 - check_zoom) / 512;
+      lv_coord_t offset_y = lv_obj_get_height(check) * (256 - check_zoom) / 512;
+      lv_obj_set_style_transform_zoom(check, check_zoom, LV_PART_MAIN);
+      lv_obj_align(check, LV_ALIGN_CENTER, offset_x, offset_y);
     }
     label_x = checkbox_size + gap;
     label_w = content_width > label_x ? content_width - label_x : lv_pct(100);
