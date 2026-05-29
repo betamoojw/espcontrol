@@ -28,6 +28,8 @@ Subpages can contain Switch, Lights, Action, Trigger, Sensor, Doors & Windows, S
 
 You can ask Home Assistant to wake the panel and open a page directly. This is useful in automations, scripts, dashboards, or voice routines where you want the panel to jump to a relevant page.
 
+This Home-Assistant-to-panel action is disabled on the ESP32-S3 4-inch panel because it can stop Home Assistant completing the panel startup registration on that lower-memory model. Tapping Subpage cards on the panel still works normally.
+
 Use the ESPHome action named after your device:
 
 ```yaml

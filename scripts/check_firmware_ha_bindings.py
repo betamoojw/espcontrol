@@ -12,8 +12,11 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = ROOT / "components" / "espcontrol"
 CORE_INFRA_PATH = ROOT / "common" / "device" / "core_infra.yaml"
+API_NAVIGATE_PATH = ROOT / "common" / "device" / "api_navigate.yaml"
 TIME_ADDON_PATH = ROOT / "common" / "addon" / "time.yaml"
 S3_DEVICE_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "device" / "device.yaml"
+S3_PACKAGES_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "packages.yaml"
+DEVICE_PACKAGE_PATHS = tuple(sorted((ROOT / "devices").glob("*/packages.yaml")))
 CONNECTIVITY_PATHS = (
     ROOT / "common" / "addon" / "connectivity.yaml",
     ROOT / "common" / "addon" / "connectivity_deployed.yaml",
@@ -296,7 +299,14 @@ def firmware_cover_request_errors(firmware_dir: Path, core_infra_path: Path, roo
     return errors
 
 
-def firmware_s3_api_errors(device_path: Path, root: Path) -> list[str]:
+def firmware_s3_api_errors(
+    device_path: Path,
+    s3_packages_path: Path,
+    core_infra_path: Path,
+    api_navigate_path: Path,
+    package_paths: tuple[Path, ...],
+    root: Path,
+) -> list[str]:
     if not device_path.exists():
         return []
     rel = device_path.relative_to(root)
@@ -310,6 +320,34 @@ def firmware_s3_api_errors(device_path: Path, root: Path) -> list[str]:
         errors.append(f"{rel}: keep the S3 native API send queue high enough for HA reconnect bursts")
     if "max_connections: 2" not in text:
         errors.append(f"{rel}: keep the S3 native API connection pool small")
+
+    if api_navigate_path.exists():
+        api_rel = api_navigate_path.relative_to(root)
+        api_text = api_navigate_path.read_text(encoding="utf-8")
+        if "action: navigate" not in api_text:
+            errors.append(f"{api_rel}: keep the Home Assistant navigate action in the dedicated API package")
+    else:
+        errors.append(f"{api_navigate_path.relative_to(root)}: missing dedicated Home Assistant navigate API package")
+
+    if core_infra_path.exists():
+        core_rel = core_infra_path.relative_to(root)
+        core_text = core_infra_path.read_text(encoding="utf-8")
+        if "action: navigate" in core_text:
+            errors.append(f"{core_rel}: keep the navigate action out of core_infra so S3 can omit it")
+
+    if s3_packages_path.exists():
+        s3_rel = s3_packages_path.relative_to(root)
+        s3_packages = s3_packages_path.read_text(encoding="utf-8")
+        if "api_navigate" in s3_packages or "api_navigate.yaml" in s3_packages:
+            errors.append(f"{s3_rel}: omit the Home Assistant navigate API action on S3")
+
+    for package_path in package_paths:
+        if package_path == s3_packages_path or not package_path.exists():
+            continue
+        package_rel = package_path.relative_to(root)
+        package_text = package_path.read_text(encoding="utf-8")
+        if "api_navigate" not in package_text or "api_navigate.yaml" not in package_text:
+            errors.append(f"{package_rel}: include the dedicated Home Assistant navigate API package")
     return errors
 
 
@@ -337,7 +375,16 @@ def run_scan() -> int:
     errors.extend(firmware_weather_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_weather_reconnect_errors(CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_cover_request_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
-    errors.extend(firmware_s3_api_errors(S3_DEVICE_PATH, ROOT))
+    errors.extend(
+        firmware_s3_api_errors(
+            S3_DEVICE_PATH,
+            S3_PACKAGES_PATH,
+            CORE_INFRA_PATH,
+            API_NAVIGATE_PATH,
+            DEVICE_PACKAGE_PATHS,
+            ROOT,
+        )
+    )
     errors.extend(firmware_connectivity_api_errors(CONNECTIVITY_PATHS, ROOT))
     if errors:
         print("Firmware Home Assistant binding check failed:")
@@ -500,14 +547,42 @@ def expect_cover_request_errors(
             assert not errors, f"{name}: expected no errors, got {errors!r}"
 
 
-def expect_s3_api_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+def expect_s3_api_errors(
+    name: str,
+    text: str,
+    expected: tuple[str, ...],
+    s3_packages_text: str = "packages:\n  device: !include device/device.yaml\n",
+    core_text: str = "api:\n  reboot_timeout: 0s\n",
+    api_navigate_text: str = "api:\n  actions:\n    - action: navigate\n",
+    extra_packages: dict[str, str] | None = None,
+) -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
         device_path = root / "devices" / "guition-esp32-s3-4848s040" / "device" / "device.yaml"
+        s3_packages_path = root / "devices" / "guition-esp32-s3-4848s040" / "packages.yaml"
+        core_path = root / "common" / "device" / "core_infra.yaml"
+        api_navigate_path = root / "common" / "device" / "api_navigate.yaml"
         device_path.parent.mkdir(parents=True)
+        core_path.parent.mkdir(parents=True)
         device_path.write_text(text, encoding="utf-8")
+        s3_packages_path.write_text(s3_packages_text, encoding="utf-8")
+        core_path.write_text(core_text, encoding="utf-8")
+        api_navigate_path.write_text(api_navigate_text, encoding="utf-8")
+        package_paths = [s3_packages_path]
+        for filename, package_text in (extra_packages or {}).items():
+            package_path = root / "devices" / filename / "packages.yaml"
+            package_path.parent.mkdir(parents=True)
+            package_path.write_text(package_text, encoding="utf-8")
+            package_paths.append(package_path)
 
-        errors = firmware_s3_api_errors(device_path, root)
+        errors = firmware_s3_api_errors(
+            device_path,
+            s3_packages_path,
+            core_path,
+            api_navigate_path,
+            tuple(package_paths),
+            root,
+        )
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -1033,6 +1108,24 @@ def run_self_test() -> int:
         "low S3 API queue",
         "api:\n  max_connections: 2\n  max_send_queue: 8\n",
         ("keep the S3 native API send queue high enough",),
+    )
+    expect_s3_api_errors(
+        "S3 includes navigate API package",
+        "api:\n  max_connections: 2\n  max_send_queue: 12\n",
+        ("omit the Home Assistant navigate API action on S3",),
+        s3_packages_text="packages:\n  api_navigate: !include ../../common/device/api_navigate.yaml\n",
+    )
+    expect_s3_api_errors(
+        "navigate action left in shared core",
+        "api:\n  max_connections: 2\n  max_send_queue: 12\n",
+        ("keep the navigate action out of core_infra",),
+        core_text="api:\n  actions:\n    - action: navigate\n",
+    )
+    expect_s3_api_errors(
+        "P4 package missing navigate API package",
+        "api:\n  max_connections: 2\n  max_send_queue: 12\n",
+        ("include the dedicated Home Assistant navigate API package",),
+        extra_packages={"esp32-p4-86": "packages:\n  device: !include device/device.yaml\n"},
     )
     expect_connectivity_api_errors(
         "raw api connected navigation",

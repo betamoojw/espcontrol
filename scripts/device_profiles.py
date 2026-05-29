@@ -281,7 +281,13 @@ def validate_package(slug: str, device: dict[str, Any], errors: list[str]) -> No
         if key in package and (not isinstance(package.get(key), str) or not package.get(key)):
             errors.append(device_error(slug, f"firmware.package.{key} must be a non-empty string when set"))
 
-    for key in ("networkCoprocessor", "ethernetSelectable", "improvSerial", "touchscreenPackage"):
+    for key in (
+        "networkCoprocessor",
+        "ethernetSelectable",
+        "improvSerial",
+        "touchscreenPackage",
+        "apiNavigateAction",
+    ):
         if key in package and not isinstance(package[key], bool):
             errors.append(device_error(slug, f"firmware.package.{key} must be true or false when set"))
 

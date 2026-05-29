@@ -136,6 +136,8 @@ def package_file_text(device: dict) -> str:
             ),
         ]
     )
+    if package.get("apiNavigateAction", True):
+        lines.append(include_line("api_navigate", "!include ../../common/device/api_navigate.yaml"))
     if package.get("improvSerial"):
         lines.append(
             include_line(
