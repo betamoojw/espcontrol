@@ -245,6 +245,31 @@ def firmware_weather_disconnect_errors(firmware_dir: Path, core_infra_path: Path
     return errors
 
 
+def firmware_weather_reconnect_errors(core_infra_path: Path, root: Path) -> list[str]:
+    if not core_infra_path.exists():
+        return []
+    core_rel = core_infra_path.relative_to(root)
+    core_text = core_infra_path.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    connected_match = re.search(
+        r"(?ms)^  on_client_connected:\n(?P<body>.*?)(?:^  on_client_disconnected:|^interval:|\Z)",
+        core_text,
+    )
+    if not connected_match:
+        errors.append(f"{core_rel}: refresh weather forecasts after Home Assistant reconnects")
+        return errors
+
+    body = connected_match.group("body")
+    for line in body.splitlines():
+        if "refresh_weather_forecast_cards();" in line and "ha_api_state_connected()" not in line:
+            errors.append(f"{core_rel}: wait for Home Assistant state readiness before forecast reconnect refreshes")
+            break
+    if "refresh_weather_forecast_cards();" in body and "delay: 20s" not in body:
+        errors.append(f"{core_rel}: retry weather forecast refresh after slow S3 reconnects")
+    return errors
+
+
 def firmware_cover_request_errors(firmware_dir: Path, core_infra_path: Path, root: Path) -> list[str]:
     path = firmware_dir / "button_grid_actions.h"
     if not path.exists() or not core_infra_path.exists():
@@ -310,6 +335,7 @@ def run_scan() -> int:
     errors.extend(firmware_time_reconnect_errors(TIME_ADDON_PATH, ROOT))
     errors.extend(firmware_weather_request_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_weather_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
+    errors.extend(firmware_weather_reconnect_errors(CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_cover_request_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_s3_api_errors(S3_DEVICE_PATH, ROOT))
     errors.extend(firmware_connectivity_api_errors(CONNECTIVITY_PATHS, ROOT))
@@ -432,6 +458,20 @@ def expect_weather_disconnect_errors(
         core_path.write_text(core_text, encoding="utf-8")
 
         errors = firmware_weather_disconnect_errors(firmware_dir, core_path, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_weather_reconnect_errors(name: str, core_text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        core_path = root / "common" / "device" / "core_infra.yaml"
+        core_path.parent.mkdir(parents=True)
+        core_path.write_text(core_text, encoding="utf-8")
+
+        errors = firmware_weather_reconnect_errors(core_path, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -935,6 +975,36 @@ def run_self_test() -> int:
         "inline void weather_forecast_cancel_pending_requests() {}\n",
         "api:\n  on_client_connected:\n    - lambda: refresh_weather_forecast_cards();\n",
         ("cancel pending forecast callbacks when the HA API disconnects",),
+    )
+    expect_weather_reconnect_errors(
+        "unguarded weather reconnect refresh",
+        "api:\n"
+        "  on_client_connected:\n"
+        "    - lambda: |-\n"
+        "        refresh_weather_forecast_cards();\n"
+        "    - delay: 20s\n"
+        "    - lambda: |-\n"
+        "        if (ha_api_state_connected()) refresh_weather_forecast_cards();\n",
+        ("wait for Home Assistant state readiness",),
+    )
+    expect_weather_reconnect_errors(
+        "missing delayed weather reconnect retry",
+        "api:\n"
+        "  on_client_connected:\n"
+        "    - lambda: |-\n"
+        "        if (ha_api_state_connected()) refresh_weather_forecast_cards();\n",
+        ("retry weather forecast refresh",),
+    )
+    expect_weather_reconnect_errors(
+        "guarded weather reconnect refresh with delayed retry",
+        "api:\n"
+        "  on_client_connected:\n"
+        "    - lambda: |-\n"
+        "        if (ha_api_state_connected()) refresh_weather_forecast_cards();\n"
+        "    - delay: 20s\n"
+        "    - lambda: |-\n"
+        "        if (ha_api_state_connected()) refresh_weather_forecast_cards();\n",
+        (),
     )
     expect_cover_request_errors(
         "missing cover callback tracking",

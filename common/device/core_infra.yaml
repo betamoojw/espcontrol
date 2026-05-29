@@ -30,13 +30,17 @@ api:
   on_client_connected:
     - lambda: |-
         ESP_LOGI("api", "Home Assistant API client connected");
-        refresh_weather_forecast_cards();
+        if (ha_api_state_connected()) refresh_weather_forecast_cards();
     - delay: 2s
     - lambda: |-
         todo_reload_active_modal();
     - delay: 8s
     - lambda: |-
-        refresh_weather_forecast_cards();
+        if (ha_api_state_connected()) refresh_weather_forecast_cards();
+        todo_reload_active_modal();
+    - delay: 20s
+    - lambda: |-
+        if (ha_api_state_connected()) refresh_weather_forecast_cards();
         todo_reload_active_modal();
   on_client_disconnected:
     - lambda: |-
