@@ -111,6 +111,10 @@ button:
             global_preferences->sync();
             App.safe_reboot();
 
+time:
+  - platform: sntp
+    id: trmnl_time
+
 spi:
   clk_pin: GPIO7
   mosi_pin: GPIO9

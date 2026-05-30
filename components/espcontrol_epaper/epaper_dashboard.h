@@ -2,6 +2,7 @@
 
 #include "esphome/components/api/api_server.h"
 #include "lvgl.h"
+#include "../espcontrol/icons.h"
 
 #include <array>
 #include <cctype>
@@ -22,6 +23,8 @@ struct EpaperDashboardTile {
   std::string entity;
   std::string sensor;
   std::string label;
+  std::string icon;
+  std::string icon_on;
   std::string unit;
   std::string type;
   std::string value;
@@ -147,6 +150,8 @@ inline std::string epaper_dashboard_display_value(const EpaperDashboardTile &til
 
 struct EpaperDashboardLvglSlot {
   lv_obj_t *tile = nullptr;
+  lv_obj_t *icon = nullptr;
+  lv_obj_t *sensor_container = nullptr;
   lv_obj_t *label = nullptr;
   lv_obj_t *value = nullptr;
   lv_obj_t *unit = nullptr;
@@ -166,17 +171,33 @@ inline void epaper_dashboard_bind_lvgl_page_label(lv_obj_t *label) {
   epaper_dashboard_lvgl_page_label() = label;
 }
 
-inline void epaper_dashboard_bind_lvgl_slot(int slot, lv_obj_t *tile, lv_obj_t *label, lv_obj_t *value,
-                                           lv_obj_t *unit = nullptr) {
+inline void epaper_dashboard_bind_lvgl_slot(int slot, lv_obj_t *tile, lv_obj_t *icon,
+                                           lv_obj_t *sensor_container, lv_obj_t *label,
+                                           lv_obj_t *value, lv_obj_t *unit = nullptr) {
   if (slot < 0 || slot >= EPAPER_DASHBOARD_PAGE_SLOTS) return;
-  epaper_dashboard_lvgl_slots()[slot] = {tile, label, value, unit};
+  epaper_dashboard_lvgl_slots()[slot] = {tile, icon, sensor_container, label, value, unit};
   if (tile) {
     lv_obj_clear_flag(tile, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(tile, LV_OBJ_FLAG_SCROLLABLE);
   }
 }
 
-inline void epaper_dashboard_style_lvgl_tile(lv_obj_t *tile, lv_obj_t *label, lv_obj_t *value,
+inline bool epaper_dashboard_state_card_type(const EpaperDashboardTile &tile) {
+  return tile.type == "sensor" || tile.type == "weather" || tile.type == "weather_forecast" ||
+         tile.type == "calendar" || tile.type == "clock" || tile.type == "timezone" ||
+         !tile.sensor.empty();
+}
+
+inline const char *epaper_dashboard_icon(const EpaperDashboardTile &tile, bool active) {
+  std::string icon = active && !tile.icon_on.empty() && tile.icon_on != "Auto" ? tile.icon_on : tile.icon;
+  if (!icon.empty() && icon != "Auto") return find_icon(icon.c_str());
+  size_t dot = tile.entity.find('.');
+  if (dot != std::string::npos) return domain_default_icon(tile.entity.substr(0, dot));
+  return find_icon("Auto");
+}
+
+inline void epaper_dashboard_style_lvgl_tile(lv_obj_t *tile, lv_obj_t *icon, lv_obj_t *label,
+                                            lv_obj_t *value, lv_obj_t *unit,
                                             bool configured, bool active) {
   if (!tile) return;
   uint32_t bg = active ? 0x000000 : 0xFFFFFF;
@@ -188,8 +209,10 @@ inline void epaper_dashboard_style_lvgl_tile(lv_obj_t *tile, lv_obj_t *label, lv
   lv_obj_set_style_radius(tile, 6, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(tile, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(tile, 8, LV_PART_MAIN);
+  if (icon) lv_obj_set_style_text_color(icon, lv_color_hex(fg), LV_PART_MAIN);
   if (label) lv_obj_set_style_text_color(label, lv_color_hex(fg), LV_PART_MAIN);
   if (value) lv_obj_set_style_text_color(value, lv_color_hex(fg), LV_PART_MAIN);
+  if (unit) lv_obj_set_style_text_color(unit, lv_color_hex(fg), LV_PART_MAIN);
 }
 
 inline void epaper_dashboard_update_lvgl_page(int page) {
@@ -212,8 +235,18 @@ inline void epaper_dashboard_update_lvgl_page(int page) {
     int row = i / 5;
     bool configured = !tile.config.empty();
     bool active = configured && epaper_dashboard_state_active(tile.value);
-    epaper_dashboard_style_lvgl_tile(slot.tile, slot.label, slot.value, configured, active);
+    bool show_value = configured && epaper_dashboard_state_card_type(tile);
+    epaper_dashboard_style_lvgl_tile(slot.tile, slot.icon, slot.label, slot.value, slot.unit, configured, active);
     lv_obj_set_grid_cell(slot.tile, LV_GRID_ALIGN_STRETCH, col, 1, LV_GRID_ALIGN_STRETCH, row, 1);
+    if (slot.icon) {
+      lv_label_set_text(slot.icon, configured ? epaper_dashboard_icon(tile, active) : find_icon("Auto"));
+      if (show_value) lv_obj_add_flag(slot.icon, LV_OBJ_FLAG_HIDDEN);
+      else lv_obj_clear_flag(slot.icon, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (slot.sensor_container) {
+      if (show_value) lv_obj_clear_flag(slot.sensor_container, LV_OBJ_FLAG_HIDDEN);
+      else lv_obj_add_flag(slot.sensor_container, LV_OBJ_FLAG_HIDDEN);
+    }
     if (slot.label) {
       lv_label_set_text(slot.label, configured ? tile.label.c_str() : "Configure");
       lv_obj_clear_flag(slot.label, LV_OBJ_FLAG_HIDDEN);
@@ -221,12 +254,12 @@ inline void epaper_dashboard_update_lvgl_page(int page) {
     if (slot.value) {
       std::string value = epaper_dashboard_display_value(tile);
       lv_label_set_text(slot.value, configured ? value.c_str() : "");
-      if (configured) lv_obj_clear_flag(slot.value, LV_OBJ_FLAG_HIDDEN);
+      if (show_value) lv_obj_clear_flag(slot.value, LV_OBJ_FLAG_HIDDEN);
       else lv_obj_add_flag(slot.value, LV_OBJ_FLAG_HIDDEN);
     }
     if (slot.unit) {
       lv_label_set_text(slot.unit, configured ? tile.unit.c_str() : "");
-      if (configured && !tile.unit.empty()) lv_obj_clear_flag(slot.unit, LV_OBJ_FLAG_HIDDEN);
+      if (show_value && !tile.unit.empty()) lv_obj_clear_flag(slot.unit, LV_OBJ_FLAG_HIDDEN);
       else lv_obj_add_flag(slot.unit, LV_OBJ_FLAG_HIDDEN);
     }
     lv_obj_invalidate(slot.tile);
@@ -263,6 +296,8 @@ inline void epaper_dashboard_set_config(int index, const std::string &config) {
   auto fields = epaper_dashboard_config_fields(config);
   if (fields.size() > 0) tile.entity = fields[0];
   if (fields.size() > 1) tile.label = fields[1];
+  if (fields.size() > 2) tile.icon = fields[2];
+  if (fields.size() > 3) tile.icon_on = fields[3];
   if (fields.size() > 4) tile.sensor = fields[4];
   if (fields.size() > 5) tile.unit = fields[5];
   if (fields.size() > 6) tile.type = fields[6];

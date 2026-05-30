@@ -20,5 +20,5 @@ font:
 
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
     id: font_trmnl_mdi_26_icons
-    size: 26
+    size: 32
     glyphs: !include ../../../common/assets/icon_glyphs.yaml

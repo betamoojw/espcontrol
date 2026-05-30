@@ -10,16 +10,23 @@ obj:
   scrollable: false
   clickable: false
   widgets:
+    - label:
+        id: trmnl_tile_${num}_icon_label
+        text: "\U000F0493"
+        text_font: font_trmnl_mdi_26_icons
+        text_color: 0x000000
+        align: top_left
     - obj:
         id: trmnl_tile_${num}_sensor_container
         align: top_left
         height: SIZE_CONTENT
-        width: 100%
+        width: SIZE_CONTENT
         clickable: false
         scrollable: false
         bg_opa: TRANSP
         border_width: 0
         pad_all: 0
+        hidden: true
         layout:
           type: flex
           flex_flow: row
@@ -31,13 +38,12 @@ obj:
               text_font: font_trmnl_value_24
               text_color: 0x000000
               long_mode: dot
-              width: 75%
           - label:
               id: trmnl_tile_${num}_unit
               text: ""
               text_font: font_trmnl_label_14
               text_color: 0x000000
-              pad_bottom: 3
+              pad_bottom: 6
               hidden: true
     - label:
         id: trmnl_tile_${num}_label

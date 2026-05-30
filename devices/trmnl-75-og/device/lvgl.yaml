@@ -5,32 +5,52 @@
 lvgl:
   top_layer:
     widgets:
-      - obj:
-          id: trmnl_clock_bar
+      - label:
+          text: "-°C / -°C"
+          id: temperatures
+          text_font: font_trmnl_header_20
+          align: top_left
+          x: 12
+          y: 8
+          text_color: 0x000000
+          hidden: true
+      - label:
+          text: "--:--"
+          id: display_time
+          text_font: font_trmnl_header_20
           align: top_mid
-          width: 100%
-          height: 42
-          bg_color: 0x000000
-          bg_opa: cover
+          y: 8
+          text_align: center
+          text_color: 0x000000
+      - label:
+          id: trmnl_page_label
+          text: "Page 1/4"
+          text_font: font_trmnl_label_14
+          text_color: 0x000000
+          align: top_right
+          x: -50
+          y: 11
+          text_align: right
+      - obj:
+          id: network_status_button
+          align: top_right
+          x: -12
+          y: 3
+          width: 30
+          height: 30
+          bg_opa: transp
           border_width: 0
           pad_all: 0
           scrollable: false
           clickable: false
           widgets:
             - label:
-                id: trmnl_title_label
-                text: "ESPControl"
-                text_font: font_trmnl_header_20
-                text_color: 0xFFFFFF
-                align: left_mid
-                x: 12
-            - label:
-                id: trmnl_page_label
-                text: "Page 1/4"
-                text_font: font_trmnl_header_20
-                text_color: 0xFFFFFF
-                align: right_mid
-                x: -12
+                id: network_status_icon_label
+                text: "\U000F0928"
+                text_font: font_trmnl_mdi_26_icons
+                align: center
+                text_align: center
+                text_color: 0x000000
 
   pages:
     - id: trmnl_wifi_setup_page
@@ -92,15 +112,15 @@ lvgl:
         type: grid
         grid_columns: [FR(1), FR(1), FR(1), FR(1), FR(1)]
         grid_rows: [FR(1), FR(1), FR(1), FR(1)]
-        pad_row: 6
-        pad_column: 6
+        pad_row: 10
+        pad_column: 10
       width: 100%
       bg_color: 0xFFFFFF
       bg_opa: cover
-      pad_top: 52
-      pad_bottom: 10
-      pad_left: 10
-      pad_right: 10
+      pad_top: 42
+      pad_bottom: 5
+      pad_left: 5
+      pad_right: 5
       widgets:
         - !include { file: trmnl_tile_widget.yaml, vars: { num: "1" } }
         - !include { file: trmnl_tile_widget.yaml, vars: { num: "2" } }

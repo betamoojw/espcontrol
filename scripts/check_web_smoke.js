@@ -125,8 +125,9 @@ for (const [slug, device] of Object.entries(manifest.devices || {})) {
   assert(generated.includes("dashboardPages:4"), "TRMNL web UI must expose four dashboard pages");
   assert(generated.includes('disabledCardTypes:["subpage"]'), "TRMNL web UI must hide subpage cards");
   assert(generated.includes("slots:20,cols:5,rows:4"), "TRMNL web UI must use a 5x4 page layout");
-  assert(generated.includes("sp-epaper-title"), "TRMNL web preview must use the e-paper title bar");
-  assert(generated.includes("sp-epaper-page"), "TRMNL web preview must show the physical dashboard page number");
+  assert(generated.includes("sp-clock"), "TRMNL web preview must keep the normal clock bar");
+  assert(generated.includes("sp-network-preview"), "TRMNL web preview must keep the normal network status icon");
+  assert(!generated.includes("sp-epaper-title"), "TRMNL web preview must not use a custom e-paper title bar");
 }
 
 const button = {
