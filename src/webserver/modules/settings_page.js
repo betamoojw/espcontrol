@@ -193,10 +193,21 @@ function buildSettingsPage(parent) {
     syncScreenScheduleUi();
   });
   clockOptions.appendChild(clockBrightnessSlider.wrap);
+  clockOptions.appendChild(fieldLabel("Clock Text Colour"));
+  var clockTextColor = colorField(
+    "sp-set-schedule-clock-text-color",
+    state.scheduleClockTextColor,
+    function (hex) {
+      state.scheduleClockTextColor = normalizeHexColor(hex, "FFFFFF");
+      postText(entityName("screen_schedule_clock_text_color"), state.scheduleClockTextColor);
+    }
+  );
+  clockOptions.appendChild(clockTextColor);
   scheduleTimes.appendChild(clockOptions);
   els.setScheduleClockOptions = clockOptions;
   els.setScheduleClockBrightness = clockBrightnessSlider.range;
   els.setScheduleClockBrightnessVal = clockBrightnessSlider.val;
+  els.setScheduleClockTextColor = clockTextColor;
 
   scheduleBody.appendChild(scheduleTimes);
   els.setScheduleTimes = scheduleTimes;

@@ -61,6 +61,7 @@ export {
   normalizeBackupPanelSettings,
   normalizeBackupScreenSettings,
   normalizeClockBrightness,
+  normalizeHexColor,
   normalizeHour,
   normalizeMonthNames,
   normalizeNtpServer,

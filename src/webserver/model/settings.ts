@@ -42,6 +42,11 @@ export function normalizeScheduleClockBrightness(value: unknown): number {
   return Math.round(n);
 }
 
+export function normalizeHexColor(value: unknown, fallback: string): string {
+  const color = String(value == null ? "" : value).replace(/^#/, "").trim().toUpperCase();
+  return /^[0-9A-F]{6}$/.test(color) ? color : fallback;
+}
+
 export function normalizeScheduleDimmedBrightness(value: unknown): number {
   const n = parseFloat(String(value));
   if (!Number.isFinite(n) || n <= 0) return 10;
@@ -129,6 +134,7 @@ export interface BackupScreenSettingsState {
   scheduleWakeBrightness: number;
   scheduleDimmedBrightness: number;
   scheduleClockBrightness: number;
+  scheduleClockTextColor: string;
 }
 
 function numberOrFallback(value: unknown, fallback: number): number {
@@ -169,6 +175,12 @@ export function normalizeBackupScreenSettings(
       objectValue(screenSettings, "schedule_clock_brightness") != null
         ? screenSettings.schedule_clock_brightness
         : current.scheduleClockBrightness,
+    ),
+    scheduleClockTextColor: normalizeHexColor(
+      objectValue(screenSettings, "schedule_clock_text_color") != null
+        ? screenSettings.schedule_clock_text_color
+        : current.scheduleClockTextColor,
+      "FFFFFF",
     ),
   };
 }

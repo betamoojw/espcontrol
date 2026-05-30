@@ -54,6 +54,7 @@ var EspControlModel = (() => {
     normalizeBackupPanelSettings: () => normalizeBackupPanelSettings,
     normalizeBackupScreenSettings: () => normalizeBackupScreenSettings,
     normalizeClockBrightness: () => normalizeClockBrightness,
+    normalizeHexColor: () => normalizeHexColor,
     normalizeHour: () => normalizeHour,
     normalizeMonthNames: () => normalizeMonthNames,
     normalizeNtpServer: () => normalizeNtpServer,
@@ -735,6 +736,10 @@ var EspControlModel = (() => {
     if (n > 100) return 100;
     return Math.round(n);
   }
+  function normalizeHexColor(value, fallback) {
+    const color = String(value == null ? "" : value).replace(/^#/, "").trim().toUpperCase();
+    return /^[0-9A-F]{6}$/.test(color) ? color : fallback;
+  }
   function normalizeScheduleDimmedBrightness(value) {
     const n = parseFloat(String(value));
     if (!Number.isFinite(n) || n <= 0) return 10;
@@ -823,6 +828,10 @@ var EspControlModel = (() => {
       ),
       scheduleClockBrightness: normalizeScheduleClockBrightness(
         objectValue(screenSettings, "schedule_clock_brightness") != null ? screenSettings.schedule_clock_brightness : current.scheduleClockBrightness
+      ),
+      scheduleClockTextColor: normalizeHexColor(
+        objectValue(screenSettings, "schedule_clock_text_color") != null ? screenSettings.schedule_clock_text_color : current.scheduleClockTextColor,
+        "FFFFFF"
       )
     };
   }

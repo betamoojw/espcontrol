@@ -292,6 +292,15 @@ var ENTITY_CATALOG = {
         "schedule_clock_brightness"
       ]
     },
+    "screen_schedule_clock_text_color": {
+      "domain": "text",
+      "name": "Screen: Schedule Clock Text Color",
+      "objectIds": [
+        "screen__schedule_clock_text_color",
+        "screen_schedule_clock_text_color",
+        "schedule_clock_text_color"
+      ]
+    },
     "screen_daytime_brightness": {
       "domain": "number",
       "name": "Screen: Daytime Brightness"
@@ -415,6 +424,7 @@ var ENTITY_CATALOG = {
       "screen_schedule_wake_brightness",
       "screen_schedule_dimmed_brightness",
       "screen_schedule_clock_brightness",
+      "screen_schedule_clock_text_color",
       "screen_daytime_brightness",
       "screen_nighttime_brightness",
       "firmware_version",

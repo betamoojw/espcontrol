@@ -10,6 +10,7 @@ var SSE_ALIAS_GROUPS = {
   scheduleWakeBrightness: ["number-screen__schedule_wake_brightness", "number-screen_schedule_wake_brightness", "number-schedule_wake_brightness"],
   scheduleDimmedBrightness: ["number-screen__schedule_dimmed_brightness", "number-screen_schedule_dimmed_brightness", "number-schedule_dimmed_brightness"],
   scheduleClockBrightness: ["number-screen__schedule_clock_brightness", "number-screen_schedule_clock_brightness", "number-schedule_clock_brightness"],
+  scheduleClockTextColor: ["text-screen__schedule_clock_text_color", "text-screen_schedule_clock_text_color", "text-schedule_clock_text_color"],
   ntpServer1: ["text-screen__ntp_server_1", "text-ntp_server_1"],
   ntpServer2: ["text-screen__ntp_server_2", "text-ntp_server_2"],
   ntpServer3: ["text-screen__ntp_server_3", "text-ntp_server_3"],
@@ -232,6 +233,10 @@ function connectEvents() {
       state.scheduleClockBrightness = normalizeScheduleClockBrightness(val);
       syncScreenScheduleUi();
     },
+    "text-screen__schedule_clock_text_color": function (val) {
+      state.scheduleClockTextColor = normalizeHexColor(val, "FFFFFF");
+      syncScreenScheduleUi();
+    },
     "select-screen__timezone": function (val, d) {
       state.timezone = d.value || val || state.timezone;
       if (Array.isArray(d.option)) {
@@ -360,6 +365,7 @@ function connectEvents() {
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.scheduleWakeBrightness, sseHandlers["number-screen__schedule_wake_brightness"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.scheduleDimmedBrightness, sseHandlers["number-screen__schedule_dimmed_brightness"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.scheduleClockBrightness, sseHandlers["number-screen__schedule_clock_brightness"]);
+  addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.scheduleClockTextColor, sseHandlers["text-screen__schedule_clock_text_color"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer1, sseHandlers["text-screen__ntp_server_1"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer2, sseHandlers["text-screen__ntp_server_2"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer3, sseHandlers["text-screen__ntp_server_3"]);

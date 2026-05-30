@@ -266,6 +266,26 @@ inline void refresh_screensaver_fullscreen(lv_obj_t *clock_overlay,
   screensaver_fill_screen(dim_guard);
 }
 
+inline uint32_t parse_clock_screensaver_text_color(const std::string &hex) {
+  if (hex.size() != 6) return 0xFFFFFF;
+  for (char ch : hex) {
+    bool digit = ch >= '0' && ch <= '9';
+    bool upper = ch >= 'A' && ch <= 'F';
+    bool lower = ch >= 'a' && ch <= 'f';
+    if (!digit && !upper && !lower) return 0xFFFFFF;
+  }
+  return strtoul(hex.c_str(), nullptr, 16);
+}
+
+inline void apply_clock_screensaver_text_color(lv_obj_t *label,
+                                               const std::string &hex) {
+  if (!label) return;
+  lv_obj_set_style_text_color(
+    label,
+    lv_color_hex(parse_clock_screensaver_text_color(hex)),
+    LV_PART_MAIN);
+}
+
 inline void position_clock_screensaver_label(lv_obj_t *overlay, lv_obj_t *label,
                                              int minute) {
   if (!label) return;

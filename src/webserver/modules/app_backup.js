@@ -56,6 +56,7 @@ function exportConfig() {
       schedule_wake_brightness: normalizeScheduleWakeBrightness(state.scheduleWakeBrightness),
       schedule_dimmed_brightness: normalizeScheduleDimmedBrightness(state.scheduleDimmedBrightness),
       schedule_clock_brightness: normalizeScheduleClockBrightness(state.scheduleClockBrightness),
+      schedule_clock_text_color: normalizeHexColor(state.scheduleClockTextColor, "FFFFFF"),
     },
   });
 
@@ -283,6 +284,7 @@ function importConfig() {
           scheduleWakeBrightness: state.scheduleWakeBrightness,
           scheduleDimmedBrightness: state.scheduleDimmedBrightness,
           scheduleClockBrightness: state.scheduleClockBrightness,
+          scheduleClockTextColor: state.scheduleClockTextColor,
         });
         state.brightnessDayVal = importedScreenSettings.brightnessDayVal;
         state.brightnessNightVal = importedScreenSettings.brightnessNightVal;
@@ -295,6 +297,7 @@ function importConfig() {
         state.scheduleWakeBrightness = importedScreenSettings.scheduleWakeBrightness;
         state.scheduleDimmedBrightness = importedScreenSettings.scheduleDimmedBrightness;
         state.scheduleClockBrightness = importedScreenSettings.scheduleClockBrightness;
+        state.scheduleClockTextColor = importedScreenSettings.scheduleClockTextColor;
 
         postNumber(entityName("screen_daytime_brightness"), state.brightnessDayVal);
         postNumber(entityName("screen_nighttime_brightness"), state.brightnessNightVal);
@@ -306,6 +309,7 @@ function importConfig() {
         postScreenScheduleWakeBrightness(state.scheduleWakeBrightness);
         postScreenScheduleDimmedBrightness(state.scheduleDimmedBrightness);
         postScreenScheduleClockBrightness(state.scheduleClockBrightness);
+        postText(entityName("screen_schedule_clock_text_color"), state.scheduleClockTextColor);
         postScreenScheduleEnabled(state.scheduleEnabled);
 
         if (els.setDayBrightness) {

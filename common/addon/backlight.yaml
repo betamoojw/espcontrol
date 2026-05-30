@@ -604,6 +604,7 @@ script:
       - script.wait: clock_screensaver_refresh_brightness
       - lambda: |-
           id(is_clock_showing) = true;
+          apply_clock_screensaver_text_color(id(clock_label), id(schedule_clock_text_color).state);
           auto time = panel_time_or_fallback(id(panel_time).now(), id(homeassistant_time).now());
           if (time.is_valid()) {
             char buf[12];
@@ -699,6 +700,7 @@ interval:
             - script.execute: clock_screensaver_refresh_brightness
       - lambda: |-
           if (!id(is_clock_showing)) return;
+          apply_clock_screensaver_text_color(id(clock_label), id(schedule_clock_text_color).state);
           auto time = panel_time_or_fallback(id(panel_time).now(), id(homeassistant_time).now());
           if (!time.is_valid()) return;
           char buf[12];

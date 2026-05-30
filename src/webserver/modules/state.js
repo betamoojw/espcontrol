@@ -67,6 +67,7 @@ var state = {
   scheduleWakeBrightness: 10,
   scheduleDimmedBrightness: 10,
   scheduleClockBrightness: 10,
+  scheduleClockTextColor: "FFFFFF",
   timezone: "UTC (GMT+0)",
   timezoneOptions: defaultTimezoneOptions(),
   clockFormat: "24h",
@@ -239,6 +240,10 @@ function normalizeScheduleWakeBrightness(value) {
 
 function normalizeScheduleClockBrightness(value) {
   return EspControlModel.normalizeScheduleClockBrightness(value);
+}
+
+function normalizeHexColor(value, fallback) {
+  return EspControlModel.normalizeHexColor(value, fallback);
 }
 
 function normalizeScheduleDimmedBrightness(value) {
@@ -440,6 +445,9 @@ function syncScreenScheduleUi() {
   if (els.setScheduleClockBrightness) {
     els.setScheduleClockBrightness.value = state.scheduleClockBrightness;
     els.setScheduleClockBrightnessVal.textContent = Math.round(state.scheduleClockBrightness) + "%";
+  }
+  if (els.setScheduleClockTextColor && els.setScheduleClockTextColor._syncColor) {
+    els.setScheduleClockTextColor._syncColor(state.scheduleClockTextColor);
   }
   if (els.setScheduleOffOptions) {
     els.setScheduleOffOptions.className =

@@ -54,6 +54,7 @@
     { "key": "screen_schedule_wake_brightness", "domain": "number", "name": "Screen: Schedule Wake Brightness", "objectIds": ["screen__schedule_wake_brightness", "screen_schedule_wake_brightness", "schedule_wake_brightness"], "groups": ["settings"] },
     { "key": "screen_schedule_dimmed_brightness", "domain": "number", "name": "Screen: Schedule Dimmed Brightness", "objectIds": ["screen__schedule_dimmed_brightness", "screen_schedule_dimmed_brightness", "schedule_dimmed_brightness"], "groups": ["settings"] },
     { "key": "screen_schedule_clock_brightness", "domain": "number", "name": "Screen: Schedule Clock Brightness", "objectIds": ["screen__schedule_clock_brightness", "screen_schedule_clock_brightness", "schedule_clock_brightness"], "groups": ["settings"] },
+    { "key": "screen_schedule_clock_text_color", "domain": "text", "name": "Screen: Schedule Clock Text Color", "objectIds": ["screen__schedule_clock_text_color", "screen_schedule_clock_text_color", "schedule_clock_text_color"], "groups": ["settings"] },
     { "key": "screen_daytime_brightness", "domain": "number", "name": "Screen: Daytime Brightness", "groups": ["settings"] },
     { "key": "screen_nighttime_brightness", "domain": "number", "name": "Screen: Nighttime Brightness", "groups": ["settings"] },
     { "key": "firmware_version", "domain": "text_sensor", "name": "Firmware: Version", "objectIds": ["firmware__version", "firmware_version", "firmware_version_sensor"], "groups": ["settings"] },

@@ -120,6 +120,30 @@ select:
       then:
         - script.execute: screen_schedule_check
 
+text:
+  - platform: template
+    name: "${entity_screen_schedule_clock_text_color}"
+    internal: true
+    id: schedule_clock_text_color
+    optimistic: true
+    restore_value: true
+    initial_value: "FFFFFF"
+    min_length: 6
+    max_length: 6
+    mode: text
+    entity_category: config
+    icon: "mdi:format-color-text"
+    update_interval: never
+    web_server:
+      sorting_group_id: sg_brightness
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(is_clock_showing);'
+            then:
+              - lambda: 'apply_clock_screensaver_text_color(id(clock_label), id(schedule_clock_text_color).state);'
+
 number:
   - platform: template
     name: "${entity_screen_schedule_on_hour}"
