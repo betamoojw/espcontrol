@@ -860,6 +860,7 @@ var EspControlModel = (() => {
       clockBar: objectValue(settings, "clock_bar") != null ? !!settings.clock_bar : false,
       networkStatusIcon: objectValue(settings, "network_status_icon") != null ? !!settings.network_status_icon : true,
       temperatureDegreeSymbol: objectValue(settings, "temperature_degree_symbol") != null ? !!settings.temperature_degree_symbol : true,
+      subpageChevron: objectValue(settings, "subpage_chevron") != null ? !!settings.subpage_chevron : true,
       timezone: String(settings.timezone || current.timezone),
       temperatureUnit: normalizeTemperatureUnit(settings.temperature_unit),
       clockFormat,

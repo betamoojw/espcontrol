@@ -37,6 +37,7 @@ esphome:
             GridConfig cfg = {};
             cfg.num_slots = 9;
             cfg.cols = 3;
+            cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;
             cfg.icon_font = id(font_mdi_44_icons)->get_lv_font();
             cfg.sp_sensor_font = id(font_roboto_light_44_digits)->get_lv_font();
             cfg.sp_large_sensor_font = id(font_roboto_thin_110_digits)->get_lv_font();
@@ -133,6 +134,7 @@ esphome:
             GridConfig cfg = {};
             cfg.num_slots = 9;
             cfg.cols = 3;
+            cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;
             cfg.icon_font = id(font_mdi_44_icons)->get_lv_font();
             cfg.sp_sensor_font = id(font_roboto_light_44_digits)->get_lv_font();
             cfg.sp_large_sensor_font = id(font_roboto_thin_110_digits)->get_lv_font();

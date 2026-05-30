@@ -245,6 +245,7 @@ def cfg_lines(device: dict) -> list[str]:
             lines.append("            cfg.width_compensation_vertical = portrait;")
     else:
         lines.append(f"            cfg.cols = {device['cols']};")
+    lines.append("            cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;")
     if device["wrap_tall_labels"]:
         lines.append("            cfg.wrap_tall_labels = true;")
     if device.get("width_compensation_percent", 100) != 100:

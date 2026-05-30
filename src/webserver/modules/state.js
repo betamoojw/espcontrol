@@ -38,6 +38,7 @@ var state = {
   networkTransport: "wifi",
   wifiStrengthPercent: 100,
   temperatureDegreeSymbolOn: true,
+  subpageChevronsOn: true,
   presenceEntity: "",
   mediaPlayerSleepPreventionOn: false,
   mediaPlayerSleepPreventionEntity: "",
@@ -513,6 +514,9 @@ function syncClockBarUi() {
   }
   if (els.setTemperatureDegreeSymbolToggle) {
     els.setTemperatureDegreeSymbolToggle.checked = !!state.temperatureDegreeSymbolOn;
+  }
+  if (els.setSubpageChevronToggle) {
+    els.setSubpageChevronToggle.checked = !!state.subpageChevronsOn;
   }
   updateNetworkPreview();
   updateTempPreview();

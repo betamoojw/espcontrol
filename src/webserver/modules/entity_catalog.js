@@ -91,6 +91,15 @@ var ENTITY_CATALOG = {
         "temperature_degree_symbol_enabled"
       ]
     },
+    "screen_subpage_chevron": {
+      "domain": "switch",
+      "name": "Screen: Subpage Chevron",
+      "objectIds": [
+        "screen__subpage_chevron",
+        "screen_subpage_chevron",
+        "subpage_chevrons_enabled"
+      ]
+    },
     "screen_temperature_unit": {
       "domain": "select",
       "name": "Screen: Temperature Unit"
@@ -371,6 +380,7 @@ var ENTITY_CATALOG = {
       "screen_clock_bar",
       "screen_network_status_icon",
       "screen_temperature_degree_symbol",
+      "screen_subpage_chevron",
       "screen_temperature_unit",
       "indoor_temp_entity",
       "outdoor_temp_entity",

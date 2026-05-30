@@ -595,6 +595,18 @@ function postTemperatureDegreeSymbol(on) {
   );
 }
 
+var SUBPAGE_CHEVRON_UNAVAILABLE =
+  "Subpage chevron setting is not available on this firmware. Update the device firmware, then reload this page.";
+
+function postSubpageChevron(on) {
+  postSwitchWithObjectIds(
+    entityName("screen_subpage_chevron"),
+    entityObjectIds("screen_subpage_chevron"),
+    on,
+    SUBPAGE_CHEVRON_UNAVAILABLE
+  );
+}
+
 var SCREEN_SCHEDULE_UNAVAILABLE =
   "Screen schedule is not available on this firmware. Update the device firmware, then reload this page.";
 var SCREEN_SCHEDULE_WAKE_TIMEOUT_UNAVAILABLE =

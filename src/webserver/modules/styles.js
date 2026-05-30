@@ -391,6 +391,7 @@ var CSS =
   "cursor:pointer;padding:2px 0 2px 4px;border-radius:4px;transform:translateY(.16em);" +
   "transition:opacity .15s}" +
   ".sp-subpage-badge:hover{opacity:1}" +
+  ".sp-hide-subpage-chevrons .sp-subpage-badge{display:none}" +
   ".sp-alarm-badge{font-size:var(--btn-label);line-height:1.2;opacity:.58;flex-shrink:0;padding:2px 0 2px 4px}" +
   ".sp-type-badge{display:none}" +
 

@@ -75,6 +75,7 @@ function hiddenExperimentalButtonTypeDef(typeDef) {
 function renderPreview() {
   var main = els.previewMain;
   main.innerHTML = "";
+  main.className = "sp-main" + (state.subpageChevronsOn ? "" : " sp-hide-subpage-chevrons");
   var c = ctx();
 
   updatePreviewHint(c);

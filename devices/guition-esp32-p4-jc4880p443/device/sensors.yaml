@@ -34,6 +34,7 @@ script:
           cfg.num_slots = 6;
           bool portrait = id(screen_rotation_select).current_option() == "90" || id(screen_rotation_select).current_option() == "270";
           cfg.cols = portrait ? 3 : 2;
+          cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;
           cfg.icon_font = id(font_mdi_62_icons)->get_lv_font();
           cfg.sp_sensor_font = id(font_roboto_light_62_digits)->get_lv_font();
           cfg.sp_large_sensor_font = id(font_roboto_thin_155_digits)->get_lv_font();
@@ -99,6 +100,7 @@ esphome:
             cfg.num_slots = 6;
             bool portrait = id(screen_rotation_select).current_option() == "90" || id(screen_rotation_select).current_option() == "270";
             cfg.cols = portrait ? 3 : 2;
+            cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;
             cfg.icon_font = id(font_mdi_62_icons)->get_lv_font();
             cfg.sp_sensor_font = id(font_roboto_light_62_digits)->get_lv_font();
             cfg.sp_large_sensor_font = id(font_roboto_thin_155_digits)->get_lv_font();
@@ -213,6 +215,7 @@ esphome:
             cfg.num_slots = 6;
             bool portrait = id(screen_rotation_select).current_option() == "90" || id(screen_rotation_select).current_option() == "270";
             cfg.cols = portrait ? 3 : 2;
+            cfg.subpage_chevrons_enabled = id(subpage_chevrons_enabled).state;
             cfg.icon_font = id(font_mdi_62_icons)->get_lv_font();
             cfg.sp_sensor_font = id(font_roboto_light_62_digits)->get_lv_font();
             cfg.sp_large_sensor_font = id(font_roboto_thin_155_digits)->get_lv_font();

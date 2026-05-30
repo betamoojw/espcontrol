@@ -22,6 +22,7 @@ function exportConfig() {
       clock_bar: state.clockBarOn,
       network_status_icon: state.networkStatusOn,
       temperature_degree_symbol: state.temperatureDegreeSymbolOn,
+      subpage_chevron: state.subpageChevronsOn,
       timezone: state.timezone,
       clock_format: state.clockFormat,
       ntp_server_1: state.ntpServer1,
@@ -166,6 +167,7 @@ function importConfig() {
         postClockBar(importedSettings.clockBar);
         postNetworkStatusIcon(importedSettings.networkStatusIcon);
         postTemperatureDegreeSymbol(importedSettings.temperatureDegreeSymbol);
+        postSubpageChevron(importedSettings.subpageChevron);
         var importedTimezone = importedSettings.timezone;
         var importedTemperatureUnit = importedSettings.temperatureUnit;
         var importedClockFormat = importedSettings.clockFormat;
@@ -223,6 +225,7 @@ function importConfig() {
         state.clockBarOn = importedSettings.clockBar;
         state.networkStatusOn = importedSettings.networkStatusIcon;
         state.temperatureDegreeSymbolOn = importedSettings.temperatureDegreeSymbol;
+        state.subpageChevronsOn = importedSettings.subpageChevron;
         state.timezone = importedTimezone;
         state.clockFormat = importedClockFormat;
         state.ntpServer1 = importedNtpServer1;

@@ -194,6 +194,7 @@ export interface BackupPanelSettingsState {
   clockBar: boolean;
   networkStatusIcon: boolean;
   temperatureDegreeSymbol: boolean;
+  subpageChevron: boolean;
   timezone: string;
   temperatureUnit: string;
   clockFormat: string;
@@ -265,6 +266,9 @@ export function normalizeBackupPanelSettings(
     networkStatusIcon: objectValue(settings, "network_status_icon") != null ? !!settings.network_status_icon : true,
     temperatureDegreeSymbol: objectValue(settings, "temperature_degree_symbol") != null
       ? !!settings.temperature_degree_symbol
+      : true,
+    subpageChevron: objectValue(settings, "subpage_chevron") != null
+      ? !!settings.subpage_chevron
       : true,
     timezone: String(settings.timezone || current.timezone),
     temperatureUnit: normalizeTemperatureUnit(settings.temperature_unit),
