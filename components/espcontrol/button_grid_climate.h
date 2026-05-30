@@ -24,11 +24,12 @@ constexpr lv_coord_t CLIMATE_MODAL_4848_STEP_BUTTONS_UP_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_JC4880P443_LABELS_DOWN_REF_PX = 22;
 constexpr lv_coord_t CLIMATE_MODAL_SQUARE_LABELS_DOWN_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_4848_LABELS_DOWN_REF_PX = 12;
-constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_H_REF_PX = 58;
 constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_W_REF_PX = 160;
 constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_GAP_REF_PX = 12;
-constexpr lv_coord_t CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_H_PX = 76;
 constexpr lv_coord_t CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX = 4;
+constexpr lv_coord_t CLIMATE_MODAL_OPTION_CHIP_MIN_H_PX = 56;
+constexpr lv_coord_t CLIMATE_MODAL_OPTION_CHIP_PAD_Y_REF_PX = 4;
+constexpr lv_coord_t CLIMATE_MODAL_OPTION_CHIP_TEXT_GAP_PX = 2;
 constexpr lv_coord_t CLIMATE_MODAL_STEP_BUTTON_GAP_REF_PX = 16;
 constexpr uint16_t CLIMATE_MODAL_STEP_ICON_ZOOM = 214;
 constexpr int CLIMATE_OPTION_ROW_WIDTH_PERCENT = 88;
@@ -480,32 +481,44 @@ inline lv_coord_t climate_control_labels_down_ref(const ControlModalLayout &layo
   return 0;
 }
 
-inline void climate_apply_4848_bottom_chip_padding(lv_obj_t *chip, bool option_chip) {
-  if (!chip) return;
-  lv_obj_set_style_pad_left(chip, option_chip ? 16 : 8, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(chip, option_chip ? 14 : 8, LV_PART_MAIN);
-  lv_obj_set_style_pad_top(chip, option_chip ? 8 : 4, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(chip, option_chip ? 12 : 7, LV_PART_MAIN);
-  if (option_chip) lv_obj_set_style_pad_column(chip, 12, LV_PART_MAIN);
+inline lv_coord_t climate_font_line_height(const lv_font_t *font, lv_coord_t fallback) {
+  return font && font->line_height > 0 ? font->line_height : fallback;
 }
 
-inline void climate_apply_jc4880p443_bottom_chip_padding(lv_obj_t *chip, bool option_chip) {
-  if (!chip) return;
-  lv_obj_set_style_pad_left(chip, option_chip ? 32 : 18, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(chip, option_chip ? 22 : 12, LV_PART_MAIN);
-  lv_obj_set_style_pad_top(chip, option_chip ? 12 : 6, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(chip, option_chip ? 18 : 12, LV_PART_MAIN);
-  if (option_chip) lv_obj_set_style_pad_column(chip, 24, LV_PART_MAIN);
+inline lv_coord_t climate_option_chip_pad_y(const ControlModalLayout &layout) {
+  lv_coord_t pad = control_modal_scaled_px(CLIMATE_MODAL_OPTION_CHIP_PAD_Y_REF_PX, layout.short_side);
+  return pad < 4 ? 4 : pad;
 }
 
-inline void climate_apply_wide_landscape_bottom_chip_padding(lv_obj_t *chip) {
+inline lv_coord_t climate_option_chip_height(ClimateControlCtx *ctx,
+                                             const ControlModalLayout &layout) {
+  lv_coord_t fallback_text_h = control_modal_scaled_px(22, layout.short_side);
+  lv_coord_t fallback_icon_h = control_modal_scaled_px(33, layout.short_side);
+  lv_coord_t title_h = climate_font_line_height(
+    ctx ? ctx->option_title_font : nullptr, fallback_text_h);
+  lv_coord_t value_h = climate_font_line_height(
+    ctx ? ctx->option_value_font : nullptr, fallback_text_h);
+  lv_coord_t icon_h = climate_font_line_height(
+    ctx ? (ctx->card_icon_font ? ctx->card_icon_font : ctx->icon_font) : nullptr,
+    fallback_icon_h);
+  lv_coord_t text_h = title_h + CLIMATE_MODAL_OPTION_CHIP_TEXT_GAP_PX + value_h;
+  lv_coord_t content_h = icon_h > text_h ? icon_h : text_h;
+  lv_coord_t chip_h = content_h + climate_option_chip_pad_y(layout) * 2;
+  return chip_h < CLIMATE_MODAL_OPTION_CHIP_MIN_H_PX
+    ? CLIMATE_MODAL_OPTION_CHIP_MIN_H_PX
+    : chip_h;
+}
+
+inline void climate_apply_bottom_chip_padding(lv_obj_t *chip,
+                                              const ControlModalLayout &layout) {
   if (!chip) return;
-  lv_obj_set_style_pad_top(chip, 16, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(chip, 0, LV_PART_MAIN);
+  lv_coord_t pad_y = climate_option_chip_pad_y(layout);
+  lv_obj_set_style_pad_top(chip, pad_y, LV_PART_MAIN);
+  lv_obj_set_style_pad_bottom(chip, pad_y, LV_PART_MAIN);
   lv_obj_t *icon_lbl = lv_obj_get_child(chip, 0);
   lv_obj_t *text_col = lv_obj_get_child(chip, 1);
-  if (icon_lbl) lv_obj_set_style_translate_y(icon_lbl, 3, LV_PART_MAIN);
-  if (text_col) lv_obj_set_style_translate_y(text_col, 3, LV_PART_MAIN);
+  if (icon_lbl) lv_obj_set_style_translate_y(icon_lbl, 0, LV_PART_MAIN);
+  if (text_col) lv_obj_set_style_translate_y(text_col, 0, LV_PART_MAIN);
 }
 
 inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
@@ -1307,16 +1320,9 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
   lv_coord_t title_center_y = value_center_y -
     (value_h / 2 + layout.title_gap + title_h / 2);
   bool tune_4848 = climate_control_uses_4848_modal_tuning(layout);
-  bool tune_jc4880p443 = control_modal_uses_compact_portrait_tuning(layout);
   bool roomy_landscape = layout.panel_w >= 900 && layout.panel_h <= 600;
   bool medium_landscape = layout.panel_w >= 760 && layout.panel_h <= 520;
-  lv_coord_t chip_h = tune_4848
-    ? control_modal_scaled_px(CLIMATE_MODAL_4848_OPTION_CHIP_H_REF_PX, layout.short_side)
-    : roomy_landscape
-    ? CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_H_PX
-    : layout.short_side < 520
-    ? (medium_landscape ? 94 : 72)
-    : 94;
+  lv_coord_t chip_h = climate_option_chip_height(ctx, layout);
   lv_coord_t chip_gap = control_modal_scaled_px(tune_4848 ? CLIMATE_MODAL_4848_OPTION_CHIP_GAP_REF_PX : 24,
     layout.short_side);
   if (chip_gap < (tune_4848 ? 10 : 16)) chip_gap = tune_4848 ? 10 : 16;
@@ -1367,9 +1373,7 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
     if (!chip) return;
     lv_obj_set_size(chip, option_chip_w, chip_h);
     lv_obj_set_style_radius(chip, chip_h / 2, LV_PART_MAIN);
-    if (tune_jc4880p443) climate_apply_jc4880p443_bottom_chip_padding(chip, true);
-    if (tune_4848) climate_apply_4848_bottom_chip_padding(chip, true);
-    if (roomy_landscape) climate_apply_wide_landscape_bottom_chip_padding(chip);
+    climate_apply_bottom_chip_padding(chip, layout);
   };
   layout_option_chip(ui.mode_chip);
   layout_option_chip(ui.preset_chip);
