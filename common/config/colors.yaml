@@ -12,7 +12,7 @@ text:
     id: button_on_color
     optimistic: true
     restore_value: true
-    initial_value: "FF8C00"
+    initial_value: "0073FF"
     min_length: 6
     max_length: 6
     mode: text
@@ -28,7 +28,7 @@ text:
     id: button_off_color
     optimistic: true
     restore_value: true
-    initial_value: "313131"
+    initial_value: "CECECE"
     min_length: 6
     max_length: 6
     mode: text
@@ -44,7 +44,7 @@ text:
     id: sensor_card_color
     optimistic: true
     restore_value: true
-    initial_value: "212121"
+    initial_value: "DEDEDE"
     min_length: 6
     max_length: 6
     mode: text

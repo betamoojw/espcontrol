@@ -99,7 +99,7 @@ function renderPreview() {
       backBtn.innerHTML =
         '<span class="sp-btn-icon sp-back-hit mdi mdi-chevron-left"></span>' +
         '<span class="sp-btn-label">' + escHtml(backLabel) + '</span>';
-      backBtn.style.backgroundColor = "#" + (state.offColor.length === 6 ? state.offColor : "313131");
+      backBtn.style.backgroundColor = "#" + (state.offColor.length === 6 ? state.offColor : "CECECE");
       backBtn.style.cursor = "pointer";
       backBtn.setAttribute("data-pos", pos);
       backBtn.draggable = !isConfigLocked();
@@ -132,7 +132,7 @@ function renderPreview() {
         (typePreview && typePreview.buttonClass ? " " + typePreview.buttonClass : "") +
         sizeClass(slotSz) +
         (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
-      btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
+      btn.style.backgroundColor = "#" + (color.length === 6 ? color : "CECECE");
       btn.draggable = !isConfigLocked();
       btn.setAttribute("data-pos", pos);
       btn.setAttribute("data-slot", slot);

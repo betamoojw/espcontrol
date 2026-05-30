@@ -7,7 +7,7 @@
 lvgl:
   pages:
     - id: wifi_setup_page
-      bg_color: 0x000000
+      bg_color: 0xFFFFFF
       scrollable: false
       pad_all: 0
       widgets:
@@ -46,13 +46,13 @@ lvgl:
                     - label:
                         text_font: $setup_icon_font_id
                         text: $icon_wifi
-                        text_color: 0xFFFFFF
+                        text_color: 0x000000
                         text_align: center
                     - label:
                         id: wifi_setup_title
                         text: "WiFi Setup"
                         text_font: $setup_title_font_id
-                        text_color: 0xFFFFFF
+                        text_color: 0x000000
                         width: $content_width
                         text_align: center
                     - label:

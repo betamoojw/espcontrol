@@ -36,18 +36,18 @@ static_assert(correct_display_color(0x123456, 100, 100, 0) == 0x123400,
 static_assert(correct_display_color(0xF0F0F0, 200, 200, 200) == 0xFFFFFF,
               "colour correction must clamp channels at 255");
 
-constexpr uint32_t DEFAULT_SLIDER_COLOR = correct_display_color(0xFF8C00);
-constexpr uint32_t DEFAULT_OFF_COLOR = correct_display_color(0x313131);
-constexpr uint32_t DEFAULT_TERTIARY_COLOR = correct_display_color(0x212121);
+constexpr uint32_t DEFAULT_SLIDER_COLOR = correct_display_color(0x0073FF);
+constexpr uint32_t DEFAULT_OFF_COLOR = correct_display_color(0xCECECE);
+constexpr uint32_t DEFAULT_TERTIARY_COLOR = correct_display_color(0xDEDEDE);
 constexpr uint32_t DARK_BACKGROUND_SECONDARY = DEFAULT_OFF_COLOR;
 constexpr uint32_t DARK_BACKGROUND_TERTIARY = DEFAULT_TERTIARY_COLOR;
-constexpr uint32_t DARK_TEXT_PRIMARY = 0xFFFFFF;
-constexpr uint32_t DARK_TEXT_MUTED = 0xA0A0A0;
-constexpr uint32_t DARK_TEXT_SOFT = 0xE8E8E8;
-constexpr uint32_t DARK_BORDER = correct_display_color(0x454545);
-constexpr uint32_t DARK_CONTROL_NEUTRAL = correct_display_color(0xBDBDBD);
-constexpr uint32_t DARK_OVERLAY = 0x000000;
-constexpr uint32_t DARK_TRACK_BACKGROUND = correct_display_color(0x333333);
+constexpr uint32_t DARK_TEXT_PRIMARY = 0x000000;
+constexpr uint32_t DARK_TEXT_MUTED = 0x5F5F5F;
+constexpr uint32_t DARK_TEXT_SOFT = 0x171717;
+constexpr uint32_t DARK_BORDER = correct_display_color(0xBABABA);
+constexpr uint32_t DARK_CONTROL_NEUTRAL = correct_display_color(0x424242);
+constexpr uint32_t DARK_OVERLAY = 0xFFFFFF;
+constexpr uint32_t DARK_TRACK_BACKGROUND = correct_display_color(0xCCCCCC);
 #ifndef ESPCONTROL_MAX_GRID_SLOTS
 #define ESPCONTROL_MAX_GRID_SLOTS 25
 #endif

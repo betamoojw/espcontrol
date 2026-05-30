@@ -45,6 +45,7 @@ function casesFromManifest() {
     return {
       name: `${orientation}-${slug}`,
       slug,
+      monochromeDisplay: !!(device.firmware && device.firmware.display && device.firmware.display.mode === "monochrome"),
       viewport: viewportFor(aspect.ratio),
       exerciseInteractions: slug === "guition-esp32-p4-jc8012p4a1",
     };
@@ -151,9 +152,9 @@ async function installFakeEventSource(page) {
 function seededEvents() {
   const events = [
     { id: "text-button_order", state: "1,2,3w,4,5" },
-    { id: "text-button_on_color", state: "FF8C00" },
-    { id: "text-button_off_color", state: "313131" },
-    { id: "text-sensor_card_color", state: "212121" },
+    { id: "text-button_on_color", state: "0073FF" },
+    { id: "text-button_off_color", state: "CECECE" },
+    { id: "text-sensor_card_color", state: "DEDEDE" },
     { id: "switch-screen__clock_bar", state: "ON", value: true },
     { id: "switch-screen__network_status_icon", state: "ON", value: true },
     { id: "select-screen__timezone", state: "Europe/London (GMT+0)", value: "Europe/London (GMT+0)", option: ["Europe/London (GMT+0)", "America/New_York (GMT-5)"] },
@@ -249,18 +250,26 @@ async function measureCoreLayout(page) {
   });
 }
 
-async function assertSettingsPage(page, label) {
+async function assertSettingsPage(page, label, options = {}) {
   await page.getByRole("tab", { name: "Settings" }).click();
   await page.waitForSelector("#sp-settings.sp-page.active");
   const settingsVisible = await page.locator("#sp-settings").isVisible();
   const appearanceVisible = await page.locator("text=Appearance").first().isVisible();
-  if (!(await page.locator("#sp-set-on-color").isVisible())) {
+  if (options.monochromeDisplay && !(await page.locator("text=E-paper theme: black and white").isVisible())) {
+    await page.getByText("Appearance", { exact: true }).click();
+  } else if (!options.monochromeDisplay && !(await page.locator("#sp-set-on-color").isVisible())) {
     await page.getByText("Appearance", { exact: true }).click();
   }
   const onColorVisible = await page.locator("#sp-set-on-color").isVisible();
+  const monoHintVisible = await page.locator("text=E-paper theme: black and white").isVisible();
   assert(settingsVisible, `${label}: settings page should be visible`);
   assert(appearanceVisible, `${label}: settings content should render`);
-  assert(onColorVisible, `${label}: appearance controls should render`);
+  if (options.monochromeDisplay) {
+    assert(!onColorVisible, `${label}: monochrome devices should hide colour pickers`);
+    assert(monoHintVisible, `${label}: monochrome appearance note should render`);
+  } else {
+    assert(onColorVisible, `${label}: appearance controls should render`);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!overflow, `${label}: settings page has horizontal overflow`);
   await page.getByRole("tab", { name: "Screen" }).click();
@@ -568,7 +577,7 @@ async function runCase(browser, testCase) {
 
     assert.deepStrictEqual(errors, [], `${testCase.name}: browser errors were reported`);
     assertNoLayoutBreaks(await measureCoreLayout(page), testCase.name);
-    await assertSettingsPage(page, testCase.name);
+    await assertSettingsPage(page, testCase.name, testCase);
     assertNoLayoutBreaks(await measureCoreLayout(page), `${testCase.name} after settings`);
     await assertEmptyCellSettings(page, testCase.name);
     if (testCase.exerciseInteractions) {
