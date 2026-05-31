@@ -22,7 +22,7 @@ lvgl:
           align: top_left
           x: 8
           y: 8
-          text_color: 0x000000
+          text_color: 0xFFFFFF
           hidden: true
 
       # Clock (top-center, updated every minute by time.yaml)
@@ -34,7 +34,7 @@ lvgl:
           x: 0
           y: 8
           text_align: center
-          text_color: 0x000000
+          text_color: 0xFFFFFF
           hidden: true
 
       # Network status (tappable, right side of clock bar)
@@ -59,7 +59,7 @@ lvgl:
                 text_font: font_mdi_19_network
                 align: center
                 text_align: center
-                text_color: 0x000000
+                text_color: 0xFFFFFF
           on_press:
             then:
               - script.execute: network_status_open_info
@@ -77,7 +77,7 @@ lvgl:
         pad_row: 10
         pad_column: 10
       width: 100%
-      bg_color: White
+      bg_color: Black
       bg_opa: cover
       pad_top: ${main_page_pad_top}
       pad_bottom: 5
