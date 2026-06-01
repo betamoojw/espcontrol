@@ -645,6 +645,7 @@ inline void grid_phase1(
   palette.off_val = has_off ? off_val : DEFAULT_OFF_COLOR;
   palette.sensor_val = has_sensor_color ? sensor_val : DEFAULT_TERTIARY_COLOR;
 
+  bump_ha_subscription_generation();
   reset_calendar_cards();
   reset_timezone_cards();
   weather_forecast_cancel_pending_requests();

@@ -170,6 +170,12 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                     and phase1_match.group(0).find("weather_forecast_cancel_pending_requests();")
                     < phase1_match.group(0).find("reset_weather_forecast_cards();")
                 ), f"{slug}: weather forecast callbacks must be cancelled before rebuilding visible card refs"
+                assert (
+                    phase1_match
+                    and "bump_ha_subscription_generation();" in phase1_match.group(0)
+                    and phase1_match.group(0).find("bump_ha_subscription_generation();")
+                    < phase1_match.group(0).find("reset_weather_forecast_cards();")
+                ), f"{slug}: stale current weather callbacks must be invalidated before rebuilding visible card refs"
                 assert "id(font_trmnl_value_32)->get_lv_font()" in sensors, (
                     f"{slug}: normal weather cards must use the TRMNL web preview value font"
                 )
