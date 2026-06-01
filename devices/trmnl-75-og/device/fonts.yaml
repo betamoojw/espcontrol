@@ -27,3 +27,13 @@ font:
     id: font_trmnl_mdi_26_icons
     size: 32
     glyphs: !include ../../../common/assets/icon_glyphs.yaml
+
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: font_trmnl_mdi_topbar_18_icons
+    size: 18
+    glyphs:
+      - "\U000F0200"
+      - "\U000F091F"
+      - "\U000F0922"
+      - "\U000F0925"
+      - "\U000F0928"

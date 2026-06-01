@@ -153,6 +153,12 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 assert "id: font_trmnl_label_14\n    size: 16\n    glyphs: \" !\\\"%()+,-./0123456789:°" in trmnl_fonts, (
                     f"{slug}: weather forecast unit font must include the degree symbol"
                 )
+                assert (
+                    "id: font_trmnl_mdi_topbar_18_icons\n    size: 18" in trmnl_fonts
+                    and '- "\\U000F0200"' in trmnl_fonts
+                    and '- "\\U000F0928"' in trmnl_fonts
+                    and "id: network_status_icon_label\n                text: \"\\U000F0928\"\n                text_font: font_trmnl_mdi_topbar_18_icons" in lvgl
+                ), f"{slug}: top bar network icon must match the generated web preview scale"
                 assert "id: button_${num}_unit_label\n              text: \"\"\n              text_font: font_trmnl_label_14" in (
                     tile_path.read_text(encoding="utf-8")
                 ), (
@@ -185,14 +191,15 @@ def test_setup_icon_glyphs() -> None:
 
 
 def test_trmnl_epaper_icon_literals() -> None:
-    glyphs = (ROOT / "common" / "assets" / "icon_glyphs.yaml").read_text(encoding="utf-8")
+    shared_glyphs = (ROOT / "common" / "assets" / "icon_glyphs.yaml").read_text(encoding="utf-8")
     trmnl_yaml = "\n".join(
         path.read_text(encoding="utf-8")
         for path in (ROOT / "devices" / "trmnl-75-og" / "device").glob("*.yaml")
     )
+    local_glyphs = set(re.findall(r'"(\\U[0-9A-Fa-f]{8})"', trmnl_yaml))
     missing_glyphs = sorted({
         glyph for glyph in re.findall(r'\\U[0-9A-Fa-f]{8}', trmnl_yaml)
-        if f'"{glyph.upper()}"' not in glyphs
+        if f'"{glyph.upper()}"' not in shared_glyphs and glyph.upper() not in local_glyphs
     })
     assert not missing_glyphs, f"TRMNL hard-coded icon glyphs missing from icon font: {', '.join(missing_glyphs)}"
 
