@@ -194,6 +194,13 @@ def test_weather_card_visual_matches_preview() -> None:
     assert 'set_weather_card_badge(s, "Weather Partly Cloudy")' not in cards, (
         "forecast weather device card should not render a visible forecast badge"
     )
+    assert 'lv_label_set_text(s.unit_lbl, display_temperature_unit_symbol())' in cards, (
+        "forecast weather placeholder should show the configured unit like the web preview"
+    )
+    config = (ROOT / "components" / "espcontrol" / "button_grid_config.h").read_text(encoding="utf-8")
+    assert 'lv_label_set_text(ref.unit_lbl, normalized_unit.c_str())' in config, (
+        "forecast weather unavailable state should keep showing the configured unit"
+    )
 
 
 def test_weather_card_mode_visibility_reset() -> None:

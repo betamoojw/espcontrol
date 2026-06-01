@@ -464,7 +464,7 @@ inline void setup_weather_forecast_card(BtnSlot &s, const ParsedCfg &p,
   lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
   lv_label_set_text(s.sensor_lbl, "--/--");
-  lv_label_set_text(s.unit_lbl, "");
+  lv_label_set_text(s.unit_lbl, display_temperature_unit_symbol());
   std::string day = weather_card_forecast_day(p);
   std::string label = p.label.empty()
     ? (day == "today" ? "Today" : "Tomorrow")

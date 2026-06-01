@@ -1183,7 +1183,8 @@ inline void apply_weather_forecast_card_text(const WeatherForecastCardRef &ref,
   if (!ref.value_lbl || !ref.unit_lbl) return;
   if (!valid) {
     lv_label_set_text(ref.value_lbl, "--/--");
-    lv_label_set_text(ref.unit_lbl, "");
+    std::string normalized_unit = weather_forecast_unit_symbol(unit);
+    lv_label_set_text(ref.unit_lbl, normalized_unit.c_str());
     return;
   }
   char buf[24];
