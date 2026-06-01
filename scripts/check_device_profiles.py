@@ -341,6 +341,26 @@ def test_weather_card_visual_matches_preview() -> None:
     assert 'if (normalized == "sunny-off") return "unavailable";' in config, (
         "current weather device cards should map the web unavailable weather icon name"
     )
+    for alias, state in (
+        ("clear-day", "sunny"),
+        ("foggy", "fog"),
+        ("partly-cloudy-day", "partlycloudy"),
+        ("partly-cloudy-night", "partlycloudy"),
+        ("possibly-rainy-day", "rainy"),
+        ("possibly-rainy-night", "rainy"),
+        ("possibly-sleet-day", "snowy-rainy"),
+        ("possibly-sleet-night", "snowy-rainy"),
+        ("possibly-snow-day", "snowy"),
+        ("possibly-snow-night", "snowy"),
+        ("possibly-thunderstorm-day", "lightning-rainy"),
+        ("possibly-thunderstorm-night", "lightning-rainy"),
+        ("sleet", "snowy-rainy"),
+        ("snow", "snowy"),
+        ("thunderstorm", "lightning"),
+    ):
+        assert f'if (normalized == "{alias}") return "{state}";' in config or (
+            f'normalized == "{alias}"' in config and f'return "{state}";' in config
+        ), f"current weather device cards should normalize provider alias {alias} to {state}"
     for state, icon_name, label in (
         ("cloudy-alert", "Weather Cloudy Alert", "Cloudy Alert"),
         ("dust", "Weather Dust", "Dust"),

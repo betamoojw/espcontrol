@@ -1097,9 +1097,20 @@ inline std::string normalize_weather_state(std::string state) {
   while (!normalized.empty() && normalized.back() == '-') normalized.pop_back();
   if (normalized.compare(0, 4, "mdi-") == 0) normalized = normalized.substr(4);
   if (normalized.compare(0, 8, "weather-") == 0) normalized = normalized.substr(8);
+  if (normalized == "clear-day") return "sunny";
+  if (normalized == "foggy") return "fog";
   if (normalized == "night") return "clear-night";
   if (normalized == "partly-cloudy") return "partlycloudy";
+  if (normalized == "partly-cloudy-day") return "partlycloudy";
+  if (normalized == "partly-cloudy-night") return "partlycloudy";
   if (normalized == "night-cloudy") return "night-partly-cloudy";
+  if (normalized == "possibly-rainy-day" || normalized == "possibly-rainy-night") return "rainy";
+  if (normalized == "possibly-sleet-day" || normalized == "possibly-sleet-night") return "snowy-rainy";
+  if (normalized == "possibly-snow-day" || normalized == "possibly-snow-night") return "snowy";
+  if (normalized == "possibly-thunderstorm-day" || normalized == "possibly-thunderstorm-night") return "lightning-rainy";
+  if (normalized == "sleet") return "snowy-rainy";
+  if (normalized == "snow") return "snowy";
+  if (normalized == "thunderstorm") return "lightning";
   if (normalized == "sunny-off") return "unavailable";
   return normalized;
 }
