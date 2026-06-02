@@ -109,6 +109,7 @@ var CSS =
   ".sp-empty-cell{border:2px dashed rgba(255,255,255,.15);background:transparent;" +
   "border-radius:var(--empty-r);display:flex;align-items:center;justify-content:center;" +
   "cursor:pointer;transition:border-color .2s,background-color .2s}" +
+  ".sp-info-only-hidden{border-color:transparent!important;cursor:default;pointer-events:none}" +
   ".sp-empty-cell:hover{border-color:var(--accent)}" +
   ".sp-drag-active .sp-empty-cell:hover{border-color:rgba(255,255,255,.15)}" +
   ".sp-add-pill{display:inline-flex;align-items:center;justify-content:center;min-width:8cqw;" +

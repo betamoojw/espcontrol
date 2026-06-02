@@ -42,6 +42,7 @@ class StringRef {
 struct lv_obj_t {};
 using lv_coord_t = int;
 using lv_style_selector_t = int;
+using lv_color_t = int;
 constexpr int LV_PART_MAIN = 0;
 constexpr int LV_STATE_CHECKED = 1;
 constexpr int LV_STATE_PRESSED = 2;
@@ -59,12 +60,17 @@ inline int lv_pct(int value) { return value; }
 inline void lv_obj_set_style_transform_scale_x(lv_obj_t *, int, int) {}
 inline void lv_obj_set_style_transform_scale_y(lv_obj_t *, int, int) {}
 inline void lv_obj_set_style_bg_color(lv_obj_t *, int, lv_style_selector_t) {}
+inline void lv_obj_set_style_text_color(lv_obj_t *, lv_color_t, lv_style_selector_t) {}
+inline lv_color_t lv_obj_get_style_text_color(lv_obj_t *, lv_style_selector_t) { return 0; }
 inline void lv_obj_set_style_opa(lv_obj_t *, int, int) {}
 inline void lv_obj_set_style_text_opa(lv_obj_t *, int, int) {}
 inline void lv_obj_add_state(lv_obj_t *, int) {}
 inline void lv_obj_clear_state(lv_obj_t *, int) {}
+inline bool lv_obj_has_state(lv_obj_t *, int) { return false; }
 inline void lv_obj_add_flag(lv_obj_t *, int) {}
 inline void lv_obj_clear_flag(lv_obj_t *, int) {}
+inline uint32_t lv_obj_get_child_cnt(lv_obj_t *) { return 0; }
+inline lv_obj_t *lv_obj_get_child(lv_obj_t *, uint32_t) { return nullptr; }
 inline void lv_label_set_long_mode(lv_obj_t *, int) {}
 inline void lv_obj_set_width(lv_obj_t *, int) {}
 inline void lv_label_set_text(lv_obj_t *, const char *) {}

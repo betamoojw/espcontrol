@@ -168,6 +168,12 @@ assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true,
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), false);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), false);
+const infoOnlyPickerKeys = Array.from(hooks.buttonTypePickerKeysForInfoOnly(true));
+assert(infoOnlyPickerKeys.includes("sensor"), "info-only displays can still add sensor cards");
+assert(infoOnlyPickerKeys.includes("weather"), "info-only displays can still add weather cards");
+assert(!infoOnlyPickerKeys.includes(""), "info-only displays hide switch controls");
+assert(!infoOnlyPickerKeys.includes("subpage"), "info-only displays hide subpage cards");
+assert(!infoOnlyPickerKeys.includes("media"), "info-only displays hide media controls");
 assert(
   hooks.buttonTypePreviewFor("alarm", { label: "Alarm", icon: "Security", type: "alarm" }).iconHtml.includes("mdi-shield-off"),
   "alarm preview defaults to the status icon"

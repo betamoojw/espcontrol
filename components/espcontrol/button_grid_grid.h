@@ -18,6 +18,7 @@ struct GridConfig {
   int cols;
   bool width_compensation_vertical = false;
   bool wrap_tall_labels;
+  bool info_only = false;
   bool subpage_chevrons_enabled = true;
   int width_compensation_percent = 100;
   int volume_width_compensation_percent = 100;
@@ -174,6 +175,7 @@ inline bool card_slot_static_child(const BtnSlot &s, lv_obj_t *child) {
 
 inline void reset_card_slot_dynamic_children(BtnSlot &s) {
   if (!s.btn) return;
+  lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_state(s.btn, LV_STATE_CHECKED);
   sync_card_checked_text_color(s.btn);
   lv_obj_clear_state(s.btn, LV_STATE_DISABLED);
@@ -185,6 +187,16 @@ inline void reset_card_slot_dynamic_children(BtnSlot &s) {
     if (!child || card_slot_static_child(s, child)) continue;
     lv_obj_del(child);
   }
+}
+
+inline bool info_only_hidden_card_type(const ParsedCfg &p) {
+  if (p.type == "sensor" || p.type == "text_sensor" ||
+      p.type == "door_window" || p.type == "presence" ||
+      p.type == "calendar" || p.type == "clock" || p.type == "timezone" ||
+      p.type == "weather" || p.type == "weather_forecast") {
+    return false;
+  }
+  return true;
 }
 
 inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
@@ -209,6 +221,12 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
     s, p.type == "subpage" && cfg.subpage_chevrons_enabled,
     cfg.subpage_chevron_x, cfg.subpage_chevron_y,
     cfg.subpage_chevron_text_width_percent);
+
+  if (cfg.info_only && info_only_hidden_card_type(p)) {
+    lv_obj_add_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
+    return;
+  }
 
   if (is_text_sensor_card(p)) {
     setup_text_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
@@ -793,6 +811,7 @@ inline void grid_phase2(
     int row_span = order.row_span[idx - 1] > 0 ? order.row_span[idx - 1] : 1;
     int col_span = order.col_span[idx - 1] > 0 ? order.col_span[idx - 1] : 1;
     bool is_1x1_card = row_span == 1 && col_span == 1;
+    if (cfg.info_only && info_only_hidden_card_type(p)) continue;
     if (p.type == "push") {
       register_ha_control_availability(s.btn, s.btn);
       continue;
@@ -1144,6 +1163,8 @@ inline void grid_phase2(
           s.unit_lbl, p.unit);
     }
   }
+
+  if (cfg.info_only) return;
 
   // --- Subpage creation ---
   // Heap-allocated grid descriptors (never freed -- display lifetime)

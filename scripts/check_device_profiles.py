@@ -88,6 +88,8 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
         assert f'device_slug: "{slug}"' in package, f"{slug}: packages.yaml missing device slug"
         assert f'firmware_manifest_slug: "{slug}"' in package, f"{slug}: packages.yaml missing manifest slug"
         assert f"cfg.num_slots = {profile['slots']};" in sensors, f"{slug}: sensors.yaml missing slot count"
+        if profile["firmware"].get("display", {}).get("infoOnly"):
+            assert "cfg.info_only = true;" in sensors, f"{slug}: sensors.yaml missing info-only grid flag"
 
 
 def test_setup_icon_glyphs() -> None:

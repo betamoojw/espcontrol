@@ -116,6 +116,13 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       state.developerExperimentalFeatures = oldExperimental;
       return visible;
     },
+    buttonTypePickerKeysForInfoOnly: function (enabled, selectedTypeKey) {
+      var oldInfoOnly = CFG.infoOnly;
+      CFG.infoOnly = !!enabled;
+      var keys = buttonTypePickerKeys(false, selectedTypeKey);
+      CFG.infoOnly = oldInfoOnly;
+      return keys;
+    },
     buttonTypesMissingCardMetadata: function () {
       var missing = [];
       for (var key in BUTTON_TYPES) {

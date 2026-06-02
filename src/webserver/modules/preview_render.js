@@ -18,8 +18,24 @@ function buttonTypeDisabledForDevice(key) {
   return disabled.indexOf(key || "") !== -1;
 }
 
+function buttonTypeInfoOnlyVisible(key) {
+  if (!CFG.infoOnly) return true;
+  return [
+    "sensor",
+    "calendar",
+    "clock",
+    "door_window",
+    "presence",
+    "timezone",
+    "weather",
+    "weather_forecast",
+  ].indexOf(key || "") !== -1;
+}
+
 function buttonTypePickerOptionList(isSub, selectedTypeKey) {
   var typeOpts = [];
+  var selectedUnsupported = null;
+  var hasSelectedType = selectedTypeKey !== null && selectedTypeKey !== undefined;
   var selectedHiddenExperimental = null;
   for (var k in BUTTON_TYPES) {
     var td = BUTTON_TYPES[k];
@@ -28,6 +44,12 @@ function buttonTypePickerOptionList(isSub, selectedTypeKey) {
     var experimental = buttonTypeRegistryValue(td, "experimental", "");
     var label = buttonTypeRegistryValue(td, "label", td.key || "Toggle");
     if (buttonTypeDisabledForDevice(td.key) || buttonTypeDisabledForDevice(pickerKey)) continue;
+    if (!buttonTypeInfoOnlyVisible(td.key) || (pickerKey && !buttonTypeInfoOnlyVisible(pickerKey))) {
+      if (hasSelectedType && (selectedTypeKey === td.key || (pickerKey && selectedTypeKey === pickerKey))) {
+        selectedUnsupported = { key: selectedTypeKey, label: label };
+      }
+      continue;
+    }
     if (pickerKey && pickerKey !== td.key) continue;
     if (isSub && !allowInSubpage) continue;
     if (td.isAvailable && !td.isAvailable({ isSub: isSub }) && selectedTypeKey !== td.key) continue;
@@ -47,6 +69,13 @@ function buttonTypePickerOptionList(isSub, selectedTypeKey) {
       disabled: true,
     });
   }
+  if (selectedUnsupported) {
+    typeOpts.push({
+      key: selectedUnsupported.key,
+      label: selectedUnsupported.label + " (not available)",
+      disabled: true,
+    });
+  }
   typeOpts.sort(function (a, b) {
     return a.label.localeCompare(b.label);
   });
@@ -54,13 +83,13 @@ function buttonTypePickerOptionList(isSub, selectedTypeKey) {
 }
 
 function buttonTypePickerKeys(isSub, selectedTypeKey) {
-  return buttonTypePickerOptionList(!!isSub, selectedTypeKey || "").map(function (opt) {
+  return buttonTypePickerOptionList(!!isSub, selectedTypeKey).map(function (opt) {
     return opt.key;
   });
 }
 
 function buttonTypeVisibleInPicker(key, isSub) {
-  return buttonTypePickerKeys(!!isSub, "").indexOf(key) >= 0;
+  return buttonTypePickerKeys(!!isSub, null).indexOf(key) >= 0;
 }
 
 function hiddenExperimentalButtonTypeDef(typeDef) {
@@ -114,6 +143,13 @@ function renderPreview() {
           state.settingsDraft.isSub === c.isSub &&
           (!c.isSub || state.settingsDraft.homeSlot === state.editingSubpage)) {
         b = state.settingsDraft.button;
+      }
+      if (!buttonTypeInfoOnlyVisible(b.type || "")) {
+        var hidden = document.createElement("div");
+        hidden.className = "sp-empty-cell sp-info-only-hidden";
+        hidden.setAttribute("data-pos", pos);
+        main.appendChild(hidden);
+        continue;
       }
       var iconName = resolveIcon(b);
       var label = b.label || b.entity || "Configure";

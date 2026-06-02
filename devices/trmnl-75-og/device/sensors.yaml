@@ -415,6 +415,7 @@ script:
           cfg.num_slots = 12;
           cfg.cols = 4;
           cfg.subpage_chevrons_enabled = false;
+          cfg.info_only = true;
           cfg.wrap_tall_labels = true;
           cfg.label_lines = 2;
           cfg.label_lines_tall = 3;

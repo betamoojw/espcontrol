@@ -685,6 +685,7 @@
         "firmwareGrid": "3x4"
       },
       "web": {
+        "infoOnly": true,
         "previewTheme": "epaper",
         "dragMode": "swap",
         "dragAnimation": false,
@@ -749,6 +750,7 @@
         },
         "display": {
           "mode": "monochrome",
+          "infoOnly": true,
           "wrapTallLabels": true
         },
         "package": {
