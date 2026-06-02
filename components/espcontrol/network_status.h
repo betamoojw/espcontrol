@@ -9,10 +9,12 @@
 #include "esphome/components/network/ip_address.h"
 #include "esphome/components/network/util.h"
 
+constexpr const char *NETWORK_ICON_WIFI_OUTLINE = "\U000F092F";
 constexpr const char *NETWORK_ICON_WIFI_1 = "\U000F091F";
 constexpr const char *NETWORK_ICON_WIFI_2 = "\U000F0922";
 constexpr const char *NETWORK_ICON_WIFI_3 = "\U000F0925";
 constexpr const char *NETWORK_ICON_WIFI_4 = "\U000F0928";
+constexpr const char *NETWORK_ICON_WIFI_OFF_OUTLINE = "\U000F092E";
 constexpr const char *NETWORK_ICON_ETHERNET = "\U000F0200";
 
 struct NetworkStatusModalUi {
@@ -31,14 +33,19 @@ inline NetworkStatusModalUi &network_status_modal_ui() {
 }
 
 inline const char *network_status_wifi_icon(float pct) {
-  if (!std::isfinite(pct) || pct < 25.0f) return NETWORK_ICON_WIFI_1;
+  if (!std::isfinite(pct) || pct <= 0.0f) return NETWORK_ICON_WIFI_OUTLINE;
+  if (pct < 25.0f) return NETWORK_ICON_WIFI_1;
   if (pct < 50.0f) return NETWORK_ICON_WIFI_2;
   if (pct < 75.0f) return NETWORK_ICON_WIFI_3;
   return NETWORK_ICON_WIFI_4;
 }
 
-inline void network_status_set_wifi_icon(lv_obj_t *label, float pct) {
+inline void network_status_set_wifi_icon(lv_obj_t *label, float pct, bool connected) {
   if (!label) return;
+  if (!connected) {
+    lv_label_set_text(label, NETWORK_ICON_WIFI_OFF_OUTLINE);
+    return;
+  }
   lv_label_set_text(label, network_status_wifi_icon(pct));
 }
 

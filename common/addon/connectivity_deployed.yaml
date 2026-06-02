@@ -9,6 +9,7 @@ wifi:
   power_save_mode: none
   reboot_timeout: 30min
   on_connect:
+    - script.execute: network_status_refresh
     - script.stop: wifi_reconnect_flow
     - script.stop: setup_screen_dim
     - lambda: |-
@@ -30,6 +31,7 @@ wifi:
               else:
                 - script.execute: navigate_after_api
   on_disconnect:
+    - script.execute: network_status_refresh
     - if:
         condition:
           lambda: 'return !id(boot_grace_period);'

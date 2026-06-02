@@ -37,7 +37,7 @@ lvgl:
           widgets:
             - label:
                 id: network_status_icon_label
-                text: "\U000F0928"
+                text: "\U000F092E"
                 text_font: font_icon_main
                 align: center
                 text_align: center

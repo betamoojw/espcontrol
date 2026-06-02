@@ -106,6 +106,12 @@ wifi:
   use_psram: true
   ap:
     ap_timeout: 90s
+  on_connect:
+    - script.execute: network_status_refresh
+    - script.execute: trmnl_refresh_display_when_ready
+  on_disconnect:
+    - script.execute: network_status_refresh
+    - script.execute: trmnl_refresh_display_when_ready
 
 captive_portal:
 
