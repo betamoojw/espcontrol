@@ -316,7 +316,6 @@ time:
         seconds: 0
         then:
           - script.execute: time_update
-          - script.execute: trmnl_dashboard_content_changed
 
   - platform: homeassistant
     id: homeassistant_time
