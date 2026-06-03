@@ -1057,11 +1057,6 @@ function syncCoverArtSubpageOptions() {
   var current = state.coverArtMediaSubpageTarget || "";
   select.innerHTML = "";
 
-  var placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "First media subpage";
-  select.appendChild(placeholder);
-
   var foundCurrent = current === "";
   for (var i = 0; i < state.buttons.length; i++) {
     var b = state.buttons[i] || {};
@@ -1070,7 +1065,7 @@ function syncCoverArtSubpageOptions() {
     var label = (b.label || "").trim() || ("Subpage " + slot);
     var opt = document.createElement("option");
     opt.value = "slot:" + slot;
-    opt.textContent = label + " (Slot " + slot + ")";
+    opt.textContent = label;
     if (opt.value === current) foundCurrent = true;
     select.appendChild(opt);
   }

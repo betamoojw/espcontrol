@@ -183,7 +183,7 @@ var ENTITY_CATALOG = {
     },
     "screen_saver_track_overlay_duration": {
       "domain": "number",
-      "name": "Screen Saver: Track Overlay Duration",
+      "name": "Screen Saver: Show Track Overlay",
       "objectIds": [
         "screen_saver__track_overlay_duration",
         "screen_saver_track_overlay_duration",
