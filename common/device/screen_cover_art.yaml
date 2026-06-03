@@ -18,6 +18,12 @@ globals:
   - id: cover_art_url
     type: std::string
     initial_value: '""'
+  - id: cover_art_retry_url
+    type: std::string
+    initial_value: '""'
+  - id: cover_art_retry_count
+    type: int
+    initial_value: '0'
   - id: cover_art_image_available
     type: bool
     initial_value: 'false'
@@ -261,9 +267,13 @@ script:
   - id: cover_art_apply_downloaded_image
     mode: restart
     then:
+      - script.stop: cover_art_retry_download
       - globals.set:
           id: cover_art_image_available
           value: 'true'
+      - lambda: |-
+          id(cover_art_retry_url) = id(cover_art_url);
+          id(cover_art_retry_count) = 0;
       - lvgl.image.update:
           id: cover_art_image_widget
           src: cover_art_downloaded_image
@@ -292,9 +302,14 @@ script:
     mode: restart
     then:
       - lambda: |-
-          ESP_LOGW("cover_art", "Artwork download failed");
-          id(cover_art_url).clear();
+          if (id(cover_art_retry_count) < 4) {
+            ESP_LOGW("cover_art", "Artwork download failed, scheduling retry %d/4",
+                     id(cover_art_retry_count) + 1);
+          } else {
+            ESP_LOGW("cover_art", "Artwork download failed, retries exhausted");
+          }
       - script.execute: cover_art_show_black_screen
+      - script.execute: cover_art_retry_download
 
   - id: cover_art_download
     mode: restart
@@ -305,10 +320,49 @@ script:
           then:
             - script.execute: cover_art_show_black_screen
             - lambda: |-
+                if (id(cover_art_url) != id(cover_art_retry_url)) {
+                  id(cover_art_retry_url) = id(cover_art_url);
+                  id(cover_art_retry_count) = 0;
+                }
                 ESP_LOGI("cover_art", "Downloading artwork URL (%u chars)", (unsigned) id(cover_art_url).size());
             - artwork_image.set_url:
                 id: cover_art_downloaded_image
                 url: !lambda 'return id(cover_art_url);'
+
+  - id: cover_art_retry_download
+    mode: restart
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return !id(cover_art_url).empty() &&
+                     id(cover_art_url) == id(cover_art_retry_url) &&
+                     id(cover_art_retry_count) < 4;
+          then:
+            - delay: !lambda |-
+                static const uint32_t delays[] = {1000, 2000, 5000, 10000};
+                int attempt = id(cover_art_retry_count);
+                if (attempt < 0) attempt = 0;
+                if (attempt > 3) attempt = 3;
+                return delays[attempt];
+            - if:
+                condition:
+                  lambda: |-
+                    return !id(cover_art_url).empty() &&
+                           id(cover_art_url) == id(cover_art_retry_url) &&
+                           id(cover_art_retry_count) < 4;
+                then:
+                  - lambda: |-
+                      id(cover_art_retry_count)++;
+                      ESP_LOGI("cover_art", "Retrying artwork download %d/4", id(cover_art_retry_count));
+                  - artwork_image.set_url:
+                      id: cover_art_downloaded_image
+                      url: !lambda 'return id(cover_art_url);'
+          else:
+            - lambda: |-
+                if (!id(cover_art_url).empty()) {
+                  ESP_LOGW("cover_art", "Artwork download retries exhausted");
+                }
 
   - id: cover_art_sync_track_text
     mode: restart
@@ -604,6 +658,9 @@ script:
               if (path.empty() || path == "unknown" || path == "unavailable") {
                 ESP_LOGI("cover_art", "Artwork entity_picture unavailable");
                 id(cover_art_url).clear();
+                id(cover_art_retry_url).clear();
+                id(cover_art_retry_count) = 0;
+                id(cover_art_retry_download).stop();
                 id(cover_art_show_black_screen).execute();
                 return;
               }
