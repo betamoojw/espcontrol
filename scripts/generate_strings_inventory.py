@@ -306,7 +306,7 @@ def extract_json_strings(strings: dict[str, set[str]]) -> None:
 
 
 def build_inventory(strings: dict[str, set[str]]) -> dict[str, object]:
-    entries: dict[str, dict[str, object]] = {}
+    entries: dict[str, str] = {}
     used_keys: set[str] = set()
     for value in sorted(strings, key=lambda item: item.lower()):
         key = slugify(value)
@@ -316,10 +316,7 @@ def build_inventory(strings: dict[str, set[str]]) -> dict[str, object]:
             key = f"{base}_{suffix}"
             suffix += 1
         used_keys.add(key)
-        entries[key] = {
-            "value": value,
-            "sources": sorted(strings[value]),
-        }
+        entries[key] = value
     return {
         "$schema": "https://espcontrol.local/schemas/source-strings-v1.json",
         "language": "en",
