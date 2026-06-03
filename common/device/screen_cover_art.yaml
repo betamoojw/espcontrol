@@ -18,6 +18,9 @@ globals:
   - id: cover_art_url
     type: std::string
     initial_value: '""'
+  - id: cover_art_home_assistant_base_url
+    type: std::string
+    initial_value: '"http://192.168.1.31:8123"'
   - id: cover_art_title
     type: std::string
     initial_value: '""'
@@ -48,6 +51,19 @@ globals:
 
 api:
   on_client_connected:
+    - lambda: |-
+        if (client_info.find("Home Assistant") == std::string::npos || client_address.empty()) return;
+        std::string host = client_address;
+        if (host.rfind("::ffff:", 0) == 0) host = host.substr(7);
+        if (host.find('.') != std::string::npos) {
+          size_t port_separator = host.find(':');
+          if (port_separator != std::string::npos) host = host.substr(0, port_separator);
+        } else if (host.find(':') != std::string::npos && host.front() != '[') {
+          host = "[" + host + "]";
+        }
+        id(cover_art_home_assistant_base_url) = "http://" + host + ":8123";
+        ESP_LOGI("cover_art", "Using Home Assistant artwork base URL: %s",
+                 id(cover_art_home_assistant_base_url).c_str());
     - delay: 2s
     - globals.set:
         id: cover_art_subscribed_entity
@@ -514,10 +530,8 @@ script:
                 std::string url = path;
                 if (!(path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0)) {
                   std::string base = id(cover_art_home_assistant_url).state;
-                  if (base.empty()) {
-                    ESP_LOGW("cover_art", "Relative artwork URL needs Screen Saver: Home Assistant URL");
-                    return;
-                  }
+                  if (base.empty()) base = id(cover_art_home_assistant_base_url);
+                  if (base.empty()) base = "http://192.168.1.31:8123";
                   while (!base.empty() && base.back() == '/') base.pop_back();
                   url = base + path;
                 }
