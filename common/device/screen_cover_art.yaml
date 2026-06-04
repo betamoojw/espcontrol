@@ -1037,7 +1037,7 @@ script:
           id(cover_art_fallback_url).clear();
 
           auto normalize_picture_url = [](esphome::StringRef picture) -> std::string {
-            constexpr size_t COVER_ART_URL_MAX_LEN = 1024;
+            constexpr size_t COVER_ART_URL_MAX_LEN = 4096;
             std::string path = string_ref_limited(picture, COVER_ART_URL_MAX_LEN);
             if (path.empty() || path == "unknown" || path == "unavailable") return "";
             if (path.rfind("http://", 0) == 0 || path.rfind("https://", 0) == 0) return path;
@@ -1055,7 +1055,7 @@ script:
                 request_id != id(cover_art_request_id)) {
               return;
             }
-            constexpr size_t COVER_ART_URL_MAX_LEN = 1024;
+            constexpr size_t COVER_ART_URL_MAX_LEN = 4096;
             std::string path = string_ref_limited(picture, COVER_ART_URL_MAX_LEN);
             std::string url = normalize_picture_url(picture);
             if (local) {
