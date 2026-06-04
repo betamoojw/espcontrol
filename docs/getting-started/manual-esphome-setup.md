@@ -75,13 +75,18 @@ espcontrol_web_username: "admin"
 espcontrol_web_password: "choose-a-strong-password"
 ```
 
-Then add this block to your EspControl device YAML, at the same level as `wifi:` and `packages:`:
+Then add the `web_server_auth` package to your EspControl device YAML:
 
 ```yaml
-web_server:
-  auth:
-    username: !secret espcontrol_web_username
-    password: !secret espcontrol_web_password
+packages:
+  setup:
+    url: https://github.com/jtenniswood/espcontrol/
+    file: devices/guition-esp32-p4-jc1060p470/packages.yaml
+    refresh: 1sec
+  web_server_auth:
+    url: https://github.com/jtenniswood/espcontrol/
+    file: common/addon/web_server_auth.yaml
+    refresh: 1sec
 ```
 
 After saving, validate the device and install the firmware again. The next time you open the display address in a browser, it will ask for the username and password.
