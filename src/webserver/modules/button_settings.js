@@ -200,17 +200,6 @@ function renderClockBarSettings(forceOpen) {
       state.outdoorEntity, "outdoor_temp_entity", "sensor.outdoor_temperature");
     renderClockBarEntityControls(panel, "indoor", "Indoor Temperature", state._indoorOn,
       state.indoorEntity, "indoor_temp_entity", "sensor.indoor_temperature");
-    panel.appendChild(clockBarSelectField("Temperature Unit", "sp-clockbar-temperature-unit", [
-      ["Auto", "Auto (from timezone)"],
-      ["\u00B0C", "Centigrade (\u00B0C)"],
-      ["\u00B0F", "Fahrenheit (\u00B0F)"],
-    ], normalizeTemperatureUnit(state.temperatureUnit), function () {
-      state.temperatureUnit = normalizeTemperatureUnit(this.value);
-      postSelect(entityName("screen_temperature_unit"), state.temperatureUnit);
-      if (els.setTemperatureUnit) els.setTemperatureUnit.value = state.temperatureUnit;
-      updateTempPreview();
-      renderPreview();
-    }));
     var degreeSymbol = toggleRow("Show Degree Symbol", "sp-clockbar-degree-symbol", state.temperatureDegreeSymbolOn);
     panel.appendChild(degreeSymbol.row);
     degreeSymbol.input.addEventListener("change", function () {
