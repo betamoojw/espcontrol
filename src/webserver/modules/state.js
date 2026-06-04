@@ -143,6 +143,7 @@ var state = {
   configLocked: false,
   configLockReason: "",
   clockBarSelectedItem: "",
+  clockBarDragItem: "",
   clockBarTempRestoreIndoor: false,
   clockBarTempRestoreOutdoor: true,
   subpages: {},

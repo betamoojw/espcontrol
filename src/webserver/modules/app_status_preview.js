@@ -97,7 +97,14 @@ var CLOCK_BAR_DEFAULT_SECTION = {
   time: "middle",
   network: "right",
 };
+var CLOCK_BAR_DEFAULT_LAYOUT = {
+  left: ["temperature"],
+  middle: ["time"],
+  right: ["network"],
+};
 var CLOCK_BAR_ITEMS = ["temperature", "time", "network"];
+var CLOCK_BAR_LAYOUT_STORAGE_PREFIX = "espcontrol.clockBarLayout.";
+var clockBarLayoutLoaded = false;
 
 function clockBarItemActive(item) {
   if (item === "temperature") return clockBarTemperatureActive();
@@ -124,8 +131,45 @@ function clockBarItemIcon(item) {
   return "plus";
 }
 
+function clockBarLayoutStorageKey() {
+  return CLOCK_BAR_LAYOUT_STORAGE_PREFIX + (typeof DEVICE_ID === "string" ? DEVICE_ID : "default");
+}
+
+function cloneClockBarLayout(layout) {
+  var out = { left: [], middle: [], right: [] };
+  CLOCK_BAR_SECTIONS.forEach(function (section) {
+    (layout && layout[section] || []).forEach(function (item) {
+      if (CLOCK_BAR_ITEMS.indexOf(item) !== -1 && out[section].indexOf(item) === -1) out[section].push(item);
+    });
+  });
+  return out;
+}
+
+function loadClockBarLayout() {
+  if (clockBarLayoutLoaded && state.clockBarLayout) return state.clockBarLayout;
+  var loaded = null;
+  try {
+    if (window.localStorage) loaded = JSON.parse(window.localStorage.getItem(clockBarLayoutStorageKey()) || "null");
+  } catch (_) {
+    loaded = null;
+  }
+  state.clockBarLayout = cloneClockBarLayout(loaded || state.clockBarLayout || CLOCK_BAR_DEFAULT_LAYOUT);
+  clockBarLayoutLoaded = true;
+  return state.clockBarLayout;
+}
+
+function saveClockBarLayout() {
+  if (!state.clockBarLayout) return;
+  clockBarLayoutLoaded = true;
+  try {
+    if (window.localStorage) {
+      window.localStorage.setItem(clockBarLayoutStorageKey(), JSON.stringify(cloneClockBarLayout(state.clockBarLayout)));
+    }
+  } catch (_) {}
+}
+
 function normalizeClockBarLayout() {
-  var current = state.clockBarLayout || {};
+  var current = loadClockBarLayout();
   var next = { left: [], middle: [], right: [] };
   var seen = {};
   CLOCK_BAR_SECTIONS.forEach(function (section) {
@@ -151,6 +195,7 @@ function moveClockBarItem(item, section) {
   });
   layout[section].push(item);
   state.clockBarLayout = layout;
+  saveClockBarLayout();
   updateClockBarItemUi();
 }
 
@@ -160,6 +205,7 @@ function removeClockBarItemFromLayout(item) {
     layout[section] = layout[section].filter(function (entry) { return entry !== item; });
   });
   state.clockBarLayout = layout;
+  saveClockBarLayout();
 }
 
 function clockBarItemsAvailableToAdd(section) {
