@@ -1068,9 +1068,13 @@ script:
             }
 
             std::string chosen = id(cover_art_pending_local_url);
+            std::string alternate;
             const bool waiting_for_pair = id(cover_art_artwork_pending_count) > 0;
             if (chosen.empty()) {
               chosen = id(cover_art_pending_remote_url);
+            } else if (!id(cover_art_pending_remote_url).empty() &&
+                       id(cover_art_pending_remote_url) != chosen) {
+              alternate = id(cover_art_pending_remote_url);
             }
             if (!chosen.empty()) {
               std::string fallback;
@@ -1080,6 +1084,10 @@ script:
                          (unsigned) capped.size());
                 fallback = chosen;
                 chosen = capped;
+              }
+              if (fallback.empty() && !alternate.empty()) {
+                fallback = esphome::artwork_image::cap_artwork_url(alternate, ${cover_art_size});
+                if (fallback == chosen) fallback.clear();
               }
               id(cover_art_fallback_url) = fallback;
             }
