@@ -947,7 +947,7 @@ script:
 
             std::string chosen = id(cover_art_pending_local_url);
             const bool waiting_for_pair = id(cover_art_artwork_pending_count) > 0;
-            if (chosen.empty() && !waiting_for_pair) {
+            if (chosen.empty()) {
               chosen = id(cover_art_pending_remote_url);
             }
 
