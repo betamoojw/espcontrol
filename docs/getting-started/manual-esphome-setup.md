@@ -155,10 +155,10 @@ If ESPHome cannot access the USB port directly, choose **Manual download** inste
 2. Add it to Home Assistant when the ESPHome integration discovers it.
 3. Open the display address in a browser, for example `http://192.168.1.42`.
 4. Configure cards, colours, brightness, and other settings from the built-in web page.
-5. Follow [Home Assistant Actions](/getting-started/home-assistant-actions) so the display is allowed to control your Home Assistant devices.
+5. Follow [Enable Actions](/getting-started/home-assistant-actions) so the display is allowed to control your Home Assistant devices.
 
 ## Updating Later
 
 Because the package uses `refresh: 1sec`, ESPHome checks GitHub for EspControl updates each time it compiles. To update manually, open ESPHome Device Builder and run **Install** again. If the display is online, use OTA so you do not need to reconnect USB.
 
-Next: [Home Assistant Actions](/getting-started/home-assistant-actions)
+Next: [Enable Actions](/getting-started/home-assistant-actions)

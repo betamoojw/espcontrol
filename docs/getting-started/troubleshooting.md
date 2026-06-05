@@ -26,7 +26,7 @@ description:
 ## Home Assistant Doesn't Respond to Button Presses
 
 - If the display shows your Home Assistant devices but nothing happens when you tap buttons, switches, lights, scripts, scenes, or other controls, Home Assistant actions probably need to be enabled for the display.
-- Follow the [Home Assistant Actions](/getting-started/home-assistant-actions) guide and make sure **Allow the device to perform Home Assistant actions** is turned on.
+- Follow the [Enable Actions](/getting-started/home-assistant-actions) guide and make sure **Allow the device to perform Home Assistant actions** is turned on.
 
 ## The Web Page Looks Broken or Unstyled
 
