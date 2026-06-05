@@ -1909,7 +1909,7 @@ inline void grid_phase3(
       ha_subscribe_state(
         clock_bar_entities[i],
         std::function<void(esphome::StringRef)>(
-          [i, temp_label](esphome::StringRef state) {
+          [i](esphome::StringRef state) {
             float val = 0.0f;
             if (parse_float_ref(state, val)) {
               std::vector<float> &values = clock_bar_temperature_values();
