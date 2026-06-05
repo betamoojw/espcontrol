@@ -9,7 +9,7 @@ description:
 Flash the EspControl firmware to your supported ESP32 display directly from your browser — no special software or technical knowledge required.
 
 ::: tip Prefer ESPHome?
-If you want to compile and install the firmware yourself, use the [manual ESPHome setup guide](/getting-started/manual-esphome-setup).
+If you want to compile and install the firmware yourself, use the [Manual Setup guide](/getting-started/manual-esphome-setup).
 :::
 
 ## Flash the Firmware
