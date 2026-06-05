@@ -365,7 +365,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Install', link: '/getting-started/install' },
-      { text: 'Docs', link: '/' },
+      { text: 'Issues', link: 'https://github.com/jtenniswood/espcontrol/issues' },
       { text: 'GitHub', link: 'https://github.com/jtenniswood/espcontrol' },
     ],
 
