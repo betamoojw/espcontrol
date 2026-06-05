@@ -233,15 +233,21 @@ select:
       - "da"
       - "de"
       - "es"
+      - "fi"
       - "fr"
+      - "hu"
       - "it"
       - "nb"
       - "nl"
       - "pl"
       - "pt"
       - "pt-br"
+      - "ro"
       - "sk"
+      - "sl"
       - "sv"
+      - "tr"
+      - "uk"
     web_server:
       sorting_group_id: sg_brightness
     on_value:
