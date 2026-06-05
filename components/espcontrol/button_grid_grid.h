@@ -858,10 +858,16 @@ inline void grid_phase2(
       if (p.label.empty())
         subscribe_friendly_name(s.text_lbl, p.entity);
 
-      subscribe_toggle_state(s.btn, s.icon_lbl, s.sensor_container,
-        &has_sensor[idx - 1], &sensor_text_mode[idx - 1],
-        &has_icon_on[idx - 1], &icon_off_cp[idx - 1], &icon_on_cp[idx - 1],
-        nullptr, p.entity, false);
+      if (normalize_subpage_kind(cfg_option_value(p.options, "subpage_kind")) == "climate") {
+        subscribe_climate_subpage_parent_indicator(
+          p.entity, s.btn, s.icon_lbl, has_icon_on[idx - 1],
+          icon_off_cp[idx - 1], icon_on_cp[idx - 1]);
+      } else {
+        subscribe_toggle_state(s.btn, s.icon_lbl, s.sensor_container,
+          &has_sensor[idx - 1], &sensor_text_mode[idx - 1],
+          &has_icon_on[idx - 1], &icon_off_cp[idx - 1], &icon_on_cp[idx - 1],
+          nullptr, p.entity, false);
+      }
       continue;
     }
     if (p.type == "lock") {

@@ -413,6 +413,69 @@ inline void subscribe_subpage_parent_indicator(
   );
 }
 
+struct ClimateSubpageParentIndicatorCtx {
+  std::string hvac_mode = "off";
+  std::string hvac_action;
+  bool available = true;
+  lv_obj_t *parent_btn = nullptr;
+  lv_obj_t *parent_icon = nullptr;
+  bool has_alt_icon = false;
+  const char *off_glyph = nullptr;
+  const char *on_glyph = nullptr;
+};
+
+inline bool climate_subpage_mode_can_work(const std::string &mode) {
+  return mode == "cool" || mode == "heat" || mode == "auto" ||
+         mode == "heat_cool" || mode == "fan_only" || mode == "fan";
+}
+
+inline bool climate_subpage_action_is_working(const std::string &action) {
+  return action == "cooling" || action == "heating" || action == "fan";
+}
+
+inline void apply_climate_subpage_parent_indicator(ClimateSubpageParentIndicatorCtx *ctx) {
+  if (!ctx) return;
+  bool working = ctx->available &&
+                 climate_subpage_mode_can_work(ctx->hvac_mode) &&
+                 climate_subpage_action_is_working(ctx->hvac_action);
+  set_card_checked_state(ctx->parent_btn, working);
+  if (ctx->has_alt_icon && ctx->parent_icon)
+    lv_label_set_text(ctx->parent_icon, working ? ctx->on_glyph : ctx->off_glyph);
+}
+
+inline void subscribe_climate_subpage_parent_indicator(
+    const std::string &entity_id,
+    lv_obj_t *parent_btn, lv_obj_t *parent_icon,
+    bool has_alt_icon, const char *off_glyph, const char *on_glyph) {
+  if (entity_id.empty()) return;
+  ClimateSubpageParentIndicatorCtx *ctx = new ClimateSubpageParentIndicatorCtx();
+  ctx->parent_btn = parent_btn;
+  ctx->parent_icon = parent_icon;
+  ctx->has_alt_icon = has_alt_icon;
+  ctx->off_glyph = off_glyph;
+  ctx->on_glyph = on_glyph;
+  apply_climate_subpage_parent_indicator(ctx);
+
+  ha_subscribe_state(
+    entity_id,
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef state) {
+        ctx->hvac_mode = climate_hvac_service_value(string_ref_limited(state, HA_SHORT_STATE_MAX_LEN));
+        ctx->available = !climate_unavailable_value(ctx->hvac_mode);
+        if (!ctx->available) ctx->hvac_mode = "off";
+        apply_climate_subpage_parent_indicator(ctx);
+      })
+  );
+  ha_subscribe_attribute(
+    entity_id, std::string("hvac_action"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef value) {
+        ctx->hvac_action = climate_lower(climate_trim(string_ref_limited(value, HA_SHORT_STATE_MAX_LEN)));
+        apply_climate_subpage_parent_indicator(ctx);
+      })
+  );
+}
+
 // Parse subpage order CSV; "B"/"Bd"/"Bw"/"Bb"/"Bt"/"Bx" tokens mark the back button position
 inline void parse_subpage_order(const std::string &order_str, int num_slots, int num_btns,
                                 SubpageOrder &result) {
