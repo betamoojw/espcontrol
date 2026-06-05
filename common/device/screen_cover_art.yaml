@@ -323,6 +323,19 @@ script:
           id: screensaver_wake_touch_guard_active
           value: 'true'
       - lvgl.widget.show: cover_art_wake_touch_guard
+      - lambda: 'lv_obj_move_foreground(id(cover_art_wake_touch_guard));'
+      - wait_until:
+          condition:
+            lambda: |-
+              lv_indev_t *indev = nullptr;
+              while ((indev = lv_indev_get_next(indev)) != nullptr) {
+                if (lv_indev_get_type(indev) == LV_INDEV_TYPE_POINTER &&
+                    lv_indev_get_state(indev) == LV_INDEV_STATE_PRESSED) {
+                  return true;
+                }
+              }
+              return false;
+          timeout: 150ms
       - wait_until:
           condition:
             lambda: |-
