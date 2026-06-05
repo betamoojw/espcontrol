@@ -745,11 +745,17 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   await page.locator('[data-clockbar-item="network"]').waitFor({ state: "detached" });
   const topbarBox = await page.locator(".sp-topbar").boundingBox();
   const rightAddBox = await page.locator('[data-clockbar-section="right"] [data-clockbar-add]').boundingBox();
+  const firstCardBox = await page.locator(".sp-main > *").first().boundingBox();
   assert(topbarBox && rightAddBox, `${label}: right add control has a visible bounded area`);
   assert(rightAddBox.y > topbarBox.y, `${label}: right add control does not touch the top of the clock bar`);
   assert(
     rightAddBox.y + rightAddBox.height < topbarBox.y + topbarBox.height,
     `${label}: right add control does not touch the bottom of the clock bar`
+  );
+  assert(firstCardBox, `${label}: first card has a visible bounded area`);
+  assert(
+    rightAddBox.y + rightAddBox.height < firstCardBox.y,
+    `${label}: right add control stays clear of the first card row`
   );
   before = posts.length;
   await addClockBarItemFromPanel("right", "network");
