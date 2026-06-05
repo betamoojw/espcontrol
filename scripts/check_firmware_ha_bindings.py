@@ -257,6 +257,36 @@ def firmware_todo_disconnect_errors(firmware_dir: Path, core_infra_path: Path, r
     return errors
 
 
+def firmware_action_card_availability_errors(firmware_dir: Path, root: Path) -> list[str]:
+    path = firmware_dir / "button_grid_grid.h"
+    if not path.exists():
+        return []
+    rel = path.relative_to(root)
+    text = path.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    stateless_main_pattern = re.compile(
+        r"std::string\s+state_entity\s*=\s*action_card_state_entity\(p\);"
+        r"(?P<body>.*?)continue;",
+        re.DOTALL,
+    )
+    stateless_subpage_pattern = re.compile(
+        r"std::string\s+state_entity\s*=\s*action_card_state_entity\(sb_cfg\);"
+        r"(?P<body>.*?)ParsedCfg\s+\*ctx\s*=",
+        re.DOTALL,
+    )
+
+    for match in stateless_main_pattern.finditer(text):
+        body = match.group("body")
+        if "else" in body and "register_ha_control_availability(s.btn, s.btn)" in body:
+            errors.append(f"{rel}: keep stateless action cards tappable while Home Assistant availability is pending")
+    for match in stateless_subpage_pattern.finditer(text):
+        body = match.group("body")
+        if "else" in body and "register_ha_control_availability(sub_slot.btn, sub_slot.btn)" in body:
+            errors.append(f"{rel}: keep stateless subpage action cards tappable while Home Assistant availability is pending")
+    return errors
+
+
 def firmware_time_reconnect_errors(time_path: Path, root: Path) -> list[str]:
     if not time_path.exists():
         return []
@@ -566,6 +596,7 @@ def run_scan() -> int:
     errors.extend(firmware_ha_boundary_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_todo_request_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_todo_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
+    errors.extend(firmware_action_card_availability_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_time_reconnect_errors(TIME_ADDON_PATH, ROOT))
     errors.extend(firmware_weather_request_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_weather_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
@@ -654,6 +685,20 @@ def expect_todo_disconnect_errors(
         core_path.write_text(core_text, encoding="utf-8")
 
         errors = firmware_todo_disconnect_errors(firmware_dir, core_path, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_action_card_availability_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        firmware_dir = root / "components" / "espcontrol"
+        firmware_dir.mkdir(parents=True)
+        (firmware_dir / "button_grid_grid.h").write_text(text, encoding="utf-8")
+
+        errors = firmware_action_card_availability_errors(firmware_dir, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -1224,6 +1269,43 @@ def run_self_test() -> int:
         "    then:\n"
         "      - lambda: todo_retry_waiting_modal();\n",
         ("keep todo cards tappable",),
+    )
+    expect_action_card_availability_errors(
+        "stateless main action registered for availability",
+        "if (p.type == \"action\") {\n"
+        "  std::string state_entity = action_card_state_entity(p);\n"
+        "  if (!state_entity.empty()) {\n"
+        "    subscribe_action_card_display_state(ctx, state_entity);\n"
+        "  } else {\n"
+        "    register_ha_control_availability(s.btn, s.btn);\n"
+        "  }\n"
+        "  continue;\n"
+        "}\n",
+        ("keep stateless action cards tappable",),
+    )
+    expect_action_card_availability_errors(
+        "stateless subpage action registered for availability",
+        "if (sb_cfg.type == \"action\") {\n"
+        "  std::string state_entity = action_card_state_entity(sb_cfg);\n"
+        "  if (!state_entity.empty()) {\n"
+        "    subscribe_action_card_display_state(action_ctx, state_entity);\n"
+        "  } else {\n"
+        "    register_ha_control_availability(sub_slot.btn, sub_slot.btn);\n"
+        "  }\n"
+        "  ParsedCfg *ctx = new ParsedCfg(sb_cfg);\n"
+        "}\n",
+        ("keep stateless subpage action cards tappable",),
+    )
+    expect_action_card_availability_errors(
+        "stateful action only subscribes display state",
+        "if (p.type == \"action\") {\n"
+        "  std::string state_entity = action_card_state_entity(p);\n"
+        "  if (!state_entity.empty()) {\n"
+        "    subscribe_action_card_display_state(ctx, state_entity);\n"
+        "  }\n"
+        "  continue;\n"
+        "}\n",
+        (),
     )
     expect_time_reconnect_errors(
         "home assistant time sync runs on raw api connect",

@@ -995,8 +995,6 @@ inline void grid_phase2(
       if (!state_entity.empty()) {
         ActionCardStateCtx *ctx = create_action_card_state_context(s, p);
         subscribe_action_card_display_state(ctx, state_entity);
-      } else {
-        register_ha_control_availability(s.btn, s.btn);
       }
       continue;
     }
@@ -1531,8 +1529,6 @@ inline void grid_phase2(
           if (!state_entity.empty()) {
             ActionCardStateCtx *action_ctx = create_action_card_state_context(sub_slot, sb_cfg);
             subscribe_action_card_display_state(action_ctx, state_entity);
-          } else {
-            register_ha_control_availability(sub_slot.btn, sub_slot.btn);
           }
           ParsedCfg *ctx = new ParsedCfg(sb_cfg);
           lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
