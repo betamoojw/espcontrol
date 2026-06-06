@@ -5,10 +5,13 @@
 #include <cstdlib>
 #include <ctime>
 #include <cctype>
+#include <cstdio>
 
 #if defined(USE_ESP_IDF)
 #include <esp_sntp.h>
 #endif
+
+#include "esphome/core/log.h"
 
 // ============================================================================
 // Timezone coordinate and POSIX TZ lookup table
@@ -467,10 +470,6 @@ inline void apply_ntp_servers(const std::string &server_1,
                               const std::string &server_2,
                               const std::string &server_3) {
 #if defined(USE_ESP_IDF)
-  if (!esp_sntp_enabled()) {
-    return;
-  }
-
   static std::string active_servers[3];
   active_servers[0] = trim_ntp_server(server_1);
   active_servers[1] = trim_ntp_server(server_2);
@@ -480,11 +479,22 @@ inline void apply_ntp_servers(const std::string &server_1,
   if (active_servers[1].empty()) active_servers[1] = "1.pool.ntp.org";
   if (active_servers[2].empty()) active_servers[2] = "2.pool.ntp.org";
 
-  for (int i = 0; i < 3; i++) {
-    esp_sntp_setservername(i, active_servers[i].c_str());
+  static char server_storage[3][101] = {};
+
+  if (esp_sntp_enabled()) {
+    esp_sntp_stop();
   }
 
-  esp_sntp_restart();
+  esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
+  for (int i = 0; i < 3; i++) {
+    std::snprintf(server_storage[i], sizeof(server_storage[i]), "%s",
+                  active_servers[i].c_str());
+    esp_sntp_setservername(i, server_storage[i]);
+  }
+
+  esp_sntp_init();
+  ESP_LOGI("sntp", "NTP servers applied: %s, %s, %s",
+           server_storage[0], server_storage[1], server_storage[2]);
 #else
   (void) server_1;
   (void) server_2;
