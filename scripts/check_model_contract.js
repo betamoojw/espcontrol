@@ -250,6 +250,6 @@ const legacyPanelSettings = model.normalizeBackupPanelSettings({}, {
 assert.strictEqual(legacyPanelSettings.clockBarTime, true, "legacy panel settings default clock bar time on");
 assert.strictEqual(legacyPanelSettings.clockBarWeatherIcon, false, "legacy panel settings default clock bar weather icon off");
 assert.strictEqual(legacyPanelSettings.clockBarWeatherEntity, "", "legacy panel settings default clock bar weather entity empty");
-assert.strictEqual(legacyPanelSettings.coverArtHideExternalInput, false, "legacy panel settings default cover art external-input setting off");
+assert.strictEqual(legacyPanelSettings.coverArtHideExternalInput, true, "legacy panel settings default cover art external-input setting on");
 
 console.log("Model contract tests passed.");

@@ -414,7 +414,7 @@ switch:
     internal: true
     id: cover_art_hide_external_input_enabled
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: RESTORE_DEFAULT_ON
     icon: "mdi:television-classic"
     entity_category: config
     web_server:
