@@ -217,7 +217,7 @@ inline void setup_media_now_playing_layout(lv_obj_t *btn, lv_obj_t *icon_lbl,
   }
   if (artist_lbl) {
     const lv_font_t *font = lv_obj_get_style_text_font(artist_lbl, LV_PART_MAIN);
-    if (reset_text) lv_label_set_text(artist_lbl, "--");
+    if (reset_text) lv_label_set_text(artist_lbl, "");
     lv_label_set_long_mode(artist_lbl, LV_LABEL_LONG_DOT);
     if (font && font->line_height > 0) lv_obj_set_size(artist_lbl, text_width, font->line_height);
     else lv_obj_set_width(artist_lbl, text_width);
@@ -518,7 +518,7 @@ inline void subscribe_media_now_playing_state(MediaNowPlayingCtx *ctx,
     entity_id, std::string("media_artist"),
     std::function<void(esphome::StringRef)>(
       [artist_lbl](esphome::StringRef artist) {
-        media_set_metadata_text(artist_lbl, artist, "--");
+        media_set_metadata_text(artist_lbl, artist, "");
       })
   );
   if (ctx && ctx->progress_slider) {
