@@ -206,7 +206,7 @@ var ENTITY_CATALOG = {
     },
     "screen_saver_cover_art_ha_url": {
       "domain": "text",
-      "name": "Screen Saver: Home Assistant URL",
+      "name": "Screen Saver: Cover Art Fallback Server",
       "objectIds": [
         "screen_saver__home_assistant_url",
         "screen_saver_cover_art_ha_url",

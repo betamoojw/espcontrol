@@ -577,6 +577,20 @@ function buildSettingsPage(parent) {
     });
     els.setCoverArtMediaPlayer = coverArtEntityInp;
 
+    var coverArtServerField = document.createElement("div");
+    coverArtServerField.className = "sp-field";
+    coverArtServerField.appendChild(fieldLabel("Fallback Server Address", "sp-set-ss-cover-art-server"));
+    var coverArtServerInp = textInput(
+      "sp-set-ss-cover-art-server",
+      state.coverArtHomeAssistantUrl,
+      "e.g. http://homeassistant.local:8123");
+    coverArtServerField.appendChild(coverArtServerInp);
+    coverArtOptions.appendChild(coverArtServerField);
+    bindTextPost(coverArtServerInp, entityName("screen_saver_cover_art_ha_url"), {
+      onBlur: function (value) { state.coverArtHomeAssistantUrl = value; },
+    });
+    els.setCoverArtHomeAssistantUrl = coverArtServerInp;
+
     var coverArtDelayField = document.createElement("div");
     coverArtDelayField.className = "sp-field";
     coverArtDelayField.appendChild(fieldLabel("Show Cover Art After", "sp-set-ss-cover-art-delay"));

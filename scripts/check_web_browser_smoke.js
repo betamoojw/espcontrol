@@ -277,6 +277,16 @@ async function assertSettingsPage(page, label, options = {}) {
   assert(appearanceVisible, `${label}: settings content should render`);
   assert.strictEqual(themeVisible, !!options.isEpaper, `${label}: theme selector visibility should match display type`);
   assert.strictEqual(onColorVisible, !options.isEpaper, `${label}: color controls visibility should match display type`);
+  if (!options.isEpaper) {
+    const coverArtCard = page.locator("#sp-settings .card").filter({ hasText: "Media Cover Art" }).first();
+    assert(await coverArtCard.isVisible(), `${label}: media cover art settings card should render`);
+    await coverArtCard.locator(".card-header").click();
+    await coverArtCard.locator("#sp-set-ss-cover-art-enable + .sp-toggle-track").click();
+    assert(
+      await page.locator("#sp-set-ss-cover-art-server").isVisible(),
+      `${label}: cover art fallback server field should render`
+    );
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!overflow, `${label}: settings page has horizontal overflow`);
   await page.getByRole("tab", { name: "Screen" }).click();
