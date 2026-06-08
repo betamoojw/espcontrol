@@ -3,10 +3,13 @@
 // Internal implementation detail for button_grid.h. Include button_grid.h from device YAML.
 
 #include "esphome/core/version.h"
+#include <cstring>
 
 constexpr uint32_t IMAGE_CARD_STARTUP_RETRY_MS = 45000;
 constexpr uint32_t IMAGE_CARD_RETRY_INTERVAL_MS = 2000;
 constexpr uint8_t IMAGE_CARD_STARTUP_DOWNLOAD_RETRIES = 10;
+constexpr const char *IMAGE_CARD_LOADING_ICON = "\U000F02E9";
+constexpr const char *IMAGE_CARD_UNAVAILABLE_ICON = "\U000F02ED";
 
 struct ImageCardCtx {
   lv_obj_t *widget = nullptr;
@@ -86,6 +89,11 @@ inline lv_obj_t *image_card_loading_widget(lv_obj_t *widget) {
   return widget ? static_cast<lv_obj_t *>(lv_obj_get_user_data(widget)) : nullptr;
 }
 
+inline lv_obj_t *image_card_loading_icon(lv_obj_t *loading_widget) {
+  if (!loading_widget || lv_obj_get_child_cnt(loading_widget) < 1) return nullptr;
+  return lv_obj_get_child(loading_widget, 0);
+}
+
 inline lv_obj_t *image_card_loading_label(lv_obj_t *loading_widget) {
   if (!loading_widget || lv_obj_get_child_cnt(loading_widget) < 2) return nullptr;
   return lv_obj_get_child(loading_widget, 1);
@@ -93,6 +101,12 @@ inline lv_obj_t *image_card_loading_label(lv_obj_t *loading_widget) {
 
 inline void image_card_set_loading_state(lv_obj_t *loading_widget, const char *text) {
   if (!loading_widget) return;
+  lv_obj_t *icon = image_card_loading_icon(loading_widget);
+  if (icon) {
+    lv_label_set_text(icon, text && std::strcmp(text, "Unavailable") == 0
+      ? IMAGE_CARD_UNAVAILABLE_ICON
+      : IMAGE_CARD_LOADING_ICON);
+  }
   lv_obj_t *label = image_card_loading_label(loading_widget);
   if (label) lv_label_set_text(label, espcontrol_i18n(text));
   lv_obj_clear_flag(loading_widget, LV_OBJ_FLAG_HIDDEN);
@@ -335,7 +349,7 @@ inline void setup_image_card(BtnSlot &s) {
   }
   lv_obj_set_style_text_color(loading_icon, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
   lv_obj_set_style_text_opa(loading_icon, LV_OPA_70, LV_PART_MAIN);
-  lv_label_set_text(loading_icon, "\U000F02E9");
+  lv_label_set_text(loading_icon, IMAGE_CARD_LOADING_ICON);
   lv_obj_align(loading_icon, LV_ALIGN_CENTER, 0, -16);
 
   lv_obj_t *loading_label = lv_label_create(loading);

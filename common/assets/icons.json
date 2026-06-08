@@ -94,6 +94,18 @@
       "codepoint": "F07D0",
       "mdi": "home-assistant",
       "comment": "Setup screens"
+    },
+    {
+      "name": "Image Card Loading",
+      "codepoint": "F02E9",
+      "mdi": "image",
+      "comment": "Image card loading state"
+    },
+    {
+      "name": "Image Card Unavailable",
+      "codepoint": "F02ED",
+      "mdi": "image-broken",
+      "comment": "Image card unavailable state"
     }
   ],
   "icons": [
