@@ -181,6 +181,7 @@ assert.deepStrictEqual(
     brightnessDayVal: 88,
     brightnessNightVal: 55,
     automaticBrightnessEnabled: false,
+    scheduleTrigger: "time",
     scheduleEnabled: true,
     scheduleOnHour: 7,
     scheduleOffHour: 22,

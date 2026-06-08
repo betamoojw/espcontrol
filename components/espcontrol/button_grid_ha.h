@@ -30,6 +30,7 @@ inline bool ha_api_state_connected() {
 }
 
 constexpr uint32_t HA_UNAVAILABLE_STATE_RETRY_INTERVAL_MS = 5000;
+constexpr uint32_t HA_UNAVAILABLE_STATE_RETRY_RESPONSE_TIMEOUT_MS = 10000;
 
 struct HaUnavailableStateRetryRef {
   std::string entity_id;
@@ -69,7 +70,13 @@ inline void ha_retry_unavailable_states(bool force = false) {
 
   for (auto &ref : refs) {
     if (ref.generation != active_generation || !ref.unavailable || !ref.callback) continue;
-    if (ref.waiting_for_response) continue;
+    if (ref.waiting_for_response) {
+      if (ref.last_request_ms != 0 &&
+          now - ref.last_request_ms < HA_UNAVAILABLE_STATE_RETRY_RESPONSE_TIMEOUT_MS) {
+        continue;
+      }
+      ref.waiting_for_response = false;
+    }
     if (!force) {
       if (ref.last_request_ms != 0 &&
           now - ref.last_request_ms < HA_UNAVAILABLE_STATE_RETRY_INTERVAL_MS) {

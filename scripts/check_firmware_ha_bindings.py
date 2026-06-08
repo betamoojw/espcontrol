@@ -122,8 +122,11 @@ def firmware_ha_boundary_errors(firmware_dir: Path, root: Path) -> list[str]:
         "ha_retry_unavailable_states" not in text
         or "ha_unavailable_state_retry_refs" not in text
         or "HA_UNAVAILABLE_STATE_RETRY_INTERVAL_MS" not in text
+        or "HA_UNAVAILABLE_STATE_RETRY_RESPONSE_TIMEOUT_MS" not in text
     ):
         errors.append(f"{rel}: retry unavailable subscribed states after Home Assistant finishes startup")
+    if "waiting_for_response = false" not in text:
+        errors.append(f"{rel}: expire unanswered unavailable-state retries after Home Assistant startup")
     if "ha_entity_state_unavailable_ref(entity_id, state)" not in text:
         errors.append(f"{rel}: use entity-aware unavailable checks for subscribed state retries")
     if "ha_reset_unavailable_state_retries" not in text:
