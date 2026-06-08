@@ -276,6 +276,7 @@ inline bool image_card_apply_modal_geometry(ImageCardCtx *ctx,
   lv_coord_t width = lv_obj_get_width(ui.panel);
   lv_coord_t height = lv_obj_get_height(ui.panel);
   if (width <= 0 || height <= 0) return false;
+  lv_obj_set_style_clip_corner(ui.panel, true, LV_PART_MAIN);
   lv_obj_set_pos(ui.image_widget, 0, 0);
   lv_obj_set_size(ui.image_widget, width, height);
   lv_obj_set_style_radius(
@@ -531,6 +532,7 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
 
   lv_obj_set_style_bg_color(ui.panel, lv_color_hex(DARK_OVERLAY), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(ui.panel, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_clip_corner(ui.panel, true, LV_PART_MAIN);
 
 #if ESPHOME_VERSION_CODE >= VERSION_CODE(2026, 4, 0)
   ui.image_widget = lv_image_create(ui.panel);

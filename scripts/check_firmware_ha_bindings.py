@@ -664,6 +664,8 @@ def firmware_image_card_quality_errors(firmware_dir: Path, root: Path) -> list[s
         errors.append(f"{rel}: request a modal-sized image when opening image cards")
     if "ctx->image->set_target_size(width, height)" not in text:
         errors.append(f"{rel}: set image card download target size before requesting images")
+    if "lv_obj_set_style_clip_corner(ui.panel, true, LV_PART_MAIN)" not in text:
+        errors.append(f"{rel}: clip image card modal content to rounded panel corners")
     return errors
 
 
@@ -2111,6 +2113,7 @@ def run_self_test() -> int:
             "scale image card modal downloads to a display-appropriate size",
             "request a modal-sized image when opening image cards",
             "set image card download target size before requesting images",
+            "clip image card modal content to rounded panel corners",
         ),
     )
     expect_image_card_quality_errors(
@@ -2122,6 +2125,7 @@ def run_self_test() -> int:
         "  ctx->image->set_target_size(width, height);\n"
         "}\n"
         "inline void image_card_open_modal(ImageCardCtx *ctx) {\n"
+        "  lv_obj_set_style_clip_corner(ui.panel, true, LV_PART_MAIN);\n"
         "  if (!ctx->source_url.empty()) image_card_request_source_url(ctx);\n"
         "}\n",
         (),
