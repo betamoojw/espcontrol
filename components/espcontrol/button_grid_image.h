@@ -4,6 +4,10 @@
 
 #include "esphome/core/version.h"
 
+constexpr uint32_t IMAGE_CARD_STARTUP_RETRY_MS = 45000;
+constexpr uint32_t IMAGE_CARD_RETRY_INTERVAL_MS = 2000;
+constexpr uint8_t IMAGE_CARD_STARTUP_DOWNLOAD_RETRIES = 10;
+
 struct ImageCardCtx {
   lv_obj_t *widget = nullptr;
   lv_obj_t *btn = nullptr;
@@ -12,16 +16,22 @@ struct ImageCardCtx {
   const lv_font_t *icon_font = nullptr;
   esphome::artwork_image::ArtworkImage *image = nullptr;
   std::string entity_id;
+  std::string base_url;
   std::string source_url;
   std::string url;
   uint32_t refresh_interval_ms = 0;
   uint32_t next_refresh_ms = 0;
+  uint32_t retry_deadline_ms = 0;
+  uint32_t next_picture_retry_ms = 0;
+  uint32_t next_download_retry_ms = 0;
   int width_compensation_percent = 100;
   bool active = false;
   bool callbacks_bound = false;
   bool requested_once = false;
+  bool image_ready = false;
   bool timer_only = false;
   bool modal_fit = false;
+  uint8_t startup_download_errors = 0;
 };
 
 struct ImageCardModalUi {
@@ -95,9 +105,18 @@ inline void image_card_hide(ImageCardCtx *ctx) {
   if (ctx->widget) lv_obj_add_flag(ctx->widget, LV_OBJ_FLAG_HIDDEN);
 }
 
+inline bool image_card_startup_retry_active(ImageCardCtx *ctx,
+                                            uint32_t now = esphome::millis()) {
+  return ctx && ctx->retry_deadline_ms != 0 &&
+         (int32_t)(now - ctx->retry_deadline_ms) < 0;
+}
+
 inline void image_card_apply_downloaded(ImageCardCtx *ctx) {
   if (!ctx || !ctx->active || !ctx->widget || !ctx->image) return;
   if (ctx->image->get_url() != ctx->url) return;
+  ctx->image_ready = true;
+  ctx->startup_download_errors = 0;
+  ctx->next_download_retry_ms = 0;
   image_card_hide_loading(ctx);
   if (image_card_modal_active_for(ctx)) {
     ImageCardModalUi &ui = image_card_modal_ui();
@@ -117,6 +136,15 @@ inline void image_card_apply_downloaded(ImageCardCtx *ctx) {
 inline void image_card_handle_download_error(ImageCardCtx *ctx) {
   if (!ctx) return;
   ESP_LOGW("image_card", "Image download failed for %s", ctx->entity_id.c_str());
+  uint32_t now = esphome::millis();
+  if (!ctx->image_ready && image_card_startup_retry_active(ctx, now) &&
+      ctx->startup_download_errors < IMAGE_CARD_STARTUP_DOWNLOAD_RETRIES) {
+    ctx->startup_download_errors++;
+    ctx->next_download_retry_ms = now + IMAGE_CARD_RETRY_INTERVAL_MS;
+    image_card_hide(ctx);
+    image_card_set_loading_state(ctx, "Loading", true);
+    return;
+  }
   if (image_card_modal_active_for(ctx)) {
     return;
   } else {
@@ -153,14 +181,20 @@ inline void reset_image_card_pool(const GridConfig &cfg) {
     contexts[i].loading_label = nullptr;
     contexts[i].icon_font = nullptr;
     contexts[i].entity_id.clear();
+    contexts[i].base_url.clear();
     contexts[i].source_url.clear();
     contexts[i].url.clear();
     contexts[i].refresh_interval_ms = 0;
     contexts[i].next_refresh_ms = 0;
+    contexts[i].retry_deadline_ms = 0;
+    contexts[i].next_picture_retry_ms = 0;
+    contexts[i].next_download_retry_ms = 0;
     contexts[i].width_compensation_percent = 100;
     contexts[i].requested_once = false;
+    contexts[i].image_ready = false;
     contexts[i].timer_only = false;
     contexts[i].modal_fit = false;
+    contexts[i].startup_download_errors = 0;
     contexts[i].image = cfg.image_card_images ? cfg.image_card_images[i] : nullptr;
     if (contexts[i].image) contexts[i].image->release();
   }
@@ -352,6 +386,23 @@ inline std::string image_card_cache_bust_url(const std::string &url) {
   return next;
 }
 
+inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef picture);
+
+inline void image_card_request_picture(ImageCardCtx *ctx) {
+  if (!ctx || !ctx->active || ctx->entity_id.empty()) return;
+  bool requested = ha_get_attribute(
+    ctx->entity_id,
+    std::string("entity_picture"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef picture) {
+        image_card_handle_picture(ctx, picture);
+      })
+  );
+  if (!requested && image_card_startup_retry_active(ctx)) {
+    ctx->next_picture_retry_ms = esphome::millis() + IMAGE_CARD_RETRY_INTERVAL_MS;
+  }
+}
+
 inline void image_card_schedule_next_refresh(ImageCardCtx *ctx, uint32_t now = esphome::millis()) {
   if (!ctx || ctx->refresh_interval_ms == 0) {
     if (ctx) ctx->next_refresh_ms = 0;
@@ -365,6 +416,7 @@ inline void image_card_request_source_url(ImageCardCtx *ctx) {
   uint32_t now = esphome::millis();
   ctx->url = image_card_cache_bust_url(ctx->source_url);
   ctx->requested_once = true;
+  ctx->next_download_retry_ms = 0;
   image_card_schedule_next_refresh(ctx, now);
   image_card_apply_active_geometry(ctx);
   ESP_LOGI("image_card", "Downloading camera image for %s", ctx->entity_id.c_str());
@@ -420,18 +472,23 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
   image_card_request_source_url(ctx);
 }
 
-inline void image_card_handle_picture(ImageCardCtx *ctx, const GridConfig &cfg,
-                                      esphome::StringRef picture) {
+inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef picture) {
   if (!ctx || !ctx->active || !ctx->image) return;
-  std::string base = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : "";
   std::string raw = string_ref_limited(picture, 4096);
-  std::string url = image_card_join_url(base, raw);
+  std::string url = image_card_join_url(ctx->base_url, raw);
   if (url.empty()) {
     ESP_LOGW("image_card", "No usable entity_picture URL for %s", ctx->entity_id.c_str());
+    if (ctx->image_ready) return;
     image_card_hide(ctx);
-    image_card_set_loading_state(ctx, "Unavailable", true);
+    if (image_card_startup_retry_active(ctx)) {
+      ctx->next_picture_retry_ms = esphome::millis() + IMAGE_CARD_RETRY_INTERVAL_MS;
+      image_card_set_loading_state(ctx, "Loading", true);
+    } else {
+      image_card_set_loading_state(ctx, "Unavailable", true);
+    }
     return;
   }
+  ctx->next_picture_retry_ms = 0;
   ctx->source_url = url;
   if (!ctx->requested_once || !ctx->timer_only || ctx->refresh_interval_ms == 0) {
     image_card_request_source_url(ctx);
@@ -447,6 +504,27 @@ inline void image_card_refresh_due() {
     ImageCardCtx *ctx = &contexts[i];
     if (!ctx->active || ctx->refresh_interval_ms == 0 ||
         ctx->source_url.empty() || !ctx->requested_once) {
+      if (ctx->active && ctx->next_picture_retry_ms != 0 &&
+          (int32_t)(now - ctx->next_picture_retry_ms) >= 0) {
+        ctx->next_picture_retry_ms = 0;
+        image_card_request_picture(ctx);
+      }
+      if (ctx->active && ctx->next_download_retry_ms != 0 &&
+          (int32_t)(now - ctx->next_download_retry_ms) >= 0) {
+        ctx->next_download_retry_ms = 0;
+        image_card_request_source_url(ctx);
+      }
+      continue;
+    }
+    if (ctx->next_picture_retry_ms != 0 &&
+        (int32_t)(now - ctx->next_picture_retry_ms) >= 0) {
+      ctx->next_picture_retry_ms = 0;
+      image_card_request_picture(ctx);
+    }
+    if (ctx->next_download_retry_ms != 0 &&
+        (int32_t)(now - ctx->next_download_retry_ms) >= 0) {
+      ctx->next_download_retry_ms = 0;
+      image_card_request_source_url(ctx);
       continue;
     }
     if ((int32_t)(now - ctx->next_refresh_ms) >= 0) {
@@ -483,9 +561,11 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
   ctx->loading_label = image_card_loading_label(loading);
   ctx->icon_font = s.icon_lbl ? lv_obj_get_style_text_font(s.icon_lbl, LV_PART_MAIN) : nullptr;
   ctx->entity_id = p.entity;
+  ctx->base_url = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : "";
   ctx->refresh_interval_ms = image_card_refresh_interval_ms(p);
   ctx->timer_only = image_card_timer_only_refresh(p);
   ctx->modal_fit = image_card_modal_fit_enabled(p);
+  ctx->retry_deadline_ms = esphome::millis() + IMAGE_CARD_STARTUP_RETRY_MS;
   ctx->width_compensation_percent = cfg.width_compensation_percent;
   image_card_apply_widget_geometry(ctx->btn, ctx->widget, ctx->image);
   image_card_set_loading_state(ctx, "Loading", true);
@@ -503,17 +583,10 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
     p.entity,
     std::string("entity_picture"),
     std::function<void(esphome::StringRef)>(
-      [ctx, cfg](esphome::StringRef picture) {
-        image_card_handle_picture(ctx, cfg, picture);
+      [ctx](esphome::StringRef picture) {
+        image_card_handle_picture(ctx, picture);
       })
   );
-  ha_get_attribute(
-    p.entity,
-    std::string("entity_picture"),
-    std::function<void(esphome::StringRef)>(
-      [ctx, cfg](esphome::StringRef picture) {
-        image_card_handle_picture(ctx, cfg, picture);
-      })
-  );
+  image_card_request_picture(ctx);
   return true;
 }
