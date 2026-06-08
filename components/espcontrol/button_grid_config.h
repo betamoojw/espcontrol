@@ -747,12 +747,14 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.options = webhook_card_options_normalized(p.options);
   }
   if (p.type == "image") {
-    p.icon = "Auto";
     p.icon_on = "Auto";
     p.sensor.clear();
     p.unit.clear();
     p.precision.clear();
     p.options = image_card_options_normalized(p.options);
+    p.icon = image_card_icon_enabled(p)
+      ? (p.icon.empty() || p.icon == "Auto" ? "Camera" : p.icon)
+      : "Auto";
     if (!image_card_label_enabled(p)) p.label.clear();
   }
   if (p.type == "todo") {

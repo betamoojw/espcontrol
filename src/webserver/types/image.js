@@ -161,7 +161,8 @@ registerButtonType("image", {
   renderPreview: function (b, helpers) {
     var tertiaryColor = (typeof state !== "undefined" && state.sensorColor) ? state.sensorColor : "212121";
     var label = imageLabelEnabled(b) ? String((b && b.label) || "Camera").trim() : "";
-    var icon = imageIconEnabled(b) ? '<span class="sp-image-preview-icon mdi mdi-camera"></span>' : "";
+    var iconName = b && b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "camera";
+    var icon = imageIconEnabled(b) ? '<span class="sp-image-preview-icon mdi mdi-' + iconName + '"></span>' : "";
     return {
       buttonClass: "sp-image-card",
       iconHtml:

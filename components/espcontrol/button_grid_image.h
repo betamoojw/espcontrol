@@ -684,7 +684,8 @@ inline void image_card_configure_icon(BtnSlot &s, const ParsedCfg &p) {
     lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
     return;
   }
-  lv_label_set_text(s.icon_lbl, find_icon("Camera"));
+  lv_label_set_text(s.icon_lbl, find_icon(
+    p.icon.empty() || p.icon == "Auto" ? "Camera" : p.icon.c_str()));
   lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
   image_card_align_icon(s.icon_lbl, s.btn);
 }

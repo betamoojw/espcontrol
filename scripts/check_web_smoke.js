@@ -464,6 +464,7 @@ const imagePreview = hooks.buttonTypePreviewFor("image", {
 });
 assert(!imagePreview.iconHtml.includes("sp-image-preview-icon"), "image preview hides the top-left icon by default");
 assert(!imagePreview.iconHtml.includes("sp-image-preview-text"), "image preview does not show centered placeholder text");
+assert(!imagePreview.iconHtml.includes(">Image<"), "image preview does not show centered Image copy");
 assert(imagePreview.labelHtml.includes("Seaside"), "image preview keeps the configured label");
 
 const imageIconPreview = hooks.buttonTypePreviewFor("image", {
@@ -474,6 +475,13 @@ const imageIconPreview = hooks.buttonTypePreviewFor("image", {
 });
 assert(imageIconPreview.iconHtml.includes("sp-image-preview-icon mdi mdi-camera"), "image preview shows a top-left camera icon when enabled");
 assert(!imageIconPreview.labelHtml.includes("Seaside"), "image preview hides the label when label option is off");
+const customImageIconPreview = hooks.buttonTypePreviewFor("image", {
+  entity: "image.seaside",
+  icon: "Image",
+  type: "image",
+  options: "image_icon",
+});
+assert(customImageIconPreview.iconHtml.includes("sp-image-preview-icon mdi mdi-image"), "image preview can use a selected image icon when enabled");
 
 const sensorNumericPreview = hooks.buttonTypePreviewFor("sensor", {
   sensor: "sensor.office_temperature",

@@ -102,12 +102,12 @@ function normalizeButtonConfig(b) {
     if (typeof normalizeWebhookConfig === "function") normalizeWebhookConfig(b);
   }
   if (b && b.type === "image") {
-    b.icon = "Auto";
     b.icon_on = "Auto";
     b.sensor = "";
     b.unit = "";
     b.precision = "";
     b.options = normalizeImageOptions(b.options);
+    b.icon = imageIconEnabled(b) ? (b.icon && b.icon !== "Auto" ? b.icon : "Camera") : "Auto";
     if (!imageLabelEnabled(b)) b.label = "";
   }
   if (b && b.type === "light_switch") {
@@ -1260,7 +1260,6 @@ function buttonConfigFields(b) {
   }
   if (type === "climate") precision = normalizeClimatePrecisionConfig(precision);
   if (type === "image") {
-    icon = "Auto";
     iconOn = "Auto";
     sensor = "";
     unit = "";
@@ -1301,6 +1300,11 @@ function buttonConfigFields(b) {
     options = "";
   } else if (type !== "action" && type !== "alarm_action" && type !== "garage" && type !== "webhook" && type !== "media" && type !== "presence" && !cardLargeNumbersSupported({ type: type, precision: precision })) {
     options = "";
+  }
+  if (type === "image") {
+    icon = configOptionEnabled(options, IMAGE_ICON_OPTION)
+      ? (icon && icon !== "Auto" ? icon : "Camera")
+      : "Auto";
   }
   if (type === "door_window") {
     b = b || {};
