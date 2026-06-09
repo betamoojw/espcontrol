@@ -429,14 +429,14 @@ script:
                          img->get_width(), img->get_height(), img->get_content_width(), img->get_content_height(),
                          img->get_content_offset_x(), img->get_content_offset_y());
             - script.execute: cover_art_apply_responsive_layout
+            - script.execute: cover_art_extract_accent_color
+            - script.wait: cover_art_extract_accent_color
             - lvgl.widget.update:
                 id: cover_art_image_widget
                 opa: 100%
             - lvgl.image.update:
                 id: cover_art_image_widget
                 src: cover_art_downloaded_image
-            - script.execute: cover_art_extract_accent_color
-            - script.wait: cover_art_extract_accent_color
             - lvgl.widget.show: cover_art_image_widget
             - if:
                 condition:

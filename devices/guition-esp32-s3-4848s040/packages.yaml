@@ -34,9 +34,12 @@ substitutions:
   clock_font_size: "160"
   clock_cx: "240"
   clock_cy: "240"
-  cover_art_size: "480"
-  cover_art_x: "0"
-  cover_art_y: "0"
+  # Keep S3 artwork updates below full-screen size. The RGB panel, WiFi,
+  # JPEG/PNG decode, and LVGL refresh all share tight S3 bandwidth; repainting
+  # the full 480x480 image can visibly flicker during artwork changes.
+  cover_art_size: "384"
+  cover_art_x: "48"
+  cover_art_y: "48"
   cover_art_accent_x: "0"
   cover_art_accent_y: "0"
   cover_art_accent_width: "480"
