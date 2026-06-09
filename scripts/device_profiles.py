@@ -316,6 +316,14 @@ def validate_package(slug: str, device: dict[str, Any], errors: list[str]) -> No
                 errors.append(device_error(slug, "firmware.package.substitutions keys must be non-empty strings"))
             if not isinstance(value, str) or not value:
                 errors.append(device_error(slug, f"firmware.package.substitutions.{key} must be a non-empty string"))
+        card_gap = substitutions.get("main_page_card_gap")
+        if not isinstance(card_gap, str) or not re.fullmatch(r'"[1-9][0-9]*"', card_gap):
+            errors.append(
+                device_error(
+                    slug,
+                    'firmware.package.substitutions.main_page_card_gap must be a quoted positive pixel value, for example "\\"10\\""',
+                )
+            )
 
     if package.get("ethernetSelectable") or "backlightPwmFrequency" in package:
         frequencies = require_object(
