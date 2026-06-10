@@ -8,7 +8,8 @@ EspControl has three main surfaces:
 
 The firmware and setup page share product facts through generated files. Most
 changes should start from the source JSON/YAML files, then rebuild generated
-outputs.
+outputs. For the hard edit/rebuild/check contract, use
+[`source-of-truth.md`](source-of-truth.md).
 
 ## Main Source Areas
 
@@ -25,7 +26,9 @@ outputs.
 
 ## Generated Outputs
 
-Do not hand-edit these unless the generator has been intentionally retired:
+Do not hand-edit these unless the generator has been intentionally retired. The
+full source-to-output ownership table lives in
+[`source-of-truth.md`](source-of-truth.md).
 
 - `common/config/entity_names.yaml`
 - `src/webserver/modules/entity_catalog.js`

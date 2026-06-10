@@ -14,6 +14,21 @@ broader checks before merging or publishing.
 | `npm run docs:build` | Public docs content or VitePress config changed. |
 | `python3 scripts/build.py --check` | Generated outputs might be stale. |
 
+## Verification Ladder
+
+Use the task playbook's ladder when one exists. Each ladder separates quick
+local checks from broader release checks:
+
+| Level | Purpose | Typical stopping point |
+|---|---|---|
+| Minimum | Prove the exact file contract touched by the change still holds. | Small, narrow changes that do not touch release-facing generated files. |
+| Recommended | Run the normal product-level safety net for that task. | Most feature, config, device, card, and generated-output changes. |
+| Release-grade | Add expensive or broad checks such as `npm run check:fast`, public docs build, browser smoke, or firmware compile. | Publishing, release prep, broad shared behavior changes, or firmware-visible changes. |
+
+For docs-only changes, run `npm run docs:build`, then search the built docs for
+internal developer-doc paths such as `dev-docs/` so private guidance does not
+leak into the public site.
+
 ## Focused Checks
 
 | Command | Covers |

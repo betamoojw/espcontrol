@@ -1,9 +1,12 @@
 # Change Workflows
 
 Use these workflows as a starting point. The exact files can vary, but these are
-the usual paths touched by each kind of change.
+the usual paths touched by each kind of change. For checklist-driven task
+recipes, use [Task Playbooks](playbooks/README.md).
 
 ## Add or Change a Card Type
+
+Playbook: [Add or change a card type](playbooks/add-card-type.md).
 
 Start with the contract, then wire both UI surfaces.
 
@@ -24,6 +27,8 @@ Start with the contract, then wire both UI surfaces.
 Watch for the option wipe points documented in [Card Contract](card-contract.md).
 
 ## Change Saved Config Format
+
+Playbook: [Change saved config](playbooks/change-saved-config.md).
 
 Saved config is upgrade-sensitive because existing devices and backups may
 already contain older strings.
@@ -57,6 +62,8 @@ npm run check:product
 
 ## Add or Change a Supported Device
 
+Playbook: [Add or change a supported device](playbooks/add-supported-device.md).
+
 1. Add or update the device entry in `devices/manifest.json`.
 2. Add or update `devices/<slug>/packages.yaml`, `dev.yaml`, `esphome.yaml`, and
    files under `devices/<slug>/device/`.
@@ -75,6 +82,8 @@ If the new device has different layout behavior, also review web preview sizing
 in the manifest `web` section.
 
 ## Change Fonts or Icons
+
+Playbook: [Change fonts or icons](playbooks/change-fonts-or-icons.md).
 
 Fonts and icons are memory-sensitive on embedded displays.
 

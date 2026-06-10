@@ -10,6 +10,8 @@ documentation under `docs/`. For the longer contributor walkthrough, use
 
 ## Fast Orientation
 
+- The hard ownership map is [Source of Truth Contract](source-of-truth.md):
+  edit authored sources, never generated outputs.
 - Product metadata starts in `devices/manifest.json`.
 - Card behavior starts in `common/config/card_contract.json`.
 - Shared Home Assistant entity names start in `common/config/entity_names.json`.
@@ -21,12 +23,23 @@ documentation under `docs/`. For the longer contributor walkthrough, use
 
 ## Reference Map
 
+- [Source of Truth Contract](source-of-truth.md) - which files are authored,
+  which files are generated, how to rebuild them, and what check proves they are
+  current.
+- [Working Tree Rules](working-tree-rules.md) - how to handle dirty worktrees,
+  unrelated local changes, staging, commits, and pushes.
 - [Architecture](architecture.md) - how firmware, the web setup page, generated
   files, and device profiles fit together.
 - [Change Workflows](change-workflows.md) - common edits and the files/checks
   they usually require.
+- [Task Playbooks](playbooks/README.md) - short, checklist-driven recipes for
+  common changes with edit-first paths, generated-file expectations, and stop
+  rules.
 - [Card Contract](card-contract.md) - how card metadata moves from JSON into the
   web UI and firmware.
+- [Card Type Map](card-type-map.md) - per-card starting points for web files,
+  firmware headers, option storage, modals, Home Assistant subscriptions, and
+  checks.
 - [Web Configurator](web-configurator.md) - structure of the browser setup page
   served by the device.
 - [Firmware](firmware.md) - the on-device LVGL grid, card runtime, modals, fonts,
