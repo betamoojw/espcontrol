@@ -918,6 +918,10 @@ inline bool image_card_home_assistant_proxy_url(const std::string &url) {
          url.find("/api/image_proxy/") != std::string::npos;
 }
 
+inline bool image_card_home_assistant_proxy_authed(const std::string &url) {
+  return !image_card_home_assistant_proxy_url(url) || image_card_query_has_param(url, "token");
+}
+
 inline std::string image_card_sized_url(const std::string &url,
                                         lv_coord_t width,
                                         lv_coord_t height) {
@@ -1291,10 +1295,6 @@ inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef pict
       image_card_schedule_picture_retry(ctx, IMAGE_CARD_RETRY_INTERVAL_MS);
       return;
     }
-    url = image_card_join_url(base_url, proxy_path);
-    if (!url.empty() && raw.empty()) {
-      ESP_LOGI("image_card", "Using Home Assistant proxy fallback for %s", ctx->entity_id.c_str());
-    }
   }
   if (url.empty()) {
     ESP_LOGW("image_card", "No usable image URL for %s", ctx->entity_id.c_str());
@@ -1302,6 +1302,19 @@ inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef pict
     image_card_hide(ctx);
     if (image_card_startup_retry_active(ctx)) {
       ctx->next_picture_retry_ms = esphome::millis() + IMAGE_CARD_RETRY_INTERVAL_MS;
+      image_card_set_loading_state(ctx, "Loading", true);
+    } else {
+      image_card_set_loading_state(ctx, "Unavailable", true);
+    }
+    return;
+  }
+  if (!image_card_home_assistant_proxy_authed(url)) {
+    ESP_LOGW("image_card", "Skipping unauthenticated Home Assistant image proxy for %s",
+             ctx->entity_id.c_str());
+    if (ctx->image_ready) return;
+    image_card_hide(ctx);
+    if (image_card_startup_retry_active(ctx)) {
+      image_card_schedule_picture_retry(ctx, IMAGE_CARD_RETRY_INTERVAL_MS);
       image_card_set_loading_state(ctx, "Loading", true);
     } else {
       image_card_set_loading_state(ctx, "Unavailable", true);
