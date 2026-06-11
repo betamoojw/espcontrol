@@ -524,7 +524,7 @@ inline void apply_push_button_transition(lv_obj_t *btn) {
 
 inline void clear_push_button_transition(lv_obj_t *btn) {
   if (!btn) return;
-  lv_obj_set_style_transition(btn, nullptr,
+  lv_obj_remove_local_style_prop(btn, LV_STYLE_TRANSITION,
     static_cast<lv_style_selector_t>(LV_PART_MAIN) | LV_STATE_DEFAULT);
 }
 

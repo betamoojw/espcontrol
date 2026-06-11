@@ -1340,6 +1340,7 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
   }
   ctx->next_download_retry_ms = 0;
   ctx->image->cancel_update();
+  image_card_release_download_slot(ctx);
 
   ControlModalShell shell = control_modal_open_shell(
     ControlModalKind::IMAGE_CARD, ctx->btn, ctx->width_compensation_percent,
