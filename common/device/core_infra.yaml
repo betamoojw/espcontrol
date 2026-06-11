@@ -105,7 +105,7 @@ web_server:
   port: 80
   version: 3
   include_internal: true
-  js_url: https://cdn.jsdelivr.net/gh/jtenniswood/espcontrol@a155734317d8deda33d34c19964e0995942b2ddd/docs/public/webserver/${device_slug}/www.js?v=${firmware_version}&ui=20260610-s3-web-activity
+  js_url: https://jtenniswood.github.io/espcontrol/webserver/${device_slug}/www.js?v=${firmware_version}&ui=20260611-livecheck
   sorting_groups:
     - id: sg_button
       name: "Button Configuration"
