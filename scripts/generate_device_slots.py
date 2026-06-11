@@ -483,10 +483,12 @@ def cfg_lines(device: dict) -> list[str]:
     lines.append("            cfg.pause_home_idle = []() {")
     lines.append("              id(home_screen_idle_suspended) = true;")
     lines.append("              id(home_screen_idle_check).stop();")
+    lines.append("              id(screensaver_idle_check).stop();")
     lines.append("            };")
     lines.append("            cfg.resume_home_idle = []() {")
     lines.append("              id(home_screen_idle_suspended) = false;")
     lines.append("              id(home_screen_idle_check).execute();")
+    lines.append("              id(screensaver_idle_check).execute();")
     lines.append("            };")
     if image_card_count > 0:
         lines.append("            static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {")

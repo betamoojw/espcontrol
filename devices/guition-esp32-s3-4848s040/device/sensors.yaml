@@ -56,10 +56,12 @@ script:
           cfg.pause_home_idle = []() {
             id(home_screen_idle_suspended) = true;
             id(home_screen_idle_check).stop();
+            id(screensaver_idle_check).stop();
           };
           cfg.resume_home_idle = []() {
             id(home_screen_idle_suspended) = false;
             id(home_screen_idle_check).execute();
+            id(screensaver_idle_check).execute();
           };
           cfg.home_assistant_base_url = []() {
             std::string base = id(cover_art_home_assistant_base_url);
@@ -149,10 +151,12 @@ esphome:
             cfg.pause_home_idle = []() {
               id(home_screen_idle_suspended) = true;
               id(home_screen_idle_check).stop();
+              id(screensaver_idle_check).stop();
             };
             cfg.resume_home_idle = []() {
               id(home_screen_idle_suspended) = false;
               id(home_screen_idle_check).execute();
+              id(screensaver_idle_check).execute();
             };
             cfg.home_assistant_base_url = []() {
               std::string base = id(cover_art_home_assistant_base_url);
@@ -260,10 +264,12 @@ esphome:
             cfg.pause_home_idle = []() {
               id(home_screen_idle_suspended) = true;
               id(home_screen_idle_check).stop();
+              id(screensaver_idle_check).stop();
             };
             cfg.resume_home_idle = []() {
               id(home_screen_idle_suspended) = false;
               id(home_screen_idle_check).execute();
+              id(screensaver_idle_check).execute();
             };
             cfg.home_assistant_base_url = []() {
               std::string base = id(cover_art_home_assistant_base_url);

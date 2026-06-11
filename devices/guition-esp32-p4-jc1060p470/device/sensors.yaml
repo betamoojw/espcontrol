@@ -65,10 +65,12 @@ script:
           cfg.pause_home_idle = []() {
             id(home_screen_idle_suspended) = true;
             id(home_screen_idle_check).stop();
+            id(screensaver_idle_check).stop();
           };
           cfg.resume_home_idle = []() {
             id(home_screen_idle_suspended) = false;
             id(home_screen_idle_check).execute();
+            id(screensaver_idle_check).execute();
           };
           static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
             id(image_card_download_1),
@@ -183,10 +185,12 @@ esphome:
             cfg.pause_home_idle = []() {
               id(home_screen_idle_suspended) = true;
               id(home_screen_idle_check).stop();
+              id(screensaver_idle_check).stop();
             };
             cfg.resume_home_idle = []() {
               id(home_screen_idle_suspended) = false;
               id(home_screen_idle_check).execute();
+              id(screensaver_idle_check).execute();
             };
             static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
               id(image_card_download_1),
@@ -356,10 +360,12 @@ esphome:
             cfg.pause_home_idle = []() {
               id(home_screen_idle_suspended) = true;
               id(home_screen_idle_check).stop();
+              id(screensaver_idle_check).stop();
             };
             cfg.resume_home_idle = []() {
               id(home_screen_idle_suspended) = false;
               id(home_screen_idle_check).execute();
+              id(screensaver_idle_check).execute();
             };
             static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
               id(image_card_download_1),
