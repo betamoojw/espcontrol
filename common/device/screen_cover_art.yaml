@@ -974,6 +974,7 @@ script:
       - script.execute: clock_bar_apply
       - lvgl.widget.hide: dim_screensaver_touch_guard
       - lvgl.widget.show: cover_art_screensaver
+      - lambda: 'lv_obj_move_foreground(id(cover_art_screensaver));'
       - script.execute: cover_art_apply_responsive_layout
       - script.execute: cover_art_show_track_overlay
       - script.execute: cover_art_use_cached_artwork

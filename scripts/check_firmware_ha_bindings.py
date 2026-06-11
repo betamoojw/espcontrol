@@ -875,17 +875,44 @@ def firmware_clock_screensaver_overlay_errors(backlight_path: Path, root: Path) 
         required_keep_on_top_tokens = (
             "if (!id(is_clock_showing)) return;",
             "refresh_screensaver_fullscreen(id(clock_screensaver), id(dim_screensaver_touch_guard));",
-            "lv_obj_clear_flag(id(clock_screensaver), LV_OBJ_FLAG_HIDDEN);",
             "lv_obj_move_foreground(id(clock_screensaver));",
         )
         if any(token not in keep_on_top_body for token in required_keep_on_top_tokens):
             errors.append(f"{rel}: keep re-raising the active clock screensaver above overlays")
+        if "lv_obj_clear_flag(id(clock_screensaver), LV_OBJ_FLAG_HIDDEN)" in keep_on_top_body:
+            errors.append(
+                f"{rel}: do not un-hide the clock screensaver in keep-on-top; "
+                "show_clock_view owns widget visibility to avoid premature display during the fade"
+            )
 
     if (
         "interval: 1s" not in text
         or "script.execute: clock_screensaver_keep_on_top" not in text.split("interval:", 1)[-1]
     ):
         errors.append(f"{rel}: keep the active clock screensaver above overlays after it starts")
+
+    dimmed_body = yaml_script_body(text, "show_dimmed_view")
+    if dimmed_body is None:
+        errors.append(f"{rel}: missing show_dimmed_view script")
+    elif "lv_obj_move_foreground(id(dim_screensaver_touch_guard))" not in dimmed_body:
+        errors.append(f"{rel}: raise the dim screensaver touch guard above any existing top-layer elements")
+
+    return errors
+
+
+def firmware_screen_schedule_screensaver_overlay_errors(cover_art_path: Path, root: Path) -> list[str]:
+    errors: list[str] = []
+    if not cover_art_path.exists():
+        return errors
+
+    rel = cover_art_path.relative_to(root)
+    text = cover_art_path.read_text(encoding="utf-8")
+    show_body = yaml_script_body(text, "show_cover_art_view")
+
+    if show_body is None:
+        errors.append(f"{rel}: missing show_cover_art_view script")
+    elif "lv_obj_move_foreground(id(cover_art_screensaver))" not in show_body:
+        errors.append(f"{rel}: raise the cover art screensaver above any existing top-layer elements")
 
     return errors
 
@@ -1070,6 +1097,7 @@ def run_scan() -> int:
     errors.extend(firmware_artwork_image_auth_errors(ARTWORK_IMAGE_PATH, ROOT))
     errors.extend(firmware_screensaver_wake_guard_errors(BACKLIGHT_PATH, COVER_ART_PATH, ROOT))
     errors.extend(firmware_clock_screensaver_overlay_errors(BACKLIGHT_PATH, ROOT))
+    errors.extend(firmware_screen_schedule_screensaver_overlay_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_screen_schedule_screensaver_override_errors(BACKLIGHT_PATH, ROOT))
     errors.extend(firmware_climate_step_errors(FIRMWARE_DIR, ROOT))
     errors.extend(
