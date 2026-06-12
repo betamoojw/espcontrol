@@ -304,8 +304,8 @@ async function assertSettingsPage(page, label, options = {}) {
   );
   assert.strictEqual(
     await page.locator("#sp-set-sensor-media-player-enable").count(),
-    1,
-    `${label}: sensor cover art override should render`
+    0,
+    `${label}: sensor cover art override should not render`
   );
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!overflow, `${label}: settings page has horizontal overflow`);

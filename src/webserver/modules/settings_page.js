@@ -587,21 +587,6 @@ function buildSettingsPage(parent) {
   els.setClockBrightnessNightVal = timerClockControls.clockBrightnessNightVal;
   els.setClockBrightnessField = timerClockControls.brightnessField;
 
-  function addMediaPlayerSleepPreventionToggle(parent, inputId) {
-    var mediaPlayerToggle = toggleRow(
-      "Allow Media Cover Art to override screensaver settings",
-      inputId,
-      state.mediaPlayerSleepPreventionOn);
-    parent.appendChild(mediaPlayerToggle.row);
-    mediaPlayerToggle.input.addEventListener("change", function () {
-      state.mediaPlayerSleepPreventionOn = this.checked;
-      syncMediaPlayerSleepPreventionUi();
-      postSwitch(entityName("screen_saver_media_player_sleep_prevention"), state.mediaPlayerSleepPreventionOn);
-    });
-    return mediaPlayerToggle.input;
-  }
-  els.setMediaPlayerSleepPreventionToggle = addMediaPlayerSleepPreventionToggle(timerPanel, "sp-set-ss-media-player-enable");
-
   var coverArtBody = document.createElement("div");
   if (!isEpaperPreview()) {
     var coverArtToggle = toggleRow(
@@ -724,7 +709,6 @@ function buildSettingsPage(parent) {
   sensorPanel.appendChild(sensorClockControls.clockField);
   sensorPanel.appendChild(sensorClockControls.dimBrightnessField);
   sensorPanel.appendChild(sensorClockControls.brightnessField);
-  els.setSensorMediaPlayerSleepPreventionToggle = addMediaPlayerSleepPreventionToggle(sensorPanel, "sp-set-sensor-media-player-enable");
   ssBody.appendChild(sensorPanel);
   els.setPresence = presInp;
   els.setSensorClockSelect = sensorClockControls.clockSelect;
