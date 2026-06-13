@@ -1,27 +1,58 @@
 ---
 title: EspControl — No-Code Smart Home Touch Controller
 titleTemplate: :title
-description: "No-code smart home controller for ESP32 touchscreens. Easy web installer, full docs, no ESPHome required. Configure cards to control your Home Assistant devices."
+description: "No-code Home Assistant touchscreen controller for supported ESP32 panels. Install from a browser, configure cards from the panel web page, and control your home locally."
 ---
 
 ![EspControl on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](/images/home_screen_hero.jpg)
 
 # EspControl
 
-**A no-code, super-easy-to-configure smart home controller.** Configure affordable touchscreens to control devices across your entire smart home — no ESPHome setup, no YAML, no code to write. Just flash, connect, and start adding cards.
+**A no-code touchscreen controller for Home Assistant.** EspControl turns affordable ESP32 touchscreens into dedicated panels for the lights, scenes, sensors, heating, garage doors, media players, cameras, alarms, and routines you use every day.
 
-EspControl is free, open-source firmware that turns supported **ESP32 touchscreens** into beautiful control panels for [Home Assistant](https://www.home-assistant.io/). It comes with **full documentation** and an **[easy-to-use web installer](/getting-started/install)** — you can go from unboxing to a working wall panel in minutes.
+You do not need to write YAML, build your own ESPHome configuration, or keep a tablet permanently logged into Home Assistant. Install the firmware from a browser, connect the screen to WiFi, add it to Home Assistant, then configure the panel from its built-in setup page.
+
+Start here: **[Install EspControl](/getting-started/install)**.
 
 **Source code and issues:** [github.com/jtenniswood/espcontrol](https://github.com/jtenniswood/espcontrol).
 
-## Features
+## What You Can Build
 
-- **Grid layout** — a fixed grid sized to each screen so you can place cards exactly where you want them
-- **Subpage cards** — group related controls into folders to keep the home screen tidy
-- **Flexible card sizes** — make cards Single, Tall, Wide, or Large to suit the control
-- **Current card types** — Switch, Lights, Action, Option Select, Webhook, Trigger, Sensor, Doors & Windows, Presence, Slider, Fans, Cover, Garage Door, Lock, Alarm, Date & Time, World Clock, Weather, Camera, Media, Climate, Internal Switches, Screen Lock, and Subpage
-- **Edit controls** — drag-and-drop ordering, bulk select, and copy-paste between pages from the built-in web UI
-- **Screensaver** — dims and sleeps after a set time, or wakes automatically from a presence sensor
+- **Room control panels** for kitchens, hallways, bedrooms, offices, garages, and utility rooms
+- **Simple family controls** for scenes, scripts, lights, fans, covers, locks, and garage doors
+- **At-a-glance dashboards** for clocks, weather, temperature, humidity, battery, power, presence, doors, windows, and custom sensor text
+- **Media and camera panels** with now-playing information, cover art, playback controls, volume, progress, and camera images
+- **Compact secondary pages** for rooms, device groups, settings, or less common actions
+
+## Main Features
+
+- **Browser-based installer** - flash supported screens from Chrome or Edge using a USB-C data cable.
+- **Built-in setup page** - configure cards, pages, icons, labels, colours, display settings, backups, and firmware updates from a phone, tablet, or computer browser.
+- **Drag-and-drop grid layout** - each supported display has a layout sized for its resolution, with Single, Tall, Wide, and Large card sizes.
+- **Subpages** - open folder-like pages for rooms, device types, or extra controls while keeping the home screen tidy.
+- **Home Assistant controls** - control lights, switches, fans, covers, locks, alarms, climate devices, media players, scenes, scripts, automations, buttons, helpers, webhooks, and built-in relays.
+- **Live Home Assistant information** - show sensors, binary sensors, weather, clocks, time zones, doors, windows, presence, camera images, and media player status.
+- **Display behaviour controls** - set brightness, idle timeout, screensaver mode, presence-based wake, clock bar, rotation, screen schedule, and before-clock-sync behaviour.
+- **Appearance controls** - choose card icons, labels, status text, active colours, display modes, clock style, temperature units, and panel language.
+- **Firmware updates** - keep panels current over WiFi after the first install, with a manual update option when needed.
+- **Backup and restore** - export a setup, restore it later, or copy it to another compatible panel.
+
+## Card Types
+
+EspControl includes card types for common Home Assistant controls and display-only information:
+
+Switch, Lights, Action, Option Select, Webhook, Trigger, Sensor, Doors & Windows, Presence, Slider, Fans, Cover, Garage Door, Lock, Alarm, Date & Time, World Clock, Weather, Camera, Media, Climate, Internal Switches, Screen Lock, and Subpage.
+
+See [Card Types](/card-types/) for examples and setup notes.
+
+## How It Works
+
+1. Buy a supported ESP32 touchscreen.
+2. Install EspControl from your browser.
+3. Connect the panel to your 2.4 GHz WiFi network.
+4. Add the discovered ESPHome device in Home Assistant.
+5. Allow Home Assistant actions so the panel can control your devices.
+6. Open the panel setup page and choose the cards, pages, colours, and display behaviour you want.
 
 ## Where to Buy
 
@@ -46,3 +77,5 @@ If you find this project useful, consider buying me a coffee to support ongoing 
 - [Install](/getting-started/install) — what you need, how to flash, and first-time setup
 - [Setup](/features/setup) — how to configure cards, display, and screensaver from your browser
 - [Card Types](/card-types/) — choose the right card for each Home Assistant control, sensor, or panel action
+- [Firmware Updates](/features/firmware-updates) — how update checks and WiFi firmware updates work
+- [Backup](/features/backup) — how to save, restore, and move a panel setup
