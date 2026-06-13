@@ -43,6 +43,9 @@ globals:
   - id: display_takeover_suspended
     type: bool
     initial_value: 'false'
+  - id: screensaver_sensor_sleep_pending
+    type: bool
+    initial_value: 'false'
   - id: presence_detected
     type: bool
     initial_value: 'false'
@@ -185,6 +188,9 @@ script:
                 condition:
                   lambda: 'return !id(display_takeover_suspended);'
                 then:
+                  - globals.set:
+                      id: screensaver_sensor_sleep_pending
+                      value: 'false'
                   - lambda: 'navigation_return_home(id(main_page)->obj);'
                   - if:
                       condition:
@@ -211,6 +217,9 @@ script:
     mode: restart
     then:
       - script.stop: screensaver_idle_check
+      - globals.set:
+          id: screensaver_sensor_sleep_pending
+          value: 'true'
       - script.execute: screensaver_sleep_timer
 
   # Presence sensor mode is lower priority than the screen schedule. This keeps

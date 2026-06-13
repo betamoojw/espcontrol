@@ -158,6 +158,8 @@ def firmware_modal_sleep_takeover_errors(root: Path) -> list[str]:
             )
         if "display_takeover_suspended" not in text:
             errors.append("common/addon/backlight.yaml: track display-takeover suspension explicitly")
+        if "screensaver_sensor_sleep_pending" not in text:
+            errors.append("common/addon/backlight.yaml: preserve pending sensor-mode sleep while image modals are active")
         sleep_timer_body = yaml_script_body(text, "screensaver_sleep_timer")
         if sleep_timer_body is None:
             errors.append("common/addon/backlight.yaml: keep the screensaver sleep timer script")
@@ -196,6 +198,14 @@ def firmware_modal_sleep_takeover_errors(root: Path) -> list[str]:
         ):
             errors.append(
                 "scripts/generate_device_slots.py: image modal display guard must not stop the home-return timer"
+            )
+        if (
+            "id(screensaver_sensor_sleep_pending)" not in text
+            or "id(screensaver_sleep_sensor).execute();" not in text
+            or "!id(presence_detected)" not in text
+        ):
+            errors.append(
+                "scripts/generate_device_slots.py: re-check pending sensor-mode sleep when image modals close"
             )
         if (
             "cfg.suspend_display_takeover" not in text
@@ -295,6 +305,7 @@ def valid_sleep_takeover_files() -> dict[str, str]:
         "common/addon/backlight.yaml": (
             "globals:\n"
             "  - id: display_takeover_suspended\n"
+            "  - id: screensaver_sensor_sleep_pending\n"
             "script:\n"
             "  - id: screensaver_sleep_timer\n"
             "    then:\n"
@@ -321,6 +332,9 @@ def valid_sleep_takeover_files() -> dict[str, str]:
             "};\n"
             "cfg.resume_display_takeover = []() {\n"
             "  id(display_takeover_suspended) = false;\n"
+            "  if (id(screensaver_sensor_sleep_pending) && !id(presence_detected)) {\n"
+            "    id(screensaver_sleep_sensor).execute();\n"
+            "  }\n"
             "  id(home_screen_idle_check).execute();\n"
             "};\n"
         ),
@@ -381,6 +395,7 @@ def run_self_test() -> int:
     home_idle_gated["common/addon/backlight.yaml"] = (
         "globals:\n"
         "  - id: display_takeover_suspended\n"
+        "  - id: screensaver_sensor_sleep_pending\n"
         "script:\n"
         "  - id: screensaver_sleep_timer\n"
         "    then:\n"
@@ -412,6 +427,9 @@ def run_self_test() -> int:
         "};\n"
         "cfg.resume_display_takeover = []() {\n"
         "  id(display_takeover_suspended) = false;\n"
+        "  if (id(screensaver_sensor_sleep_pending) && !id(presence_detected)) {\n"
+        "    id(screensaver_sleep_sensor).execute();\n"
+        "  }\n"
         "  id(home_screen_idle_check).execute();\n"
         "};\n"
     )
@@ -419,6 +437,22 @@ def run_self_test() -> int:
         "image modal display guard stops home return",
         image_guard_stops_home_idle,
         ("must not stop the home-return timer",),
+    )
+    missing_sensor_resume = valid_sleep_takeover_files()
+    missing_sensor_resume["scripts/generate_device_slots.py"] = (
+        "cfg.suspend_display_takeover = []() {\n"
+        "  id(display_takeover_suspended) = true;\n"
+        "  id(screensaver_idle_check).stop();\n"
+        "};\n"
+        "cfg.resume_display_takeover = []() {\n"
+        "  id(display_takeover_suspended) = false;\n"
+        "  id(home_screen_idle_check).execute();\n"
+        "};\n"
+    )
+    expect_sleep_takeover_errors(
+        "image modal close misses pending sensor sleep",
+        missing_sensor_resume,
+        ("re-check pending sensor-mode sleep",),
     )
     print("Firmware modal allocation self-tests passed.")
     return 0
