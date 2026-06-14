@@ -534,6 +534,20 @@ inline lv_coord_t cover_control_slider_handle_inset(lv_obj_t *slider) {
   return inset;
 }
 
+inline uint32_t cover_control_slider_fill_color(CoverControlCtx *ctx, int pct) {
+  return slider_clamp_pct(pct) == 0
+    ? DARK_BACKGROUND_SECONDARY
+    : (ctx ? ctx->accent_color : DEFAULT_SLIDER_COLOR);
+}
+
+inline void cover_control_update_slider_fill_color(lv_obj_t *slider,
+                                                   CoverControlCtx *ctx,
+                                                   int pct) {
+  if (!slider) return;
+  lv_obj_set_style_bg_color(
+    slider, lv_color_hex(cover_control_slider_fill_color(ctx, pct)), LV_PART_INDICATOR);
+}
+
 inline void cover_control_update_slider_handle(lv_obj_t *slider, lv_obj_t *handle, int pct) {
   if (!slider || !handle) return;
   lv_coord_t width = lv_obj_get_width(slider);
@@ -603,6 +617,9 @@ inline void cover_control_update_position_fill(int position_pct) {
   lv_coord_t width = lv_obj_get_width(ui.position_slider);
   lv_coord_t height = lv_obj_get_height(ui.position_slider);
   if (width <= 0 || height <= 0) return;
+  lv_obj_set_style_bg_color(
+    ui.position_fill, lv_color_hex(cover_control_slider_fill_color(ui.active, position_pct)),
+    LV_PART_MAIN);
   lv_coord_t fill_h = (lv_coord_t)((int32_t) height * fill_pct / 100);
   lv_coord_t min_handle_cap = cover_control_slider_handle_inset(ui.position_slider) * 2 + 8;
   if (fill_h < min_handle_cap) fill_h = min_handle_cap;
@@ -663,6 +680,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   cover_control_layout_slider(ui.position_slider, content_w, content_h, content_center_y);
   cover_control_update_position_fill(ctx->current_position);
   cover_control_layout_slider(ui.tilt_slider, content_w, content_h, content_center_y);
+  cover_control_update_slider_fill_color(ui.tilt_slider, ctx, ctx->current_tilt);
   cover_control_update_slider_handle(ui.tilt_slider, ui.tilt_handle, ctx->current_tilt);
 
   if (ui.controls_box) {
@@ -718,6 +736,7 @@ inline void cover_control_set_tilt_value(CoverControlCtx *ctx, int pct) {
   CoverControlModalUi &ui = cover_control_modal_ui();
   if (!ctx || ui.active != ctx) return;
   cover_control_set_slider_value(ui.tilt_slider, ctx->updating_tilt, ctx->dragging_tilt, pct);
+  cover_control_update_slider_fill_color(ui.tilt_slider, ctx, pct);
   if (!ctx->dragging_tilt) cover_control_update_slider_handle(ui.tilt_slider, ui.tilt_handle, pct);
 }
 
@@ -887,6 +906,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
     ui.active->dragging_tilt = true;
     lv_obj_t *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
     ui.active->current_tilt = lv_slider_get_value(slider);
+    cover_control_update_slider_fill_color(slider, ui.active, ui.active->current_tilt);
     cover_control_update_slider_handle(slider, ui.tilt_handle, ui.active->current_tilt);
   }, LV_EVENT_VALUE_CHANGED, nullptr);
   lv_obj_add_event_cb(ui.tilt_slider, [](lv_event_t *e) {
