@@ -364,7 +364,9 @@ struct CoverControlModalUi {
   lv_obj_t *down_btn = nullptr;
   lv_obj_t *position_slider = nullptr;
   lv_obj_t *position_fill = nullptr;
+  lv_obj_t *position_handle = nullptr;
   lv_obj_t *tilt_slider = nullptr;
+  lv_obj_t *tilt_handle = nullptr;
   CoverControlCtx *active = nullptr;
   CoverControlTab tab = CoverControlTab::CONTROLS;
 };
@@ -509,6 +511,43 @@ inline lv_coord_t cover_control_home_grid_row_gap(const ControlModalLayout &layo
   return gap > 0 ? gap : 10;
 }
 
+inline lv_obj_t *cover_control_create_slider_handle(lv_obj_t *slider) {
+  if (!slider) return nullptr;
+  lv_obj_t *handle = lv_obj_create(slider);
+  if (!handle) return nullptr;
+  lv_obj_set_size(handle, 0, 0);
+  lv_obj_set_style_bg_color(handle, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(handle, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(handle, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(handle, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(handle, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(handle, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_clear_flag(handle, LV_OBJ_FLAG_SCROLLABLE);
+  return handle;
+}
+
+inline void cover_control_update_slider_handle(lv_obj_t *slider, lv_obj_t *handle, int pct) {
+  if (!slider || !handle) return;
+  lv_coord_t width = lv_obj_get_width(slider);
+  lv_coord_t height = lv_obj_get_height(slider);
+  if (width <= 0 || height <= 0) return;
+  lv_coord_t handle_w = width * 3 / 5;
+  if (handle_w < 20) handle_w = 20;
+  if (handle_w > width - 12) handle_w = width - 12;
+  if (handle_w < 8) handle_w = 8;
+  lv_coord_t handle_h = height / 70;
+  if (handle_h < 5) handle_h = 5;
+  if (handle_h > 8) handle_h = 8;
+  lv_coord_t y = (lv_coord_t)((int32_t) height * (100 - slider_clamp_pct(pct)) / 100);
+  y -= handle_h / 2;
+  if (y < 0) y = 0;
+  if (y > height - handle_h) y = height - handle_h;
+  lv_obj_set_size(handle, handle_w, handle_h);
+  lv_obj_set_style_radius(handle, handle_h / 2, LV_PART_MAIN);
+  lv_obj_align(handle, LV_ALIGN_TOP_MID, 0, y);
+  lv_obj_move_foreground(handle);
+}
+
 inline void cover_control_layout_slider(lv_obj_t *slider, lv_coord_t width,
                                         lv_coord_t height, lv_coord_t center_y) {
   if (!slider) return;
@@ -532,10 +571,10 @@ inline void cover_control_update_position_fill(int position_pct) {
   if (width <= 0 || height <= 0) return;
   lv_coord_t fill_h = (lv_coord_t)((int32_t) height * fill_pct / 100);
   lv_obj_set_size(ui.position_fill, width, fill_h);
-  lv_obj_set_style_radius(
-    ui.position_fill, lv_obj_get_style_radius(ui.position_slider, LV_PART_MAIN), LV_PART_MAIN);
+  lv_obj_set_style_radius(ui.position_fill, 0, LV_PART_MAIN);
   lv_obj_align(ui.position_fill, LV_ALIGN_TOP_MID, 0, 0);
   lv_obj_move_foreground(ui.position_fill);
+  cover_control_update_slider_handle(ui.position_slider, ui.position_handle, position_pct);
 }
 
 inline void cover_control_layout_modal(CoverControlCtx *ctx) {
@@ -587,6 +626,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   cover_control_layout_slider(ui.position_slider, content_w, content_h, content_center_y);
   cover_control_update_position_fill(ctx->current_position);
   cover_control_layout_slider(ui.tilt_slider, content_w, content_h, content_center_y);
+  cover_control_update_slider_handle(ui.tilt_slider, ui.tilt_handle, ctx->current_tilt);
 
   if (ui.controls_box) {
     lv_coord_t box_w = layout.panel_w - layout.inset * 3;
@@ -643,6 +683,7 @@ inline void cover_control_set_tilt_value(CoverControlCtx *ctx, int pct) {
   CoverControlModalUi &ui = cover_control_modal_ui();
   if (!ctx || ui.active != ctx) return;
   cover_control_set_slider_value(ui.tilt_slider, ctx->updating_tilt, ctx->dragging_tilt, pct);
+  if (!ctx->dragging_tilt) cover_control_update_slider_handle(ui.tilt_slider, ui.tilt_handle, pct);
 }
 
 inline bool cover_control_parse_supported_features(esphome::StringRef val, int &features) {
@@ -694,6 +735,7 @@ inline lv_obj_t *cover_control_create_position_fill(lv_obj_t *slider, uint32_t a
   lv_obj_set_style_border_width(fill, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(fill, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(fill, 0, LV_PART_MAIN);
+  lv_obj_set_style_radius(fill, 0, LV_PART_MAIN);
   lv_obj_clear_flag(fill, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_clear_flag(fill, LV_OBJ_FLAG_SCROLLABLE);
   return fill;
@@ -766,6 +808,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
   ui.position_slider = lv_slider_create(ui.panel);
   cover_control_style_slider(ui.position_slider, ctx->accent_color);
   ui.position_fill = cover_control_create_position_fill(ui.position_slider, ctx->accent_color);
+  ui.position_handle = cover_control_create_slider_handle(ui.position_slider);
   lv_slider_set_value(ui.position_slider, slider_clamp_pct(ctx->current_position), LV_ANIM_OFF);
   lv_obj_add_event_cb(ui.position_slider, [](lv_event_t *e) {
     CoverControlModalUi &ui = cover_control_modal_ui();
@@ -797,6 +840,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
 
   ui.tilt_slider = lv_slider_create(ui.panel);
   cover_control_style_slider(ui.tilt_slider, ctx->accent_color);
+  ui.tilt_handle = cover_control_create_slider_handle(ui.tilt_slider);
   lv_slider_set_value(ui.tilt_slider, slider_clamp_pct(ctx->current_tilt), LV_ANIM_OFF);
   lv_obj_add_event_cb(ui.tilt_slider, [](lv_event_t *e) {
     CoverControlModalUi &ui = cover_control_modal_ui();
@@ -808,6 +852,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
     ui.active->dragging_tilt = true;
     lv_obj_t *slider = static_cast<lv_obj_t *>(lv_event_get_target(e));
     ui.active->current_tilt = lv_slider_get_value(slider);
+    cover_control_update_slider_handle(slider, ui.tilt_handle, ui.active->current_tilt);
   }, LV_EVENT_VALUE_CHANGED, nullptr);
   lv_obj_add_event_cb(ui.tilt_slider, [](lv_event_t *e) {
     CoverControlModalUi &ui = cover_control_modal_ui();
