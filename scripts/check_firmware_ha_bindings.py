@@ -112,22 +112,17 @@ def firmware_ha_boundary_errors(firmware_dir: Path, root: Path) -> list[str]:
         errors.append(f"{rel}: missing ha_subscribe_state helper")
     elif "heap_available" in state_helper.group("body"):
         errors.append(f"{rel}: keep core HA state subscriptions off the low-heap guard")
-    elif "ha_note_state_retry_result" not in state_helper.group("body"):
-        errors.append(f"{rel}: track unavailable subscribed states for reconnect retries")
 
-    if (
-        "ha_retry_unavailable_states" not in text
-        or "ha_unavailable_state_retry_refs" not in text
-        or "HA_UNAVAILABLE_STATE_RETRY_INTERVAL_MS" not in text
-        or "HA_UNAVAILABLE_STATE_RETRY_RESPONSE_TIMEOUT_MS" not in text
-    ):
-        errors.append(f"{rel}: retry unavailable subscribed states after Home Assistant finishes startup")
-    if "waiting_for_response = false" not in text:
-        errors.append(f"{rel}: expire unanswered unavailable-state retries after Home Assistant startup")
-    if "ha_entity_state_unavailable_ref(entity_id, state)" not in text:
-        errors.append(f"{rel}: use entity-aware unavailable checks for subscribed state retries")
-    if "ha_reset_unavailable_state_retries" not in text:
-        errors.append(f"{rel}: expose a helper to clear stale unavailable state retries")
+    retry_symbols = (
+        "HaUnavailableStateRetryRef",
+        "ha_unavailable_state_retry_refs",
+        "ha_note_state_retry_result",
+        "ha_retry_unavailable_states",
+        "ha_reset_unavailable_state_retries",
+        "HA_UNAVAILABLE_STATE_RETRY",
+    )
+    if any(symbol in text for symbol in retry_symbols):
+        errors.append(f"{rel}: do not reintroduce unavailable HA state retry polling")
 
     attribute_helper = ATTRIBUTE_HELPER_PATTERN.search(text)
     if not attribute_helper:
@@ -169,20 +164,16 @@ def firmware_unavailable_retry_errors(
             config_text,
             re.DOTALL,
         )
-        if not bump_match or "ha_reset_unavailable_state_retries()" not in bump_match.group("body"):
-            errors.append(f"{config_rel}: clear stale unavailable state retries when subscriptions are rebuilt")
+        if bump_match and "ha_reset_unavailable_state_retries" in bump_match.group("body"):
+            errors.append(f"{config_rel}: do not reset removed unavailable HA state retries")
+        if "ha_reset_unavailable_state_retries" in config_text:
+            errors.append(f"{config_rel}: do not keep removed unavailable HA state retry helpers")
 
     if core_infra_path.exists():
         core_rel = core_infra_path.relative_to(root)
         core_text = core_infra_path.read_text(encoding="utf-8")
-        if "ha_retry_unavailable_states" not in core_text:
-            errors.append(f"{core_rel}: retry unavailable HA states after reconnects and during maintenance")
-        interval_match = re.search(
-            r"(?ms)^interval:\n(?P<body>.*?)(?:^logger:|\Z)",
-            core_text,
-        )
-        if not interval_match or "ha_retry_unavailable_states();" not in interval_match.group("body"):
-            errors.append(f"{core_rel}: periodically retry unavailable HA states")
+        if "ha_retry_unavailable_states" in core_text:
+            errors.append(f"{core_rel}: do not retry unavailable HA states after reconnects or during maintenance")
     return errors
 
 
@@ -1267,6 +1258,28 @@ def expect_ha_boundary_errors(name: str, files: dict[str, str], expected: tuple[
             assert not errors, f"{name}: expected no errors, got {errors!r}"
 
 
+def expect_unavailable_retry_errors(
+    name: str,
+    config_text: str,
+    core_text: str,
+    expected: tuple[str, ...],
+) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        firmware_dir = root / "components" / "espcontrol"
+        core_path = root / "common" / "device" / "core_infra.yaml"
+        firmware_dir.mkdir(parents=True)
+        core_path.parent.mkdir(parents=True)
+        (firmware_dir / "button_grid_config.h").write_text(config_text, encoding="utf-8")
+        core_path.write_text(core_text, encoding="utf-8")
+
+        errors = firmware_unavailable_retry_errors(firmware_dir, core_path, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
 def expect_todo_request_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -1760,6 +1773,38 @@ def run_self_test() -> int:
             )
         },
         ("send Home Assistant actions only after state subscription is ready",),
+    )
+    expect_ha_boundary_errors(
+        "unavailable retry helper symbols",
+        {
+            "button_grid_ha.h": (
+                "struct HaUnavailableStateRetryRef {};\n"
+                "inline bool ha_subscribe_state() {\n  return true;\n}\n"
+                "inline bool ha_subscribe_attribute() {\n  return true;\n}\n"
+                "inline bool ha_cancel_action_response_callback() {\n  handle_action_response(); return true;\n}\n"
+                "inline bool ha_action_send() {\n"
+                "  return ha_api_state_connected() && HA_ACTION_INTERNAL_FREE_MIN_BYTES;\n"
+                "}\n"
+            )
+        },
+        ("do not reintroduce unavailable HA state retry polling",),
+    )
+    expect_unavailable_retry_errors(
+        "unavailable retry reset and interval",
+        "inline void bump_ha_subscription_generation() {\n"
+        "  ha_reset_unavailable_state_retries();\n"
+        "  ha_reset_deferred_state_requests();\n"
+        "}\n",
+        "interval:\n"
+        "  - interval: 5s\n"
+        "    then:\n"
+        "      - lambda: |-\n"
+        "          ha_retry_unavailable_states();\n",
+        (
+            "do not reset removed unavailable HA state retries",
+            "do not keep removed unavailable HA state retry helpers",
+            "do not retry unavailable HA states",
+        ),
     )
     with TemporaryDirectory() as tmp:
         root = Path(tmp)

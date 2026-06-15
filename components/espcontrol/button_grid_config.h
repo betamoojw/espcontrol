@@ -1270,9 +1270,6 @@ inline void reset_ha_control_availability_refs() {
   ha_control_availability_refs().clear();
 }
 
-#ifndef ESPCONTROL_HA_RETRY_HELPERS_DEFINED
-inline void ha_reset_unavailable_state_retries() {}
-#endif
 #ifndef ESPCONTROL_HA_DEFERRED_HELPERS_DEFINED
 inline void ha_reset_deferred_state_requests() {}
 #endif
@@ -1286,7 +1283,6 @@ inline void bump_ha_subscription_generation() {
   uint32_t &generation = ha_subscription_generation();
   generation++;
   if (generation == 0) generation = 1;
-  ha_reset_unavailable_state_retries();
   ha_reset_deferred_state_requests();
 }
 
