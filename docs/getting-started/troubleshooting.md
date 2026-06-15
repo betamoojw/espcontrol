@@ -6,6 +6,11 @@ description:
 
 # Troubleshooting
 
+## The Screen Doesn't Respond to Commands
+
+- If the display shows your Home Assistant devices but nothing happens when you tap controls, such as turning lights on, Home Assistant actions probably need to be enabled for the display.
+- Follow the [Enable Actions](https://jtenniswood.github.io/espcontrol/getting-started/home-assistant-actions) guide and make sure **Allow the device to perform Home Assistant actions** is turned on.
+
 ## The Install Button Doesn't Detect My Device
 
 - Make sure you're using **Chrome or Edge** on a desktop computer. Mobile browsers and Safari/Firefox don't support the required browser feature (WebSerial).
@@ -23,11 +28,6 @@ description:
 
 - Make sure the display and Home Assistant are on the **same WiFi network** (not a guest network or a different VLAN).
 - In Home Assistant, go to **Settings > Devices & Services > Add Integration** and search for **ESPHome**. Enter the device's IP address manually.
-
-## Home Assistant Doesn't Respond to Button Presses
-
-- If the display shows your Home Assistant devices but nothing happens when you tap buttons, switches, lights, scripts, scenes, or other controls, Home Assistant actions probably need to be enabled for the display.
-- Follow the [Enable Actions](/getting-started/home-assistant-actions) guide and make sure **Allow the device to perform Home Assistant actions** is turned on.
 
 ## The Web Page Looks Broken or Unstyled
 
