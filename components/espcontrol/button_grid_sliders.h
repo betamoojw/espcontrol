@@ -370,7 +370,7 @@ struct CoverControlModalUi {
   lv_obj_t *tilt_slider = nullptr;
   lv_obj_t *tilt_handle = nullptr;
   CoverControlCtx *active = nullptr;
-  CoverControlTab tab = CoverControlTab::CONTROLS;
+  CoverControlTab tab = CoverControlTab::POSITION;
 };
 
 inline CoverControlModalUi &cover_control_modal_ui() {
@@ -423,7 +423,7 @@ inline void cover_control_apply_tab_visibility() {
   CoverControlCtx *ctx = ui.active;
   if (!ctx) return;
   if (!ctx->supports_tilt && ui.tab == CoverControlTab::TILT) {
-    ui.tab = CoverControlTab::CONTROLS;
+    ui.tab = CoverControlTab::POSITION;
   }
   bool show_controls = ui.tab == CoverControlTab::CONTROLS;
   bool show_position = ui.tab == CoverControlTab::POSITION;
@@ -644,7 +644,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   CoverControlModalUi &ui = cover_control_modal_ui();
   if (!ctx || !ui.panel) return;
   if (!ctx->supports_tilt && ui.tab == CoverControlTab::TILT) {
-    ui.tab = CoverControlTab::CONTROLS;
+    ui.tab = CoverControlTab::POSITION;
   }
   ControlModalLayout layout = control_modal_calc_layout(ctx->width_compensation_percent);
 
@@ -822,7 +822,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
   ui.overlay = shell.overlay;
   ui.panel = shell.panel;
   ui.back_btn = shell.close_btn;
-  ui.tab = CoverControlTab::CONTROLS;
+  ui.tab = CoverControlTab::POSITION;
   if (!ui.panel) return;
 
   ui.tab_row = lv_obj_create(ui.panel);
