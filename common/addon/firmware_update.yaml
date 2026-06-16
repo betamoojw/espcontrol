@@ -36,9 +36,6 @@ esphome:
                   return NETWORK_STATUS_UPDATE_HIDDEN;
               }
             };
-            network_status_set_update_callback([]() {
-              id(firmware_update_from_screen).execute();
-            });
             network_status_set_update_check_callback([]() {
               id(firmware_update_check_for_network_status).execute();
             });
