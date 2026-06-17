@@ -941,6 +941,9 @@ void ArtworkImage::retire_active_buffer_() {
 #endif
   this->limit_retired_buffers_();
   this->cleanup_retired_buffers_(false);
+  if (!this->retired_buffers_.empty()) {
+    this->enable_loop();
+  }
 }
 
 void ArtworkImage::cleanup_retired_buffers_(bool force) {
