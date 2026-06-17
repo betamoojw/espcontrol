@@ -295,6 +295,9 @@ assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonCon
 assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
   "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=night%7Cvacation"
 ))), ["night", "vacation"]);
+assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
+  "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=away%7Chome%7Cnight%7Cvacation%7Cdisarm"
+))), ["away", "home", "night"]);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", false, false), false);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, true), true);

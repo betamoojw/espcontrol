@@ -1004,6 +1004,21 @@ assertButtonRoundTrip(hooks, "alarm card night vacation options", nightVacationA
 const parsedNightVacationAlarm = hooks.parseButtonConfig(hooks.serializeButtonConfig(nightVacationAlarmCard));
 assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(parsedNightVacationAlarm)), ["night", "vacation"], "alarm visible night and vacation actions");
 
+const tooManyAlarmCard = {
+  entity: "alarm_control_panel.house",
+  label: "House Alarm",
+  icon: "Alarm",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "alarm",
+  precision: "",
+  options: "actions=away%7Chome%7Cnight%7Cvacation%7Cdisarm",
+};
+const parsedTooManyAlarm = hooks.parseButtonConfig(hooks.serializeButtonConfig(tooManyAlarmCard));
+assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(parsedTooManyAlarm)), ["away", "home", "night"], "alarm visible actions are limited to three");
+assert.strictEqual(parsedTooManyAlarm.options, "actions=away%7Chome%7Cnight", "alarm visible action overflow is trimmed when saved");
+
 const statusAlarmCard = {
   entity: "alarm_control_panel.house",
   label: "House Alarm",

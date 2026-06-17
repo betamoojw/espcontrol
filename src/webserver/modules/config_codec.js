@@ -245,6 +245,7 @@ var ALARM_ACTIONS = [
   { value: "disarm", label: "Disarm", service: "alarm_control_panel.alarm_disarm", icon: "Shield Off" },
 ];
 var ALARM_DEFAULT_ACTIONS = ["away", "home", "disarm"];
+var ALARM_MAX_VISIBLE_ACTIONS = 3;
 
 function alarmBehaviorSpec() {
   var card = cardContractCard("alarm");
@@ -1086,6 +1087,7 @@ function normalizeAlarmActionList(value) {
     var action = parts[i];
     if (!alarmActionInfo(action) || out.indexOf(action) >= 0) continue;
     out.push(action);
+    if (out.length >= ALARM_MAX_VISIBLE_ACTIONS) break;
   }
   return out.length ? out : alarmDefaultActions();
 }

@@ -8,6 +8,7 @@ constexpr uint32_t ALARM_TRIGGERED_COLOR = 0xC62828;
 constexpr uint32_t ALARM_CARD_CTX_MAGIC = 0x414C4D43;    // ALMC
 constexpr uint32_t ALARM_ACTION_CTX_MAGIC = 0x414C4D41;  // ALMA
 constexpr int ALARM_MAX_ACTIONS = 5;
+constexpr int ALARM_MAX_VISIBLE_ACTIONS = 3;
 
 struct AlarmCardCtx {
   uint32_t magic = ALARM_CARD_CTX_MAGIC;
@@ -1173,7 +1174,7 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
 
   ControlModalLayout &layout = shell.layout;
   std::string modes[ALARM_MAX_ACTIONS];
-  ui.action_count = alarm_visible_action_modes(ctx->options, modes, ALARM_MAX_ACTIONS);
+  ui.action_count = alarm_visible_action_modes(ctx->options, modes, ALARM_MAX_VISIBLE_ACTIONS);
   if (ui.action_count < 1) {
     ui.action_count = 1;
     modes[0] = "disarm";
@@ -1326,7 +1327,7 @@ inline AlarmCardCtx *create_alarm_card_context(
   }, LV_EVENT_CLICKED, main_page_obj);
 
   std::string modes[ALARM_MAX_ACTIONS];
-  int mode_count = alarm_visible_action_modes(p.options, modes, ALARM_MAX_ACTIONS);
+  int mode_count = alarm_visible_action_modes(p.options, modes, ALARM_MAX_VISIBLE_ACTIONS);
   int page_pos = 1;
   for (int i = 0; i < mode_count && page_pos < NS; i++) {
     std::string mode = modes[i];

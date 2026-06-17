@@ -30,7 +30,7 @@ Use Alarm cards for house alarms, zone alarms, and Home Assistant alarm integrat
 
 Combined Control is the most complete alarm card mode. Tapping the card opens an alarm screen on the panel, where the available actions can include **Arm Away**, **Arm Home**, **Arm Night**, **Arm Vacation**, and **Disarm**.
 
-The setup page lets you choose which actions appear. This is useful when a panel should allow arming but not disarming, or when you only use certain arming modes such as Night and Away.
+The setup page lets you choose up to three actions to appear. This is useful when a panel should allow arming but not disarming, or when you only use certain arming modes such as Night and Away.
 
 The card can show:
 
