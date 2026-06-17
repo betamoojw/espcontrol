@@ -411,6 +411,17 @@ int main() {
   assert(action_card_state_icon_mode(action_icon));
   assert(!action_card_state_numeric_mode(action_icon));
   assert(!action_card_state_text_mode(action_icon));
+  auto action_confirm = parse_cfg("script.goodnight;Goodnight;Script Text Play;Auto;script.turn_on;;action;;confirm_on,confirm_message=Run%20bedtime%3F,confirm_yes=Run,confirm_no=Cancel");
+  assert(action_script_confirmation_enabled(action_confirm));
+  assert(switch_confirmation_message(action_confirm) == "Run bedtime?");
+  assert(switch_confirmation_yes_text(action_confirm) == "Run");
+  assert(switch_confirmation_no_text(action_confirm) == "Cancel");
+  auto action_confirm_default = parse_cfg("script.goodnight;Goodnight;Script Text Play;Auto;script.turn_on;;action;;confirm_on");
+  assert(action_script_confirmation_enabled(action_confirm_default));
+  assert(switch_confirmation_message(action_confirm_default) == "Run this script?");
+  auto scene_confirm = parse_cfg("scene.goodnight;Goodnight;Movie Open;Auto;scene.turn_on;;action;;confirm_on,confirm_message=Run%20bedtime%3F");
+  assert(!action_script_confirmation_enabled(scene_confirm));
+  assert(scene_confirm.options == "");
 
   auto climate_large = parse_cfg("climate.living_room;Living;Thermostat;Auto;;;climate;1;large_numbers");
   assert(climate_large.options == "large_numbers");

@@ -256,6 +256,47 @@ const confirmationOnRoundTrip = hooks.parseButtonConfig(hooks.serializeButtonCon
 }));
 assert.strictEqual(hooks.switchConfirmationMode(confirmationOnRoundTrip), "on");
 assert.strictEqual(hooks.switchConfirmationMessage(confirmationOnRoundTrip), "Turn on this device?");
+const scriptConfirmationButton = {
+  entity: "script.goodnight",
+  label: "Goodnight",
+  icon: "Script Text Play",
+  icon_on: "Auto",
+  sensor: "script.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+  options: "confirm_on,confirm_message=Run bedtime?,confirm_yes=Run,confirm_no=Cancel",
+};
+const scriptConfirmationRoundTrip = hooks.parseButtonConfig(hooks.serializeButtonConfig(scriptConfirmationButton));
+assert.deepStrictEqual(plain(scriptConfirmationRoundTrip), scriptConfirmationButton);
+assert.strictEqual(hooks.actionScriptConfirmationEnabled(scriptConfirmationRoundTrip), true);
+assert.strictEqual(hooks.actionScriptConfirmationMessage(scriptConfirmationRoundTrip), "Run bedtime?");
+assert.strictEqual(hooks.actionScriptConfirmationYesText(scriptConfirmationRoundTrip), "Run");
+assert.strictEqual(hooks.actionScriptConfirmationNoText(scriptConfirmationRoundTrip), "Cancel");
+const scriptConfirmationDefaultRoundTrip = hooks.parseButtonConfig(hooks.serializeButtonConfig({
+  entity: "script.goodnight",
+  label: "Goodnight",
+  icon: "Script Text Play",
+  icon_on: "Auto",
+  sensor: "script.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+  options: "confirm_on",
+}));
+assert.strictEqual(hooks.actionScriptConfirmationMessage(scriptConfirmationDefaultRoundTrip), "Run this script?");
+const sceneWithStaleConfirmation = hooks.parseButtonConfig(hooks.serializeButtonConfig({
+  entity: "scene.goodnight",
+  label: "Goodnight",
+  icon: "Movie Open",
+  icon_on: "Auto",
+  sensor: "scene.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+  options: "confirm_on,confirm_message=Run bedtime?",
+}));
+assert.strictEqual(sceneWithStaleConfirmation.options, "", "non-script action cards drop script confirmation options");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", false, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), true);

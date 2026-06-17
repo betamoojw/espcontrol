@@ -100,6 +100,32 @@ var CARD_CONTRACT_CARDS = {
         "name": "large_numbers",
         "label": "Large State Numbers",
         "kind": "flag"
+      },
+      {
+        "name": "confirmation_required",
+        "label": "Confirmation Required",
+        "kind": "flag",
+        "storage": [
+          "confirm_on"
+        ]
+      },
+      {
+        "name": "confirm_message",
+        "label": "Message",
+        "kind": "text",
+        "defaultValue": "Run this script?"
+      },
+      {
+        "name": "confirm_yes",
+        "label": "Confirm Button",
+        "kind": "text",
+        "defaultValue": "Yes"
+      },
+      {
+        "name": "confirm_no",
+        "label": "Cancel Button",
+        "kind": "text",
+        "defaultValue": "No"
       }
     ],
     "default": {

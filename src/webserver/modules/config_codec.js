@@ -167,6 +167,8 @@ function normalizeButtonConfig(b) {
     b.icon_on = "Auto";
     b.options = "";
     if (!b.icon || b.icon === "Auto" || b.icon === "Chevron Down") b.icon = "Flash";
+  } else if (b && b.type === "action") {
+    b.options = normalizeActionOptions(b.options, b.sensor);
   }
   if (b && !b.type) {
     b.options = normalizeSwitchConfirmationOptions(b.options);
@@ -221,6 +223,7 @@ var SWITCH_CONFIRM_ON_DEFAULT_MESSAGE = "Turn on this device?";
 var SWITCH_CONFIRM_BOTH_DEFAULT_MESSAGE = "Toggle this device?";
 var SWITCH_CONFIRM_DEFAULT_YES = "Yes";
 var SWITCH_CONFIRM_DEFAULT_NO = "No";
+var ACTION_SCRIPT_CONFIRM_DEFAULT_MESSAGE = "Run this script?";
 var ALARM_PIN_ARM_OPTION = "pin_arm";
 var ALARM_PIN_DISARM_OPTION = "pin_disarm";
 var ALARM_ACTIONS_OPTION = "actions";
@@ -953,6 +956,98 @@ function setSwitchConfirmationOptions(b, mode, message, yesText, noText) {
   return b.options;
 }
 
+function actionCardIsScript(b) {
+  var value = typeof b === "string" ? b : b && b.sensor;
+  return value === "script.turn_on";
+}
+
+function actionScriptConfirmationEnabled(b) {
+  return !!(b && actionCardIsScript(b) &&
+    configOptionEnabled(b.options, SWITCH_CONFIRM_ON_OPTION));
+}
+
+function actionScriptConfirmationDefaultMessage() {
+  return cardContractOptionDefaultValue("action", SWITCH_CONFIRM_MESSAGE_OPTION,
+    ACTION_SCRIPT_CONFIRM_DEFAULT_MESSAGE);
+}
+
+function actionScriptConfirmationMessage(b) {
+  return configOptionValue(b && b.options, SWITCH_CONFIRM_MESSAGE_OPTION) ||
+    actionScriptConfirmationDefaultMessage();
+}
+
+function actionScriptConfirmationYesText(b) {
+  return configOptionValue(b && b.options, SWITCH_CONFIRM_YES_OPTION) ||
+    cardContractOptionDefaultValue("action", SWITCH_CONFIRM_YES_OPTION, SWITCH_CONFIRM_DEFAULT_YES);
+}
+
+function actionScriptConfirmationNoText(b) {
+  return configOptionValue(b && b.options, SWITCH_CONFIRM_NO_OPTION) ||
+    cardContractOptionDefaultValue("action", SWITCH_CONFIRM_NO_OPTION, SWITCH_CONFIRM_DEFAULT_NO);
+}
+
+function copyActionCardStateOptions(out, options) {
+  var stateEntity = configOptionValue(options, ACTION_CARD_STATE_ENTITY_OPTION);
+  if (!stateEntity) return out;
+  out = setConfigOptionValue(out, ACTION_CARD_STATE_ENTITY_OPTION, stateEntity);
+  var rawPrecision = configOptionValue(options, ACTION_CARD_STATE_PRECISION_OPTION);
+  if (rawPrecision === "icon" || rawPrecision === "text") {
+    out = setConfigOptionValue(out, ACTION_CARD_STATE_PRECISION_OPTION, rawPrecision);
+    return out;
+  }
+  var stateUnit = configOptionValue(options, ACTION_CARD_STATE_UNIT_OPTION);
+  if (!stateUnit && rawPrecision !== "0" && rawPrecision !== "1" && rawPrecision !== "2") {
+    return out;
+  }
+  var statePrecision = rawPrecision === "1" || rawPrecision === "2" ? rawPrecision : "0";
+  if (stateUnit) out = setConfigOptionValue(out, ACTION_CARD_STATE_UNIT_OPTION, stateUnit);
+  if (statePrecision && statePrecision !== "0") {
+    out = setConfigOptionValue(out, ACTION_CARD_STATE_PRECISION_OPTION, statePrecision);
+  }
+  out = copyLargeNumbersOption(out, options);
+  return out;
+}
+
+function normalizeActionOptions(options, action) {
+  var out = copyActionCardStateOptions("", options);
+  if (action !== "script.turn_on" || !configOptionEnabled(options, SWITCH_CONFIRM_ON_OPTION)) {
+    return out;
+  }
+  out = setConfigOption(out, SWITCH_CONFIRM_ON_OPTION, true);
+  var msg = configOptionValue(options, SWITCH_CONFIRM_MESSAGE_OPTION);
+  var yes = configOptionValue(options, SWITCH_CONFIRM_YES_OPTION);
+  var no = configOptionValue(options, SWITCH_CONFIRM_NO_OPTION);
+  if (msg && msg !== actionScriptConfirmationDefaultMessage()) {
+    out = setConfigOptionValue(out, SWITCH_CONFIRM_MESSAGE_OPTION, msg);
+  }
+  if (yes && yes !== cardContractOptionDefaultValue("action", SWITCH_CONFIRM_YES_OPTION, SWITCH_CONFIRM_DEFAULT_YES)) {
+    out = setConfigOptionValue(out, SWITCH_CONFIRM_YES_OPTION, yes);
+  }
+  if (no && no !== cardContractOptionDefaultValue("action", SWITCH_CONFIRM_NO_OPTION, SWITCH_CONFIRM_DEFAULT_NO)) {
+    out = setConfigOptionValue(out, SWITCH_CONFIRM_NO_OPTION, no);
+  }
+  return out;
+}
+
+function setActionScriptConfirmationOptions(b, enabled, message, yesText, noText) {
+  if (!b) return "";
+  var out = copyActionCardStateOptions("", b.options);
+  if (enabled && actionCardIsScript(b)) {
+    out = setConfigOption(out, SWITCH_CONFIRM_ON_OPTION, true);
+    if (message && message !== actionScriptConfirmationDefaultMessage()) {
+      out = setConfigOptionValue(out, SWITCH_CONFIRM_MESSAGE_OPTION, message);
+    }
+    if (yesText && yesText !== cardContractOptionDefaultValue("action", SWITCH_CONFIRM_YES_OPTION, SWITCH_CONFIRM_DEFAULT_YES)) {
+      out = setConfigOptionValue(out, SWITCH_CONFIRM_YES_OPTION, yesText);
+    }
+    if (noText && noText !== cardContractOptionDefaultValue("action", SWITCH_CONFIRM_NO_OPTION, SWITCH_CONFIRM_DEFAULT_NO)) {
+      out = setConfigOptionValue(out, SWITCH_CONFIRM_NO_OPTION, noText);
+    }
+  }
+  b.options = out;
+  return b.options;
+}
+
 function normalizeGarageLabelDisplayMode(value) {
   value = String(value || "").trim();
   var spec = cardContractOptionSpec("garage", GARAGE_LABEL_DISPLAY_OPTION);
@@ -1333,6 +1428,8 @@ function buttonConfigFields(b) {
     options = normalizePresenceOptions(options);
   } else if (type === "image") {
     options = normalizeImageOptions(options);
+  } else if (type === "action") {
+    options = normalizeActionOptions(options, sensor);
   } else if (isActionOptionSelect || isFanCardType(type)) {
     options = "";
   } else if (type !== "action" && type !== "alarm_action" && type !== "garage" && type !== "webhook" && type !== "screen_lock" && type !== "media" && type !== "presence" && !cardLargeNumbersSupported({ type: type, precision: precision })) {

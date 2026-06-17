@@ -1681,7 +1681,13 @@ inline void grid_phase2(
           ParsedCfg *ctx = new ParsedCfg(sb_cfg);
           lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
             ParsedCfg *c = (ParsedCfg *)lv_event_get_user_data(e);
-            if (c) send_action_card_action(*c);
+            lv_obj_t *target = static_cast<lv_obj_t *>(lv_event_get_target(e));
+            if (!c) return;
+            if (action_script_confirmation_enabled(*c) && target) {
+              switch_confirmation_open_modal(*c, target, false);
+            } else {
+              send_action_card_action(*c);
+            }
           }, LV_EVENT_CLICKED, ctx);
         }
         continue;
