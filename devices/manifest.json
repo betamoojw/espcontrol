@@ -570,7 +570,8 @@
           "esp32C6FirmwareUpdate": true,
           "ethernetSelectable": true,
           "extraPackages": {
-            "voice_assistant": "!include device/voice_assistant.yaml"
+            "voice_assistant": "!include device/voice_assistant.yaml",
+            "physical_volume_button": "!include device/physical_volume_button${network_package_suffix}.yaml"
           },
           "backlightPwmFrequency": {
             "wifi": "100Hz",

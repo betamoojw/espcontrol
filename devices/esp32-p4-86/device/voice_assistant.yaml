@@ -348,6 +348,25 @@ micro_wake_word:
               format: "Ignoring wake word while muted"
 
 script:
+  - id: open_device_volume_control
+    mode: restart
+    then:
+      - lambda: |-
+          open_device_volume_modal(
+            id(voice_clock_bar_mute_button),
+            id(voice_media_player),
+            id(font_number_value_large)->get_lv_font(),
+            id(font_number_value_large)->get_lv_font(),
+            id(font_text_body)->get_lv_font(),
+            id(font_text_body)->get_lv_font(),
+            id(font_icon_main)->get_lv_font(),
+            100,
+            []() -> bool { return id(master_mute_switch).state; },
+            [](bool muted) {
+              if (muted) id(master_mute_switch).turn_on();
+              else id(master_mute_switch).turn_off();
+            });
+
   - id: play_voice_wake_chime
     mode: restart
     then:

@@ -125,6 +125,7 @@ packages:
   memory_diag:     !include ../../common/addon/memory_diagnostics.yaml
   fw_update:       !include ../../common/addon/firmware_update${firmware_update_package_suffix}.yaml
   voice_assistant: !include device/voice_assistant.yaml
+  physical_volume_button: !include device/physical_volume_button${network_package_suffix}.yaml
 
   # ---------------------------------------------------------------------------
   # Screens (loading must be first page for LVGL startup)
