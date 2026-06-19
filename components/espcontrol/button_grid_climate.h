@@ -317,6 +317,13 @@ inline std::string climate_format_tenths(int value, int precision) {
   return buf;
 }
 
+inline int climate_target_display_precision(ClimateControlCtx *ctx) {
+  if (!ctx) return 0;
+  return ctx->configured_step_tenths == CLIMATE_DEFAULT_STEP_TENTHS && ctx->precision <= 0
+    ? 1
+    : ctx->precision;
+}
+
 inline std::string climate_option_label(const std::string &raw) {
   std::string value = climate_lower(climate_trim(raw));
   if (value == "off") return espcontrol_i18n(std::string("Off"));
@@ -637,12 +644,13 @@ inline void climate_apply_step_button_icon_size(lv_obj_t *btn) {
 
 inline std::string climate_card_target_value(ClimateControlCtx *ctx) {
   if (!ctx || !ctx->available) return "--";
+  int precision = climate_target_display_precision(ctx);
   if (ctx->has_low && ctx->has_high)
-    return climate_format_tenths(ctx->low_tenths, ctx->precision) + "-" +
-           climate_format_tenths(ctx->high_tenths, ctx->precision);
-  if (ctx->has_target) return climate_format_tenths(ctx->target_tenths, ctx->precision);
-  if (ctx->has_low) return climate_format_tenths(ctx->low_tenths, ctx->precision);
-  if (ctx->has_high) return climate_format_tenths(ctx->high_tenths, ctx->precision);
+    return climate_format_tenths(ctx->low_tenths, precision) + "-" +
+           climate_format_tenths(ctx->high_tenths, precision);
+  if (ctx->has_target) return climate_format_tenths(ctx->target_tenths, precision);
+  if (ctx->has_low) return climate_format_tenths(ctx->low_tenths, precision);
+  if (ctx->has_high) return climate_format_tenths(ctx->high_tenths, precision);
   return "--";
 }
 
@@ -785,7 +793,8 @@ inline void climate_update_drag_preview(ClimateControlCtx *ctx) {
   if (!ctx || ui.active != ctx) return;
   int target = climate_display_target(ctx);
   if (ui.target_lbl)
-    lv_label_set_text(ui.target_lbl, climate_format_tenths(target, ctx->precision).c_str());
+    lv_label_set_text(ui.target_lbl, climate_format_tenths(
+      target, climate_target_display_precision(ctx)).c_str());
   if (ui.handle_dot && ui.panel) {
     ControlModalLayout layout = climate_control_calc_layout(ctx);
     climate_layout_handle_dot(ctx, layout);
@@ -1305,7 +1314,8 @@ inline void climate_control_set_modal_value(ClimateControlCtx *ctx) {
   if (ui.target_row) climate_set_obj_visible(ui.target_row, true);
   if (ui.target_lbl) {
     if (!ctx->available) lv_label_set_text(ui.target_lbl, "--");
-    else lv_label_set_text(ui.target_lbl, climate_format_tenths(target, ctx->precision).c_str());
+    else lv_label_set_text(ui.target_lbl, climate_format_tenths(
+      target, climate_target_display_precision(ctx)).c_str());
     lv_obj_clear_flag(ui.target_lbl, LV_OBJ_FLAG_CLICKABLE);
   }
   if (ui.unit_lbl) {
