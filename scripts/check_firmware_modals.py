@@ -276,6 +276,28 @@ def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
     return errors
 
 
+def firmware_light_control_brightness_errors(root: Path) -> list[str]:
+    path = root / "components" / "espcontrol" / "button_grid_sliders.h"
+    errors: list[str] = []
+
+    if not path.exists():
+        errors.append("components/espcontrol/button_grid_sliders.h: keep light-off brightness display at zero")
+        return errors
+
+    text = path.read_text(encoding="utf-8")
+    if (
+        "light_control_display_pct" not in text
+        or "ctx && ctx->on ? ctx->current_pct : 0" not in text
+    ):
+        errors.append("components/espcontrol/button_grid_sliders.h: display zero brightness while light control is off")
+    if text.count("light_control_set_modal_value(ctx, light_control_display_pct(ctx));") < 2:
+        errors.append("components/espcontrol/button_grid_sliders.h: refresh brightness slider from light on/off and brightness updates")
+    if "light_control_set_modal_value(ui.active, light_control_display_pct(ui.active));" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: update brightness slider immediately when the light power button is used")
+
+    return errors
+
+
 def firmware_network_status_version_errors(root: Path) -> list[str]:
     path = root / "components" / "espcontrol" / "network_status.h"
     errors: list[str] = []
@@ -311,6 +333,7 @@ def run_scan() -> int:
     errors = firmware_modal_errors(FIRMWARE_DIR, ROOT)
     errors.extend(firmware_modal_sleep_takeover_errors(ROOT))
     errors.extend(firmware_subpage_modal_wiring_errors(ROOT))
+    errors.extend(firmware_light_control_brightness_errors(ROOT))
     errors.extend(firmware_network_status_version_errors(ROOT))
 
     if errors:
