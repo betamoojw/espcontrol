@@ -311,8 +311,10 @@ def firmware_cover_control_tab_errors(root: Path) -> list[str]:
         errors.append("components/espcontrol/button_grid_sliders.h: hide cover modal tabs when only one control is visible")
     if "if (show_tab_bar) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);" not in text:
         errors.append("components/espcontrol/button_grid_sliders.h: keep cover modal tab row hidden for single-control modals")
-    if "lv_coord_t visible_tab_frame_h = show_tab_bar ? tab_frame_h : 0;" not in text:
-        errors.append("components/espcontrol/button_grid_sliders.h: let single-control cover modals use the tab row space")
+    if "lv_coord_t content_top = show_tab_bar" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: position cover modal content from explicit top and bottom bounds")
+    if "lv_coord_t content_center_y = content_top + content_h / 2 - layout.panel_h / 2;" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: center cover modal controls within their available space")
 
     return errors
 

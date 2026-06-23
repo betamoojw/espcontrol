@@ -1740,10 +1740,13 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
     if (label) lv_obj_align(label, LV_ALIGN_CENTER, tab_btn_size / 16, tab_btn_size / 16);
   }
 
-  lv_coord_t visible_tab_frame_h = show_tab_bar ? tab_frame_h : 0;
-  lv_coord_t content_center_y = show_tab_bar ? tab_frame_h / 2 + 12 : 0;
-  lv_coord_t content_h = layout.panel_h - layout.inset * 3 - visible_tab_frame_h - 16;
+  lv_coord_t content_top = show_tab_bar
+    ? layout.inset + tab_frame_h + 16
+    : layout.inset * 2;
+  lv_coord_t content_bottom = layout.panel_h - layout.inset;
+  lv_coord_t content_h = content_bottom - content_top;
   if (content_h < 160) content_h = layout.panel_h / 2;
+  lv_coord_t content_center_y = content_top + content_h / 2 - layout.panel_h / 2;
   lv_coord_t content_w = control_modal_home_card_width(ctx->btn, layout);
   cover_control_layout_slider(ui.position_slider, content_w, content_h, content_center_y);
   lv_obj_update_layout(ui.panel);
