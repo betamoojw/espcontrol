@@ -45,6 +45,16 @@ function normalizeCoverPosition(value) {
   return String(n);
 }
 
+function renderCoverControlTabSettings(panel, b, helpers) {
+  renderModalTabSettings(panel, b, helpers, {
+    definitions: coverControlTabDefinitions,
+    tabs: coverControlTabs,
+    normalizeOptions: normalizeCoverOptions,
+    setTabs: setCoverControlTabs,
+    idPrefix: "cover-tab-",
+  });
+}
+
 function sliderCardMetadata(opts) {
   return {
     entity: {
@@ -239,6 +249,14 @@ function sliderTypeFactory(opts) {
 
       if (opts.renderLabelInSettings && opts.labelAfterEntity) labelField();
 
+      if (opts.coverControlTabs && coverMode === "modal") {
+        renderCoverControlTabSettings(panel, b, helpers);
+      } else if (opts.coverControlTabs) {
+        var previousOptions = b.options || "";
+        b.options = "";
+        if (b.options !== previousOptions) helpers.saveField("options", b.options);
+      }
+
       function iconField(label, inputSuffix, field, currentVal, defaultVal) {
         var picker = helpers.renderCardIconPicker(panel, b, helpers, {
           pickerIdSuffix: inputSuffix + "-picker",
@@ -393,4 +411,5 @@ registerButtonType("cover", sliderTypeFactory({
   hideLabel: true,
   renderLabelInSettings: true,
   interactionMode: true,
+  coverControlTabs: true,
 }));
