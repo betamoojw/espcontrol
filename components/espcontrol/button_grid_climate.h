@@ -512,7 +512,7 @@ inline bool climate_control_uses_square_modal_tuning(const ControlModalLayout &l
 }
 
 inline bool climate_control_uses_4848_modal_tuning(const ControlModalLayout &layout) {
-  return control_modal_uses_4848_tuning(layout);
+  return control_modal_uses_4848_control_tuning(layout);
 }
 
 inline bool climate_control_uses_p4_86_modal_tuning(const ControlModalLayout &layout) {
@@ -528,7 +528,9 @@ inline bool climate_control_uses_jc1060p470_modal_tuning(const ControlModalLayou
 }
 
 inline bool climate_control_uses_compact_portrait_modal_tuning(const ControlModalLayout &layout) {
-  return control_modal_uses_compact_portrait_tuning(layout) && layout.sh > layout.sw;
+  return control_modal_uses_compact_portrait_tuning(layout) &&
+         !climate_control_uses_4848_modal_tuning(layout) &&
+         layout.sh > layout.sw;
 }
 
 inline lv_coord_t climate_control_step_buttons_up_ref(const ControlModalLayout &layout) {
@@ -536,7 +538,7 @@ inline lv_coord_t climate_control_step_buttons_up_ref(const ControlModalLayout &
     return CLIMATE_MODAL_JC1060P470_STEP_BUTTONS_UP_REF_PX;
   if (climate_control_uses_large_landscape_modal_tuning(layout))
     return CLIMATE_MODAL_LARGE_LANDSCAPE_STEP_BUTTONS_UP_REF_PX;
-  if (control_modal_uses_compact_portrait_tuning(layout))
+  if (climate_control_uses_compact_portrait_modal_tuning(layout))
     return CLIMATE_MODAL_JC4880P443_STEP_BUTTONS_UP_REF_PX;
   if (climate_control_uses_4848_modal_tuning(layout))
     return CLIMATE_MODAL_4848_STEP_BUTTONS_UP_REF_PX;
@@ -554,7 +556,7 @@ inline lv_coord_t climate_control_labels_down_ref(const ControlModalLayout &layo
     return CLIMATE_MODAL_JC1060P470_VALUE_DOWN_REF_PX;
   if (climate_control_uses_large_landscape_modal_tuning(layout))
     return CLIMATE_MODAL_LARGE_LANDSCAPE_VALUE_DOWN_REF_PX;
-  if (control_modal_uses_compact_portrait_tuning(layout))
+  if (climate_control_uses_compact_portrait_modal_tuning(layout))
     return CLIMATE_MODAL_JC4880P443_LABELS_DOWN_REF_PX;
   if (climate_control_uses_4848_modal_tuning(layout))
     return CLIMATE_MODAL_4848_LABELS_DOWN_REF_PX;
@@ -614,8 +616,10 @@ inline void climate_apply_bottom_chip_padding(lv_obj_t *chip,
 }
 
 inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
-  ControlModalLayout layout = control_modal_calc_layout(ctx ? ctx->width_compensation_percent : 100);
-  int arc_size_percent = control_modal_uses_compact_portrait_tuning(layout)
+  ControlModalLayout layout = control_modal_calc_layout(
+    ctx ? ctx->width_compensation_percent : 100,
+    false);
+  int arc_size_percent = climate_control_uses_compact_portrait_modal_tuning(layout)
     ? CLIMATE_MODAL_JC4880P443_ARC_SIZE_PERCENT
     : CLIMATE_MODAL_ARC_SIZE_PERCENT;
   layout.arc_size = layout.arc_size * arc_size_percent / 100;
