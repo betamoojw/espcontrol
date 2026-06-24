@@ -221,8 +221,7 @@ inline bool control_modal_is_jc4880p443_size(const ControlModalLayout &layout) {
 }
 
 inline bool control_modal_uses_compact_portrait_tuning(const ControlModalLayout &layout) {
-  (void) layout;
-  return false;
+  return control_modal_is_jc4880p443_size(layout);
 }
 
 inline bool control_modal_uses_square_tuning(const ControlModalLayout &layout) {
@@ -230,7 +229,11 @@ inline bool control_modal_uses_square_tuning(const ControlModalLayout &layout) {
 }
 
 inline bool control_modal_uses_4848_tuning(const ControlModalLayout &layout) {
-  return display_modal_is_4848_size(layout.sw, layout.sh) ||
+  return display_modal_is_4848_size(layout.sw, layout.sh);
+}
+
+inline bool control_modal_uses_4848_control_tuning(const ControlModalLayout &layout) {
+  return control_modal_uses_4848_tuning(layout) ||
          control_modal_is_jc4880p443_size(layout);
 }
 
@@ -301,7 +304,8 @@ inline lv_coord_t control_modal_home_card_width(lv_obj_t *btn,
   return width;
 }
 
-inline ControlModalLayout control_modal_calc_layout(int width_compensation_percent) {
+inline ControlModalLayout control_modal_calc_layout(int width_compensation_percent,
+                                                    bool allow_compact_portrait_tuning = true) {
   ControlModalLayout layout;
   lv_disp_t *disp = lv_disp_get_default();
   layout.sw = disp ? lv_disp_get_hor_res(disp) : 480;
@@ -327,7 +331,7 @@ inline ControlModalLayout control_modal_calc_layout(int width_compensation_perce
   if (layout.inset < 8) layout.inset = 8;
   layout.back_inset_x = layout.inset;
   layout.back_inset_y = layout.inset;
-  if (control_modal_uses_compact_portrait_tuning(layout)) {
+  if (allow_compact_portrait_tuning && control_modal_uses_compact_portrait_tuning(layout)) {
     lv_coord_t back_offset = control_modal_scaled_px(12, layout.short_side);
     layout.back_inset_x += back_offset;
     layout.back_inset_y += back_offset;
