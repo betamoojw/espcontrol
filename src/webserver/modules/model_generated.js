@@ -821,7 +821,7 @@ var EspControlModel = (() => {
     }
     return out.slice(0, 1);
   }
-  var CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:network";
+  var CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:voice,network";
   function normalizeLanguage(value) {
     const language = String(value == null ? "" : value).trim().toLowerCase();
     return language || "en";
@@ -1015,6 +1015,7 @@ var EspControlModel = (() => {
       clockBarLayout: CLOCK_BAR_FIXED_LAYOUT,
       clockBarTime: objectValue(settings, "clock_bar_time") != null ? !!settings.clock_bar_time : true,
       networkStatusIcon: objectValue(settings, "network_status_icon") != null ? !!settings.network_status_icon : true,
+      voiceServices: objectValue(settings, "voice_services") != null ? !!settings.voice_services : false,
       temperatureDegreeSymbol: objectValue(settings, "temperature_degree_symbol") != null ? !!settings.temperature_degree_symbol : true,
       subpageChevron: objectValue(settings, "subpage_chevron") != null ? !!settings.subpage_chevron : true,
       timezone: String(settings.timezone || current.timezone),
@@ -1035,6 +1036,7 @@ var EspControlModel = (() => {
       coverArtMediaPlayerEntity: String(settings.cover_art_media_player_entity || settings.media_player_sleep_prevention_entity || ""),
       coverArtAttributeConditions: String(settings.cover_art_attribute_conditions || settings.cover_art_conditions || ""),
       coverArtDelay: objectValue(settings, "cover_art_delay") != null ? settings.cover_art_delay : 10,
+      coverArtTouchPause: objectValue(settings, "cover_art_touch_pause") != null ? settings.cover_art_touch_pause : 120,
       coverArtTrackOverlayDuration: objectValue(settings, "cover_art_track_overlay_duration") != null ? settings.cover_art_track_overlay_duration : 5,
       coverArtHideExternalInput: objectValue(settings, "cover_art_hide_external_input") != null ? !!settings.cover_art_hide_external_input : true,
       coverArtHomeAssistantPort: objectValue(settings, "home_assistant_artwork_port") != null ? normalizeHomeAssistantArtworkPort(settings.home_assistant_artwork_port) : normalizeHomeAssistantArtworkPort(current.coverArtHomeAssistantPort),

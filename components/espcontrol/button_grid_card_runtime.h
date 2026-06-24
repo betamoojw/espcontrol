@@ -50,6 +50,62 @@ inline const char *card_runtime_option_select_canonical_action() {
   return CARD_CONTRACT_OPTION_SELECT_ACTION;
 }
 
+constexpr const char *card_runtime_option_name_state_labels() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_LABELS;
+}
+
+constexpr const char *card_runtime_option_name_state_input() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_INPUT;
+}
+
+constexpr const char *card_runtime_option_name_state_output() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_OUTPUT;
+}
+
+constexpr const char *card_runtime_option_name_state_input_2() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_INPUT_2;
+}
+
+constexpr const char *card_runtime_option_name_state_output_2() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_OUTPUT_2;
+}
+
+constexpr const char *card_runtime_option_name_state_low_label() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_LOW_LABEL;
+}
+
+constexpr const char *card_runtime_option_name_state_high_label() {
+  return CARD_CONTRACT_OPTION_NAME_STATE_HIGH_LABEL;
+}
+
+constexpr const char *card_runtime_option_name_image_label() {
+  return CARD_CONTRACT_OPTION_NAME_IMAGE_LABEL;
+}
+
+constexpr const char *card_runtime_option_name_image_icon() {
+  return CARD_CONTRACT_OPTION_NAME_IMAGE_ICON;
+}
+
+constexpr const char *card_runtime_option_name_image_modal_mode() {
+  return CARD_CONTRACT_OPTION_NAME_IMAGE_MODAL_MODE;
+}
+
+constexpr const char *card_runtime_option_name_image_refresh() {
+  return CARD_CONTRACT_OPTION_NAME_IMAGE_REFRESH;
+}
+
+constexpr const char *card_runtime_option_name_image_refresh_mode() {
+  return CARD_CONTRACT_OPTION_NAME_IMAGE_REFRESH_MODE;
+}
+
+constexpr const char *card_runtime_option_name_light_tabs() {
+  return CARD_CONTRACT_OPTION_NAME_LIGHT_TABS;
+}
+
+constexpr const char *card_runtime_option_name_cover_tabs() {
+  return CARD_CONTRACT_OPTION_NAME_COVER_TABS;
+}
+
 inline bool card_runtime_large_numbers_supported(const std::string &type,
                                                  const std::string &precision) {
   return card_contract_large_numbers_supported(type, precision);
@@ -222,4 +278,24 @@ inline const char *card_runtime_vacuum_default_icon_name(const std::string &mode
   if (normalized == "locate") return "Robot Vacuum Alert";
   if (normalized == "clean_area") return "Vacuum Outline";
   return "Robot Vacuum";
+}
+
+inline std::string card_runtime_lawn_mower_mode(const std::string &mode) {
+  if (mode == "status" || mode == "start_mowing" || mode == "dock" ||
+      mode == "pause_resume") {
+    return mode;
+  }
+  return "start_mowing";
+}
+
+inline bool card_runtime_lawn_mower_state_mode(const std::string &mode) {
+  std::string normalized = card_runtime_lawn_mower_mode(mode);
+  return normalized == "status" || normalized == "start_mowing" ||
+         normalized == "dock" || normalized == "pause_resume";
+}
+
+inline const char *card_runtime_lawn_mower_default_icon_name(const std::string &mode) {
+  std::string normalized = card_runtime_lawn_mower_mode(mode);
+  if (normalized == "dock") return "Robot Mower Outline";
+  return "Robot Mower";
 }

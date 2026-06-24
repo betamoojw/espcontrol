@@ -10,6 +10,12 @@
     "precision",
     "options"
   ],
+  "optionNames": [
+    "state_low_label",
+    "state_high_label",
+    "image_refresh",
+    "image_refresh_mode"
+  ],
   "cards": {
     "": {
       "label": "Switch",
@@ -140,6 +146,31 @@
         "sensor": "start_stop",
         "unit": "",
         "type": "vacuum",
+        "precision": "",
+        "options": ""
+      }
+    },
+    "lawn_mower": {
+      "label": "Lawn Mower",
+      "allowInSubpage": true,
+      "domains": ["lawn_mower"],
+      "options": [
+        {
+          "name": "lawn_mower_mode",
+          "label": "Type",
+          "kind": "choice",
+          "values": ["status", "start_mowing", "dock", "pause_resume"],
+          "defaultValue": "start_mowing"
+        }
+      ],
+      "default": {
+        "entity": "",
+        "label": "",
+        "icon": "Robot Mower",
+        "icon_on": "Auto",
+        "sensor": "start_mowing",
+        "unit": "",
+        "type": "lawn_mower",
         "precision": "",
         "options": ""
       }
@@ -395,6 +426,12 @@
           "min": 0,
           "max": 100,
           "step": 1
+        },
+        {
+          "name": "cover_tabs",
+          "label": "Visible Tabs",
+          "kind": "text",
+          "defaultValue": "position|controls|tilt"
         }
       ],
       "behavior": {
@@ -667,6 +704,14 @@
       "pickerKey": "light_brightness",
       "hidden": true,
       "domains": ["light"],
+      "options": [
+        {
+          "name": "light_tabs",
+          "label": "Visible Tabs",
+          "kind": "text",
+          "defaultValue": "power|brightness|temperature|color"
+        }
+      ],
       "default": {
         "entity": "",
         "label": "",
@@ -941,15 +986,17 @@
     "local_sensor": {
       "label": "Local Sensor",
       "allowInSubpage": true,
+      "pickerKey": "sensor",
+      "hidden": true,
       "domains": ["sensor", "text_sensor"],
       "default": {
         "entity": "",
         "label": "",
         "icon": "Auto",
         "icon_on": "Auto",
-        "sensor": "",
+        "sensor": "local",
         "unit": "",
-        "type": "local_sensor",
+        "type": "sensor",
         "precision": "",
         "options": ""
       }
@@ -979,7 +1026,7 @@
           "name": "subpage_kind",
           "label": "Subpage Type",
           "kind": "choice",
-          "values": ["", "switch", "lights", "climate", "presence", "media", "alarm", "cover", "garage", "lock", "vacuum", "weather", "sensor", "image"],
+          "values": ["", "switch", "lights", "climate", "presence", "media", "alarm", "cover", "garage", "lock", "vacuum", "lawn_mower", "weather", "sensor", "image"],
           "defaultValue": ""
         },
         {
@@ -1129,6 +1176,10 @@
     "weather_forecast": {
       "type": "weather",
       "precision": "tomorrow"
+    },
+    "local_sensor": {
+      "type": "sensor",
+      "sensor": "local"
     }
   },
   "optionSelect": {
@@ -1210,6 +1261,7 @@
     "slider": "L",
     "cover": "C",
     "vacuum": "VC",
+    "lawn_mower": "LM",
     "light_temperature": "N",
     "garage": "R",
     "lock": "K",

@@ -312,13 +312,46 @@ def gen_i18n_header():
             f"inline const char *espcontrol_i18n_{fn}(const char *text) {{",
             "  if (!text) return \"\";",
         ])
+        seen_sources = set()
         for key, source in english.items():
+            if source in seen_sources:
+                continue
+            seen_sources.add(source)
             target = translated[key]
             if target == source:
                 continue
             lines.append(f"  if (std::strcmp(text, {cpp_string(source)}) == 0) return {cpp_string(target)};")
         lines.extend([
             "  return text;",
+            "}",
+            "",
+        ])
+
+    lines.extend([
+        "inline const char *espcontrol_i18n_key_en(const char *key) {",
+        "  if (!key) return \"\";",
+    ])
+    for key, source in english.items():
+        lines.append(f"  if (std::strcmp(key, {cpp_string(key)}) == 0) return {cpp_string(source)};")
+    lines.extend([
+        "  return key;",
+        "}",
+        "",
+    ])
+
+    for code, translated in languages:
+        fn = re.sub(r"[^A-Za-z0-9_]", "_", code)
+        lines.extend([
+            f"inline const char *espcontrol_i18n_key_{fn}(const char *key) {{",
+            "  if (!key) return \"\";",
+        ])
+        for key, target in translated.items():
+            source = english[key]
+            if target == source:
+                continue
+            lines.append(f"  if (std::strcmp(key, {cpp_string(key)}) == 0) return {cpp_string(target)};")
+        lines.extend([
+            "  return espcontrol_i18n_key_en(key);",
             "}",
             "",
         ])
@@ -336,6 +369,20 @@ def gen_i18n_header():
         "",
         "inline std::string espcontrol_i18n(const std::string &text) {",
         "  return std::string(espcontrol_i18n(text.c_str()));",
+        "}",
+        "",
+        "inline const char *espcontrol_i18n_key(const char *key) {",
+        "  if (!key) return \"\";",
+    ])
+    for code, _translated in languages:
+        fn = re.sub(r"[^A-Za-z0-9_]", "_", code)
+        lines.append(f"  if (espcontrol_language_code() == {cpp_string(code)}) return espcontrol_i18n_key_{fn}(key);")
+    lines.extend([
+        "  return espcontrol_i18n_key_en(key);",
+        "}",
+        "",
+        "inline std::string espcontrol_i18n_key(const std::string &key) {",
+        "  return std::string(espcontrol_i18n_key(key.c_str()));",
         "}",
         "",
     ])
@@ -370,6 +417,25 @@ def js_string_list(values):
     return "[" + ", ".join(json.dumps(v) for v in values) + "]"
 
 
+def contract_option_names(data):
+    names = {}
+    for name in data.get("optionNames", []):
+        if name:
+            names[name] = name
+    for card in data["cards"].values():
+        for option in card.get("options", []):
+            name = option.get("name")
+            if name:
+                names[name] = name
+            for storage_name in option.get("storage", []):
+                names[storage_name] = storage_name
+    return dict(sorted(names.items()))
+
+
+def option_constant_name(option_name):
+    return "CARD_CONTRACT_OPTION_NAME_" + re.sub(r"[^A-Za-z0-9]+", "_", option_name).strip("_").upper()
+
+
 def gen_card_contract_js(data):
     groups = data["cardGroups"]
     fan = groups["fan"]
@@ -380,6 +446,7 @@ def gen_card_contract_js(data):
     large = data["largeNumbers"]
     cards = data["cards"]
     aliases = data.get("migrationAliases", {})
+    option_names = contract_option_names(data)
     return (
         "// =============================================================================\n"
         "// GENERATED CARD CONFIG CONTRACT - do not edit by hand\n"
@@ -396,6 +463,7 @@ def gen_card_contract_js(data):
         f"var CARD_CONTRACT_SUBPAGE_TYPE_CODES = {json.dumps(codes, indent=2)};\n"
         f"var CARD_CONTRACT_SUBPAGE_TYPES_BY_CODE = {json.dumps(code_to_type, indent=2)};\n"
         f"var CARD_CONTRACT_LARGE_NUMBERS = {json.dumps(large, indent=2)};\n"
+        f"var CARD_CONTRACT_OPTION_NAMES = {json.dumps(option_names, indent=2)};\n"
         "\n"
         "function cardContractListContains(list, value) {\n"
         "  return (list || []).indexOf(value) >= 0;\n"
@@ -490,6 +558,10 @@ def gen_card_contract_js(data):
         "  if (rule.precisions) return cardContractListContains(rule.precisions, precision || \"\");\n"
         "  return false;\n"
         "}\n"
+        "\n"
+        "function cardContractOptionName(name) {\n"
+        "  return CARD_CONTRACT_OPTION_NAMES[name] || name || \"\";\n"
+        "}\n"
     )
 
 
@@ -525,6 +597,7 @@ def gen_card_contract_h(data):
     media_behavior = cards["media"]["behavior"]["media"]
     climate_behavior = cards["climate"]["behavior"]["climate"]
     large_numbers = data["largeNumbers"]
+    option_names = contract_option_names(data)
     lines = [
         "#pragma once\n",
         "\n",
@@ -554,6 +627,10 @@ def gen_card_contract_h(data):
         cpp_string_array("CARD_CONTRACT_CLIMATE_TEMPERATURE_STEPS", contract_card_option_values(cards, "climate", "temperature_step")),
         cpp_string_array("CARD_CONTRACT_CLIMATE_PRECISION_VALUES", climate_behavior["precisionValues"]),
         cpp_string_array("CARD_CONTRACT_WEATHER_FORECAST_PRECISIONS", large_numbers["weather"]["precisions"]),
+        "".join(
+            f"constexpr const char *{option_constant_name(name)} = {json.dumps(value)};\n"
+            for name, value in option_names.items()
+        ),
         f'constexpr const char *CARD_CONTRACT_GARAGE_LABEL_DISPLAY_DEFAULT = {json.dumps(contract_card_option_default(cards, "garage", "label_display"))};\n',
         f'constexpr const char *CARD_CONTRACT_MEDIA_DEFAULT_MODE = {json.dumps(media_behavior["defaultMode"])};\n',
         f'constexpr const char *CARD_CONTRACT_ALARM_ICON_DISPLAY_DEFAULT = {json.dumps(contract_card_option_default(cards, "alarm", "icon_display"))};\n',
@@ -1306,7 +1383,9 @@ def load_timezone_options():
     options = []
     for match in re.finditer(r'^\s+- "([^"]+)"$', TIME_YAML.read_text(), re.M):
         option = match.group(1)
-        if " (GMT" in option and ("/" in option or option.startswith("UTC ")):
+        if option == "Auto (Home Assistant)" or (
+            " (GMT" in option and ("/" in option or option.startswith("UTC "))
+        ):
             options.append(option)
     if not options:
         raise BuildError(f"No timezone options found in {TIME_YAML.relative_to(ROOT)}")

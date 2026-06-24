@@ -58,6 +58,20 @@ def firmware_modal_errors(firmware_dir: Path, root: Path) -> list[str]:
                 errors.append(
                     f"{rel}:{line_no}: delete modal overlays through button_grid_modal.h lifecycle helpers"
                 )
+    sliders_path = firmware_dir / "button_grid_sliders.h"
+    if not sliders_path.exists():
+        errors.append("components/espcontrol/button_grid_sliders.h: keep cover modal back button accessible")
+    else:
+        text = sliders_path.read_text(encoding="utf-8")
+        cover_layout = re.search(
+            r"inline\s+void\s+cover_control_layout_modal\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+            text,
+            re.S,
+        )
+        if cover_layout is None or "lv_obj_move_foreground(ui.back_btn);" not in cover_layout.group("body"):
+            errors.append(
+                "components/espcontrol/button_grid_sliders.h: keep the cover modal back button above tab and slider controls"
+            )
     return errors
 
 
@@ -109,6 +123,13 @@ def firmware_modal_sleep_takeover_errors(root: Path) -> list[str]:
         if hide_modals is None or "control_modal_close_active();" not in hide_modals.group("body"):
             errors.append(
                 "components/espcontrol/button_grid_navigation.h: return-home navigation must close active shared modals"
+            )
+        elif (
+            "cover_control_hide_modal();" not in hide_modals.group("body")
+            or "light_control_hide_modal();" not in hide_modals.group("body")
+        ):
+            errors.append(
+                "components/espcontrol/button_grid_navigation.h: return-home navigation must explicitly clear cover and light modals"
             )
         if return_home is None or "navigation_hide_modals();" not in return_home.group("body"):
             errors.append(
@@ -229,6 +250,7 @@ def firmware_modal_sleep_takeover_errors(root: Path) -> list[str]:
 
 def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
     grid_path = root / "components" / "espcontrol" / "button_grid_grid.h"
+    subpages_path = root / "components" / "espcontrol" / "button_grid_subpages.h"
     errors: list[str] = []
 
     if not grid_path.exists():
@@ -253,6 +275,119 @@ def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
         or "LV_EVENT_CLICKED" not in body
     ):
         errors.append("components/espcontrol/button_grid_grid.h: open light control modals from subpage cards")
+
+    if not subpages_path.exists():
+        errors.append("components/espcontrol/button_grid_subpages.h: preserve light control tab options in subpages")
+        return errors
+
+    subpages_text = subpages_path.read_text(encoding="utf-8")
+    if (
+        'b.type == "light_control"' not in subpages_text
+        or "light_control_card_options_normalized(b.options)" not in subpages_text
+    ):
+        errors.append("components/espcontrol/button_grid_subpages.h: preserve light control tab options in subpages")
+    unsupported_block = re.search(
+        r'if\s*\(\s*!b\.type\.empty\(\)(?P<body>.*?)\)\s*\{\s*\n\s*b\.options\.clear\(\);',
+        subpages_text,
+        re.S,
+    )
+    if unsupported_block is None or 'b.type != "light_control"' not in unsupported_block.group("body"):
+        errors.append("components/espcontrol/button_grid_subpages.h: keep light control options out of the unsupported-card cleanup")
+
+    return errors
+
+
+def firmware_light_control_brightness_errors(root: Path) -> list[str]:
+    path = root / "components" / "espcontrol" / "button_grid_sliders.h"
+    errors: list[str] = []
+
+    if not path.exists():
+        errors.append("components/espcontrol/button_grid_sliders.h: keep light-off brightness display at zero")
+        return errors
+
+    text = path.read_text(encoding="utf-8")
+    if (
+        "light_control_display_pct" not in text
+        or "ctx && ctx->on ? ctx->current_pct : 0" not in text
+    ):
+        errors.append("components/espcontrol/button_grid_sliders.h: display zero brightness while light control is off")
+    if text.count("light_control_set_modal_value(ctx, light_control_display_pct(ctx));") < 2:
+        errors.append("components/espcontrol/button_grid_sliders.h: refresh brightness slider from light on/off and brightness updates")
+    if "light_control_set_modal_value(ui.active, light_control_display_pct(ui.active));" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: update brightness slider immediately when the light power button is used")
+
+    return errors
+
+
+def firmware_cover_control_tab_errors(root: Path) -> list[str]:
+    path = root / "components" / "espcontrol" / "button_grid_sliders.h"
+    errors: list[str] = []
+
+    if not path.exists():
+        errors.append("components/espcontrol/button_grid_sliders.h: hide cover modal tabs when only one control is visible")
+        return errors
+
+    text = path.read_text(encoding="utf-8")
+    if "bool show_tab_bar = visible_tabs.count > 1;" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: hide cover modal tabs when only one control is visible")
+    if "if (show_tab_bar) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: keep cover modal tab row hidden for single-control modals")
+    if "lv_coord_t content_top = show_tab_bar" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: position cover modal content from explicit top and bottom bounds")
+    if "lv_coord_t content_center_y = content_top + content_h / 2 - layout.panel_h / 2;" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: center cover modal controls within their available space")
+
+    return errors
+
+
+def firmware_light_control_tab_errors(root: Path) -> list[str]:
+    path = root / "components" / "espcontrol" / "button_grid_sliders.h"
+    errors: list[str] = []
+
+    if not path.exists():
+        errors.append("components/espcontrol/button_grid_sliders.h: hide light modal tabs when only one control is visible")
+        return errors
+
+    text = path.read_text(encoding="utf-8")
+    if "inline void light_control_apply_tab_visibility()" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: keep light modal tab visibility helper")
+    if text.count("bool show_tab_bar = visible_tabs.count > 1;") < 2:
+        errors.append("components/espcontrol/button_grid_sliders.h: hide light and cover modal tabs when only one control is visible")
+    if text.count("if (show_tab_bar) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);") < 2:
+        errors.append("components/espcontrol/button_grid_sliders.h: keep single-tab modal rows hidden on the device")
+    if "lv_coord_t content_top = show_tab_bar" not in text:
+        errors.append("components/espcontrol/button_grid_sliders.h: let single-control modals use the tab row space")
+
+    return errors
+
+
+def firmware_network_status_version_errors(root: Path) -> list[str]:
+    path = root / "components" / "espcontrol" / "network_status.h"
+    errors: list[str] = []
+    if not path.exists():
+        errors.append("components/espcontrol/network_status.h: keep network status version labeling")
+        return errors
+
+    text = path.read_text(encoding="utf-8")
+    if "network_status_is_specific_firmware_version" not in text:
+        errors.append("components/espcontrol/network_status.h: classify release versions before labeling firmware")
+
+    label_match = re.search(
+        r"inline\s+std::string\s+network_status_firmware_label\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+        text,
+        re.S,
+    )
+    if label_match is None:
+        errors.append("components/espcontrol/network_status.h: keep network_status_firmware_label helper")
+        return errors
+
+    body = label_match.group("body")
+    if "network_status_is_specific_firmware_version(trimmed)" not in body:
+        errors.append("components/espcontrol/network_status.h: show only release versions as installed versions")
+    if 'espcontrol_i18n(std::string("Dev build"))' not in body:
+        errors.append("components/espcontrol/network_status.h: label local ESPHome builds as Dev build")
+    if 'espcontrol_i18n(std::string("Version unknown"))' not in body:
+        errors.append("components/espcontrol/network_status.h: keep empty firmware versions readable")
 
     return errors
 
@@ -320,6 +455,10 @@ def run_scan() -> int:
     errors.extend(firmware_modal_sleep_takeover_errors(ROOT))
     errors.extend(firmware_subpage_modal_wiring_errors(ROOT))
     errors.extend(firmware_climate_step_errors(ROOT))
+    errors.extend(firmware_light_control_brightness_errors(ROOT))
+    errors.extend(firmware_light_control_tab_errors(ROOT))
+    errors.extend(firmware_cover_control_tab_errors(ROOT))
+    errors.extend(firmware_network_status_version_errors(ROOT))
 
     if errors:
         print("Firmware modal allocation check failed:")
@@ -338,6 +477,14 @@ def expect_errors(name: str, files: dict[str, str], expected: tuple[str, ...]) -
         firmware_dir.mkdir(parents=True)
         for filename, text in files.items():
             (firmware_dir / filename).write_text(text, encoding="utf-8")
+        sliders_path = firmware_dir / "button_grid_sliders.h"
+        if not sliders_path.exists():
+            sliders_path.write_text(
+                "inline void cover_control_layout_modal(CoverControlCtx *ctx) {\n"
+                "  lv_obj_move_foreground(ui.back_btn);\n"
+                "}\n",
+                encoding="utf-8",
+            )
 
         errors = firmware_modal_errors(firmware_dir, root)
         for item in expected:
@@ -367,6 +514,15 @@ def expect_subpage_modal_wiring_errors(name: str, grid_text: str, expected: tupl
         path = root / "components" / "espcontrol" / "button_grid_grid.h"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(grid_text, encoding="utf-8")
+        (path.parent / "button_grid_subpages.h").write_text(
+            'if (b.type == "light_control") {\n'
+            "  b.options = light_control_card_options_normalized(b.options);\n"
+            "}\n"
+            'if (!b.type.empty() && b.type != "light_control") {\n'
+            "  b.options.clear();\n"
+            "}\n",
+            encoding="utf-8",
+        )
 
         errors = firmware_subpage_modal_wiring_errors(root)
         for item in expected:
@@ -383,6 +539,21 @@ def expect_climate_step_errors(name: str, text: str, expected: tuple[str, ...]) 
         path.write_text(text, encoding="utf-8")
 
         errors = firmware_climate_step_errors(root)
+
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_network_status_version_errors(name: str, header_text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        path = root / "components" / "espcontrol" / "network_status.h"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(header_text, encoding="utf-8")
+
+        errors = firmware_network_status_version_errors(root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -402,6 +573,8 @@ def valid_sleep_takeover_files() -> dict[str, str]:
         "components/espcontrol/button_grid_navigation.h": (
             "inline void navigation_hide_modals() {\n"
             "  control_modal_close_active();\n"
+            "  cover_control_hide_modal();\n"
+            "  light_control_hide_modal();\n"
             "}\n"
             "inline bool navigation_return_home(lv_obj_t *main_page_obj) {\n"
             "  navigation_hide_modals();\n"
@@ -598,6 +771,34 @@ def run_self_test() -> int:
             "  climate_apply_selected_target(ui.active, value, true, false);\n"
             "  climate_selected_target(ui.active) - climate_effective_step_tenths(ui.active);\n"
             "  climate_selected_target(ui.active) + climate_effective_step_tenths(ui.active);\n"
+            "}\n"
+        ),
+        (),
+    )
+    expect_network_status_version_errors(
+        "raw local firmware version leaks",
+        (
+            "inline std::string network_status_firmware_label(const std::string &version) {\n"
+            "  std::string trimmed = version;\n"
+            "  if (trimmed.empty()) return espcontrol_i18n(std::string(\"Version unknown\"));\n"
+            "  if (trimmed == \"dev\" || trimmed == \"0.0.0\") return espcontrol_i18n(std::string(\"Dev build\"));\n"
+            "  return trimmed;\n"
+            "}\n"
+        ),
+        (
+            "classify release versions before labeling firmware",
+            "show only release versions as installed versions",
+        ),
+    )
+    expect_network_status_version_errors(
+        "release-only firmware version label",
+        (
+            "inline bool network_status_is_specific_firmware_version(const std::string &version) { return true; }\n"
+            "inline std::string network_status_firmware_label(const std::string &version) {\n"
+            "  std::string trimmed = version;\n"
+            "  if (trimmed.empty()) return espcontrol_i18n(std::string(\"Version unknown\"));\n"
+            "  if (network_status_is_specific_firmware_version(trimmed)) return trimmed;\n"
+            "  return espcontrol_i18n(std::string(\"Dev build\"));\n"
             "}\n"
         ),
         (),

@@ -47,6 +47,10 @@ inline bool action_card_action_allowed(const std::string &action) {
 }
 
 inline void send_action_card_action(const ParsedCfg &p) {
+  if (action_card_local_action(p)) {
+    if (!p.entity.empty()) send_local_action(p.entity);
+    return;
+  }
   if (p.entity.empty() || p.sensor.empty() || !action_card_action_allowed(p.sensor)) return;
   if (action_card_option_select(p)) return;
   const char *value_key = action_card_value_key(p.sensor);
@@ -601,7 +605,7 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
     }
   } else if (p.type == "internal") {
     if (!p.entity.empty()) send_internal_relay_action(p);
-  } else if (p.type == "local") {
+  } else if (p.type == "local" || action_card_local_action(p)) {
     if (!p.entity.empty()) send_local_action(p.entity);
   } else if (p.type == "action") {
     if (action_card_option_select(p)) {
@@ -622,6 +626,16 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
       fallback.mode = vacuum_card_mode(p.sensor);
       fallback.area_id = p.unit;
       send_vacuum_card_action(&fallback);
+    }
+  } else if (p.type == "lawn_mower") {
+    LawnMowerCardCtx *ctx = (LawnMowerCardCtx *)lv_obj_get_user_data(btn_obj);
+    if (ctx) {
+      send_lawn_mower_card_action(ctx);
+    } else if (!lawn_mower_card_read_only(p)) {
+      LawnMowerCardCtx fallback;
+      fallback.entity_id = p.entity;
+      fallback.mode = lawn_mower_card_mode(p.sensor);
+      send_lawn_mower_card_action(&fallback);
     }
   } else if (p.type == "webhook") {
     send_webhook_action(p);

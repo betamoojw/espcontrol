@@ -19,17 +19,22 @@ constexpr int CLIMATE_MODAL_JC4880P443_ARC_SIZE_PERCENT = 96;
 constexpr lv_coord_t CLIMATE_MODAL_ARC_UP_REF_PX = 30;
 constexpr lv_coord_t CLIMATE_MODAL_SQUARE_ARC_UP_REF_PX = 24;
 constexpr lv_coord_t CLIMATE_MODAL_STEP_BUTTONS_UP_REF_PX = 42;
+constexpr lv_coord_t CLIMATE_MODAL_JC1060P470_STEP_BUTTONS_UP_REF_PX = 18;
+constexpr lv_coord_t CLIMATE_MODAL_JC1060P470_VALUE_DOWN_REF_PX = 24;
+constexpr lv_coord_t CLIMATE_MODAL_JC1060P470_OPTION_CHIP_BOTTOM_PX = 36;
 constexpr lv_coord_t CLIMATE_MODAL_LARGE_LANDSCAPE_STEP_BUTTONS_UP_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_LARGE_LANDSCAPE_VALUE_DOWN_REF_PX = 12;
-constexpr lv_coord_t CLIMATE_MODAL_LARGE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX = 4;
+constexpr lv_coord_t CLIMATE_MODAL_LARGE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX = 16;
+constexpr lv_coord_t CLIMATE_MODAL_LARGE_LANDSCAPE_CONTROLS_DOWN_REF_PX = 12;
 constexpr lv_coord_t CLIMATE_MODAL_JC4880P443_STEP_BUTTONS_UP_REF_PX = 14;
 constexpr lv_coord_t CLIMATE_MODAL_SQUARE_STEP_BUTTONS_UP_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_4848_STEP_BUTTONS_UP_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_JC4880P443_LABELS_DOWN_REF_PX = 22;
 constexpr lv_coord_t CLIMATE_MODAL_SQUARE_LABELS_DOWN_REF_PX = 18;
 constexpr lv_coord_t CLIMATE_MODAL_4848_LABELS_DOWN_REF_PX = 12;
-constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_W_REF_PX = 160;
+constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_W_REF_PX = 200;
 constexpr lv_coord_t CLIMATE_MODAL_4848_OPTION_CHIP_GAP_REF_PX = 12;
+constexpr lv_coord_t CLIMATE_MODAL_P4_86_OPTION_CHIP_W_REF_PX = 280;
 constexpr lv_coord_t CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX = 4;
 constexpr lv_coord_t CLIMATE_MODAL_OPTION_CHIP_MIN_H_PX = 56;
 constexpr lv_coord_t CLIMATE_MODAL_OPTION_CHIP_PAD_Y_REF_PX = 6;
@@ -408,22 +413,29 @@ inline std::string climate_hvac_service_value(const std::string &raw) {
   return value;
 }
 
+inline bool climate_action_is_working(const std::string &action) {
+  return action == "heating" || action == "cooling" ||
+         action == "drying" || action == "fan";
+}
+
 inline std::string climate_action_label(ClimateControlCtx *ctx) {
   if (!ctx || !ctx->available) return espcontrol_i18n(std::string("Unavailable"));
-  if (ctx->hvac_mode == "off") return espcontrol_i18n(std::string("Off"));
-  if (ctx->hvac_action.empty() || ctx->hvac_action == "unknown" ||
-      ctx->hvac_action == "unavailable") return climate_option_label(ctx->hvac_mode);
   if (ctx->hvac_action == "heating") return espcontrol_i18n(std::string("Heating"));
   if (ctx->hvac_action == "cooling") return espcontrol_i18n(std::string("Cooling"));
   if (ctx->hvac_action == "drying") return espcontrol_i18n(std::string("Drying"));
   if (ctx->hvac_action == "fan") return espcontrol_i18n(std::string("Fan"));
+  if (ctx->hvac_mode == "off") return espcontrol_i18n(std::string("Off"));
+  if (ctx->hvac_action.empty() || ctx->hvac_action == "unknown" ||
+      ctx->hvac_action == "unavailable") return climate_option_label(ctx->hvac_mode);
   if (ctx->hvac_action == "idle") return espcontrol_i18n(std::string("Idle"));
   if (ctx->hvac_action == "off") return espcontrol_i18n(std::string("Off"));
   return espcontrol_i18n(std::string("Idle"));
 }
 
 inline bool climate_is_active(ClimateControlCtx *ctx) {
-  if (!ctx || !ctx->available || ctx->hvac_mode == "off") return false;
+  if (!ctx || !ctx->available) return false;
+  if (climate_action_is_working(ctx->hvac_action)) return true;
+  if (ctx->hvac_mode == "off") return false;
   if (ctx->hvac_action.empty() || ctx->hvac_action == "unknown" ||
       ctx->hvac_action == "unavailable") {
     return !climate_unavailable_value(ctx->hvac_mode);
@@ -432,7 +444,8 @@ inline bool climate_is_active(ClimateControlCtx *ctx) {
 }
 
 inline bool climate_temperature_controls_enabled(ClimateControlCtx *ctx) {
-  return ctx && ctx->available && ctx->hvac_mode != "off";
+  return ctx && ctx->available &&
+         (ctx->hvac_mode != "off" || climate_action_is_working(ctx->hvac_action));
 }
 
 inline bool climate_modal_temperature_controls_enabled(ClimateControlCtx *ctx) {
@@ -507,21 +520,33 @@ inline bool climate_control_uses_square_modal_tuning(const ControlModalLayout &l
 }
 
 inline bool climate_control_uses_4848_modal_tuning(const ControlModalLayout &layout) {
-  return control_modal_uses_4848_tuning(layout);
+  return control_modal_uses_4848_control_tuning(layout);
+}
+
+inline bool climate_control_uses_p4_86_modal_tuning(const ControlModalLayout &layout) {
+  return control_modal_uses_p4_86_tuning(layout);
 }
 
 inline bool climate_control_uses_large_landscape_modal_tuning(const ControlModalLayout &layout) {
   return control_modal_uses_large_landscape_tuning(layout);
 }
 
+inline bool climate_control_uses_jc1060p470_modal_tuning(const ControlModalLayout &layout) {
+  return control_modal_uses_jc1060p470_tuning(layout);
+}
+
 inline bool climate_control_uses_compact_portrait_modal_tuning(const ControlModalLayout &layout) {
-  return control_modal_uses_compact_portrait_tuning(layout) && layout.sh > layout.sw;
+  return control_modal_uses_compact_portrait_tuning(layout) &&
+         !climate_control_uses_4848_modal_tuning(layout) &&
+         layout.sh > layout.sw;
 }
 
 inline lv_coord_t climate_control_step_buttons_up_ref(const ControlModalLayout &layout) {
+  if (climate_control_uses_jc1060p470_modal_tuning(layout))
+    return CLIMATE_MODAL_JC1060P470_STEP_BUTTONS_UP_REF_PX;
   if (climate_control_uses_large_landscape_modal_tuning(layout))
     return CLIMATE_MODAL_LARGE_LANDSCAPE_STEP_BUTTONS_UP_REF_PX;
-  if (control_modal_uses_compact_portrait_tuning(layout))
+  if (climate_control_uses_compact_portrait_modal_tuning(layout))
     return CLIMATE_MODAL_JC4880P443_STEP_BUTTONS_UP_REF_PX;
   if (climate_control_uses_4848_modal_tuning(layout))
     return CLIMATE_MODAL_4848_STEP_BUTTONS_UP_REF_PX;
@@ -535,9 +560,11 @@ inline lv_coord_t climate_control_step_buttons_down_ref(const ControlModalLayout
 }
 
 inline lv_coord_t climate_control_labels_down_ref(const ControlModalLayout &layout) {
+  if (climate_control_uses_jc1060p470_modal_tuning(layout))
+    return CLIMATE_MODAL_JC1060P470_VALUE_DOWN_REF_PX;
   if (climate_control_uses_large_landscape_modal_tuning(layout))
     return CLIMATE_MODAL_LARGE_LANDSCAPE_VALUE_DOWN_REF_PX;
-  if (control_modal_uses_compact_portrait_tuning(layout))
+  if (climate_control_uses_compact_portrait_modal_tuning(layout))
     return CLIMATE_MODAL_JC4880P443_LABELS_DOWN_REF_PX;
   if (climate_control_uses_4848_modal_tuning(layout))
     return CLIMATE_MODAL_4848_LABELS_DOWN_REF_PX;
@@ -597,8 +624,10 @@ inline void climate_apply_bottom_chip_padding(lv_obj_t *chip,
 }
 
 inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
-  ControlModalLayout layout = control_modal_calc_layout(ctx ? ctx->width_compensation_percent : 100);
-  int arc_size_percent = control_modal_uses_compact_portrait_tuning(layout)
+  ControlModalLayout layout = control_modal_calc_layout(
+    ctx ? ctx->width_compensation_percent : 100,
+    false);
+  int arc_size_percent = climate_control_uses_compact_portrait_modal_tuning(layout)
     ? CLIMATE_MODAL_JC4880P443_ARC_SIZE_PERCENT
     : CLIMATE_MODAL_ARC_SIZE_PERCENT;
   layout.arc_size = layout.arc_size * arc_size_percent / 100;
@@ -611,6 +640,10 @@ inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
     ? CLIMATE_MODAL_SQUARE_ARC_UP_REF_PX
     : CLIMATE_MODAL_ARC_UP_REF_PX;
   layout.arc_center_y = -control_modal_scaled_px(arc_up_ref, layout.short_side);
+  if (climate_control_uses_large_landscape_modal_tuning(layout)) {
+    layout.arc_center_y += control_modal_scaled_px(
+      CLIMATE_MODAL_LARGE_LANDSCAPE_CONTROLS_DOWN_REF_PX, layout.short_side);
+  }
   layout.value_center_y = layout.arc_center_y + layout.arc_stroke / 2;
   layout.controls_center_y = layout.arc_center_y + layout.arc_size / 2 -
     layout.btn_size / 2 - layout.inset +
@@ -1430,10 +1463,12 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
   if (ctx->available && !ctx->fan_modes.empty()) visible_chip_count++;
   if (ctx->available && !ctx->swing_modes.empty()) visible_chip_count++;
   lv_coord_t chip_row_w = layout.panel_w * CLIMATE_OPTION_ROW_WIDTH_PERCENT / 100;
+  bool p4_86_square = climate_control_uses_p4_86_modal_tuning(layout);
   lv_coord_t option_chip_w = compensated_width(
     tune_4848 ? CLIMATE_MODAL_4848_OPTION_CHIP_W_REF_PX :
-      (compact_portrait ? CLIMATE_MODAL_COMPACT_PORTRAIT_OPTION_CHIP_W_PX :
-        (layout.short_side < 520 ? (roomy_landscape ? 224 : (medium_landscape ? 240 : 180)) : 240)),
+      (p4_86_square ? CLIMATE_MODAL_P4_86_OPTION_CHIP_W_REF_PX :
+        (compact_portrait ? CLIMATE_MODAL_COMPACT_PORTRAIT_OPTION_CHIP_W_PX :
+          (layout.short_side < 520 ? (roomy_landscape ? 224 : (medium_landscape ? 240 : 180)) : 240))),
     ctx->width_compensation_percent);
   if (compact_portrait && visible_chip_count == 2) {
     lv_coord_t fitted_w = (chip_row_w - chip_gap) / 2;
@@ -1458,9 +1493,11 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
     lv_obj_scroll_to_x(ui.chips, 0, LV_ANIM_OFF);
     lv_obj_set_style_flex_main_place(ui.chips, LV_FLEX_ALIGN_CENTER, LV_PART_MAIN);
   }
-  lv_coord_t chip_bottom = climate_control_uses_large_landscape_modal_tuning(layout)
-    ? CLIMATE_MODAL_LARGE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX
-    : (roomy_landscape ? CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX : layout.inset);
+  lv_coord_t chip_bottom = climate_control_uses_jc1060p470_modal_tuning(layout)
+    ? CLIMATE_MODAL_JC1060P470_OPTION_CHIP_BOTTOM_PX
+    : (climate_control_uses_large_landscape_modal_tuning(layout)
+      ? CLIMATE_MODAL_LARGE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX
+      : (roomy_landscape ? CLIMATE_MODAL_WIDE_LANDSCAPE_OPTION_CHIP_BOTTOM_PX : layout.inset));
   lv_obj_align(ui.chips, LV_ALIGN_BOTTOM_MID, 0, -chip_bottom);
   if (ui.menu_view) {
     lv_obj_set_size(ui.menu_view, layout.panel_w, layout.panel_h);
