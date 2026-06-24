@@ -63,6 +63,7 @@ var EspControlModel = (() => {
     normalizeBackupScreenSettings: () => normalizeBackupScreenSettings,
     normalizeClockBrightness: () => normalizeClockBrightness,
     normalizeHexColor: () => normalizeHexColor,
+    normalizeHomeAssistantArtworkPort: () => normalizeHomeAssistantArtworkPort,
     normalizeHour: () => normalizeHour,
     normalizeLanguage: () => normalizeLanguage,
     normalizeNtpServer: () => normalizeNtpServer,
@@ -820,7 +821,7 @@ var EspControlModel = (() => {
     }
     return out.slice(0, 1);
   }
-  var CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:network";
+  var CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:voice,network";
   function normalizeLanguage(value) {
     const language = String(value == null ? "" : value).trim().toLowerCase();
     return language || "en";
@@ -921,6 +922,13 @@ var EspControlModel = (() => {
     if (n > 100) return 100;
     return Math.round(n);
   }
+  function normalizeHomeAssistantArtworkPort(value) {
+    const port = parseInt(String(value), 10);
+    if (!Number.isFinite(port)) return 8123;
+    if (port < 1) return 1;
+    if (port > 65535) return 65535;
+    return port;
+  }
   function normalizeNtpServer(value, fallback) {
     const server = String(value == null ? "" : value).trim();
     return server || fallback;
@@ -1007,6 +1015,7 @@ var EspControlModel = (() => {
       clockBarLayout: CLOCK_BAR_FIXED_LAYOUT,
       clockBarTime: objectValue(settings, "clock_bar_time") != null ? !!settings.clock_bar_time : true,
       networkStatusIcon: objectValue(settings, "network_status_icon") != null ? !!settings.network_status_icon : true,
+      voiceServices: objectValue(settings, "voice_services") != null ? !!settings.voice_services : false,
       temperatureDegreeSymbol: objectValue(settings, "temperature_degree_symbol") != null ? !!settings.temperature_degree_symbol : true,
       subpageChevron: objectValue(settings, "subpage_chevron") != null ? !!settings.subpage_chevron : true,
       timezone: String(settings.timezone || current.timezone),
@@ -1027,8 +1036,10 @@ var EspControlModel = (() => {
       coverArtMediaPlayerEntity: String(settings.cover_art_media_player_entity || settings.media_player_sleep_prevention_entity || ""),
       coverArtAttributeConditions: String(settings.cover_art_attribute_conditions || settings.cover_art_conditions || ""),
       coverArtDelay: objectValue(settings, "cover_art_delay") != null ? settings.cover_art_delay : 10,
+      coverArtTouchPause: objectValue(settings, "cover_art_touch_pause") != null ? settings.cover_art_touch_pause : 120,
       coverArtTrackOverlayDuration: objectValue(settings, "cover_art_track_overlay_duration") != null ? settings.cover_art_track_overlay_duration : 5,
       coverArtHideExternalInput: objectValue(settings, "cover_art_hide_external_input") != null ? !!settings.cover_art_hide_external_input : true,
+      coverArtHomeAssistantPort: objectValue(settings, "home_assistant_artwork_port") != null ? normalizeHomeAssistantArtworkPort(settings.home_assistant_artwork_port) : normalizeHomeAssistantArtworkPort(current.coverArtHomeAssistantPort),
       screensaverAction,
       clockScreensaver: screensaverAction === "clock",
       clockBrightnessDay,

@@ -15,7 +15,7 @@ export function normalizeClockBarTemperatureEntities(value: unknown): string[] {
   return out.slice(0, 1);
 }
 
-export const CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:network";
+export const CLOCK_BAR_FIXED_LAYOUT = "left:temperature|middle:time|right:voice,network";
 
 export function normalizeLanguage(value: unknown): string {
   const language = String(value == null ? "" : value).trim().toLowerCase();
@@ -132,6 +132,14 @@ export function normalizeScreensaverDimmedBrightness(value: unknown): number {
   return Math.round(n);
 }
 
+export function normalizeHomeAssistantArtworkPort(value: unknown): number {
+  const port = parseInt(String(value), 10);
+  if (!Number.isFinite(port)) return 8123;
+  if (port < 1) return 1;
+  if (port > 65535) return 65535;
+  return port;
+}
+
 export function normalizeNtpServer(value: unknown, fallback: string): string {
   const server = String(value == null ? "" : value).trim();
   return server || fallback;
@@ -218,6 +226,7 @@ export interface BackupPanelSettingsCurrent {
   ntpServer1: string;
   ntpServer2: string;
   ntpServer3: string;
+  coverArtHomeAssistantPort: number;
   screenRotationOptions: readonly string[];
 }
 
@@ -231,6 +240,7 @@ export interface BackupPanelSettingsState {
   clockBarLayout: string;
   clockBarTime: boolean;
   networkStatusIcon: boolean;
+  voiceServices: boolean;
   temperatureDegreeSymbol: boolean;
   subpageChevron: boolean;
   timezone: string;
@@ -251,8 +261,10 @@ export interface BackupPanelSettingsState {
   coverArtMediaPlayerEntity: string;
   coverArtAttributeConditions: string;
   coverArtDelay: unknown;
+  coverArtTouchPause: unknown;
   coverArtTrackOverlayDuration: unknown;
   coverArtHideExternalInput: boolean;
+  coverArtHomeAssistantPort: number;
   screensaverAction: string;
   clockScreensaver: boolean;
   clockBrightnessDay: number;
@@ -319,6 +331,7 @@ export function normalizeBackupPanelSettings(
     clockBarLayout: CLOCK_BAR_FIXED_LAYOUT,
     clockBarTime: objectValue(settings, "clock_bar_time") != null ? !!settings.clock_bar_time : true,
     networkStatusIcon: objectValue(settings, "network_status_icon") != null ? !!settings.network_status_icon : true,
+    voiceServices: objectValue(settings, "voice_services") != null ? !!settings.voice_services : false,
     temperatureDegreeSymbol: objectValue(settings, "temperature_degree_symbol") != null
       ? !!settings.temperature_degree_symbol
       : true,
@@ -349,10 +362,14 @@ export function normalizeBackupPanelSettings(
     coverArtMediaPlayerEntity: String(settings.cover_art_media_player_entity || settings.media_player_sleep_prevention_entity || ""),
     coverArtAttributeConditions: String(settings.cover_art_attribute_conditions || settings.cover_art_conditions || ""),
     coverArtDelay: objectValue(settings, "cover_art_delay") != null ? settings.cover_art_delay : 10,
+    coverArtTouchPause: objectValue(settings, "cover_art_touch_pause") != null ? settings.cover_art_touch_pause : 120,
     coverArtTrackOverlayDuration: objectValue(settings, "cover_art_track_overlay_duration") != null ? settings.cover_art_track_overlay_duration : 5,
     coverArtHideExternalInput: objectValue(settings, "cover_art_hide_external_input") != null
       ? !!settings.cover_art_hide_external_input
       : true,
+    coverArtHomeAssistantPort: objectValue(settings, "home_assistant_artwork_port") != null
+      ? normalizeHomeAssistantArtworkPort(settings.home_assistant_artwork_port)
+      : normalizeHomeAssistantArtworkPort(current.coverArtHomeAssistantPort),
     screensaverAction,
     clockScreensaver: screensaverAction === "clock",
     clockBrightnessDay,

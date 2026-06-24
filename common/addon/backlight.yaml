@@ -58,6 +58,9 @@ globals:
   - id: screensaver_fade_start_level
     type: float
     initial_value: '1.0'
+  - id: backlight_force_next_write
+    type: bool
+    initial_value: 'false'
   - id: screensaver_clock_target_level
     type: float
     initial_value: '0.35'
@@ -174,9 +177,8 @@ script:
                 condition:
                   lambda: |-
                     return id(cover_art_screensaver_active) ||
-                           ((id(media_player_sleep_prevention_enabled).state ||
-                             id(cover_art_screensaver_enabled).state) &&
-                            id(cover_art_media_playing));
+                           (id(media_player_sleep_prevention_enabled).state &&
+                            id(media_player_playing));
                 then:
                   - script.execute: screensaver_idle_check
                 else:
@@ -208,21 +210,35 @@ script:
                   - lambda: 'navigation_return_home(id(main_page)->obj);'
                   - if:
                       condition:
-                        lambda: 'return id(screensaver_action_clock);'
+                        lambda: |-
+                          bool voice_active = ${voice_interaction_active_condition};
+                          return id(cover_art_screensaver_enabled).state &&
+                                 id(cover_art_media_playing) &&
+                                 !voice_active &&
+                                 id(cover_art_attribute_conditions_match) &&
+                                 !(id(cover_art_hide_external_input_enabled).state &&
+                                   id(cover_art_external_input_active)) &&
+                                 !id(cover_art_media_player_entity).state.empty();
                       then:
-                        - globals.set:
-                            id: display_asleep
-                            value: 'true'
-                        - script.execute: show_clock_view
+                        - script.execute: show_cover_art_view
                       else:
-                        - script.execute: hide_cover_art_view
                         - if:
                             condition:
-                              lambda: 'return id(screensaver_action_dimmed);'
+                              lambda: 'return id(screensaver_action_clock);'
                             then:
-                              - script.execute: show_dimmed_view
+                              - globals.set:
+                                  id: display_asleep
+                                  value: 'true'
+                              - script.execute: show_clock_view
                             else:
-                              - script.execute: screensaver_sleep_display_off
+                              - script.execute: hide_cover_art_view
+                              - if:
+                                  condition:
+                                    lambda: 'return id(screensaver_action_dimmed);'
+                                  then:
+                                    - script.execute: show_dimmed_view
+                                  else:
+                                    - script.execute: screensaver_sleep_display_off
                 else:
                   - lambda: 'ESP_LOGD("screensaver", "Skipping automatic sleep while image modal is active");'
 
@@ -354,23 +370,34 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return !id(display_takeover_suspended);'
+            lambda: 'return id(display_takeover_suspended);'
           then:
-            - script.execute: backlight_force_display_off
-            - delay: 100ms
+            - lambda: 'ESP_LOGD("backlight", "Skipping LVGL pause while image modal is active");'
+          else:
             - if:
                 condition:
                   lambda: |-
-                    return id(screen_rotation_select).current_option() == "90" ||
-                           id(screen_rotation_select).current_option() == "270";
+                    #ifdef ESPCONTROL_KEEP_LVGL_ACTIVE_ON_DISPLAY_OFF
+                    return false;
+                    #else
+                    return true;
+                    #endif
                 then:
-                  - lvgl.pause:
+                  - script.execute: backlight_force_display_off
+                  - delay: 100ms
+                  - if:
+                      condition:
+                        lambda: |-
+                          return id(screen_rotation_select).current_option() == "90" ||
+                                 id(screen_rotation_select).current_option() == "270";
+                      then:
+                        - lvgl.pause:
+                      else:
+                        - lvgl.pause:
+                            show_snow: true
+                  - script.execute: backlight_force_display_off
                 else:
-                  - lvgl.pause:
-                      show_snow: true
-            - script.execute: backlight_force_display_off
-          else:
-            - lambda: 'ESP_LOGD("backlight", "Skipping LVGL pause while image modal is active");'
+                  - lambda: 'ESP_LOGD("backlight", "Keeping LVGL active during display-off so touch can wake the screen");'
 
   - id: backlight_fade_current_ui_to_black
     mode: restart
@@ -461,6 +488,8 @@ script:
             - lvgl.resume:
             - script.execute: clock_bar_hide
             - script.wait: clock_bar_hide
+            - script.stop: cover_art_delay_timer
+            - script.execute: hide_cover_art_view
             - script.execute: hide_clock_view
             - globals.set:
                 id: screensaver_dimmed_active
@@ -633,6 +662,9 @@ script:
             - globals.set:
                 id: screen_schedule_asleep
                 value: 'false'
+            - globals.set:
+                id: backlight_force_next_write
+                value: 'true'
             - lvgl.resume:
             - lvgl.widget.hide: dim_screensaver_touch_guard
             - script.execute: hide_cover_art_view
@@ -670,7 +702,10 @@ script:
       - script.execute: home_screen_idle_check
       - if:
           condition:
-            lambda: 'return id(cover_art_media_playing) && id(cover_art_screensaver_enabled).state;'
+            lambda: |-
+              return id(media_player_sleep_prevention_enabled).state &&
+                     id(cover_art_media_playing) &&
+                     id(cover_art_screensaver_enabled).state;
           then:
             - script.execute: cover_art_delay_timer
 

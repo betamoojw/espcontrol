@@ -489,6 +489,7 @@ function installPublicFirmwareViaWebOta(info) {
     state.firmwareInstallPostPending = false;
     state.firmwareChecking = false;
     state.firmwareUpdateState = "INSTALLING";
+    state.firmwareInstallError = "";
     state.firmwareInstallStatus = state.firmwareInstallTargetVersion ?
       "Uploading firmware " + state.firmwareInstallTargetVersion + "\u2026" :
       "Uploading firmware update\u2026";
@@ -535,6 +536,7 @@ function installPublicFirmwareViaWebOta(info) {
 }
 
 function waitForFirmwareRestart() {
+  state.firmwareInstallError = "";
   state.firmwareInstallStatus = "Waiting for device to restart\u2026";
   renderFirmwareUpdateStatus();
   setConfigLocked(true, "Waiting for device to restart\u2026");
@@ -543,10 +545,12 @@ function waitForFirmwareRestart() {
 }
 
 function failPublicFirmwareUpload(message) {
+  var reason = message || "Could not upload firmware update.";
   stopFirmwareInstallRefresh();
   state.firmwareUpdateState = "";
+  state.firmwareInstallError = "Firmware update failed: " + reason;
   renderFirmwareUpdateStatus();
-  showBanner(message || "Could not upload firmware update.", "error");
+  showBanner(reason, "error");
 }
 
 function postSwitch(name, on) {
@@ -579,6 +583,19 @@ function postCoverArtDelay(value) {
   return post(coverArtDelayPostUrls(value));
 }
 
+function coverArtTouchPausePostUrls(value) {
+  return entityPostUrls(
+    "number",
+    entityName("screen_saver_cover_art_touch_pause"),
+    entityObjectIds("screen_saver_cover_art_touch_pause"),
+    "set?value=" + encodeURIComponent(value)
+  );
+}
+
+function postCoverArtTouchPause(value) {
+  return post(coverArtTouchPausePostUrls(value));
+}
+
 function coverArtTrackOverlayDurationPostUrls(value) {
   return entityPostUrls(
     "number",
@@ -590,6 +607,19 @@ function coverArtTrackOverlayDurationPostUrls(value) {
 
 function postCoverArtTrackOverlayDuration(value) {
   return post(coverArtTrackOverlayDurationPostUrls(value));
+}
+
+function homeAssistantArtworkPortPostUrls(value) {
+  return entityPostUrls(
+    "number",
+    entityName("home_assistant_artwork_port"),
+    entityObjectIds("home_assistant_artwork_port"),
+    "set?value=" + encodeURIComponent(value)
+  );
+}
+
+function postHomeAssistantArtworkPort(value) {
+  return post(homeAssistantArtworkPortPostUrls(value));
 }
 
 function postNumber(name, value) {
@@ -718,6 +748,22 @@ function postNetworkStatusIcon(on) {
     on,
     NETWORK_STATUS_ICON_UNAVAILABLE
   );
+}
+
+var VOICE_SERVICES_UNAVAILABLE =
+  "Voice services setting is not available on this firmware. Update the device firmware, then reload this page.";
+
+function voiceServicesPostUrls(on) {
+  return entityPostUrls(
+    "switch",
+    entityName("voice_services"),
+    entityObjectIds("voice_services"),
+    on ? "turn_on" : "turn_off"
+  );
+}
+
+function postVoiceServices(on) {
+  post(voiceServicesPostUrls(on), null, VOICE_SERVICES_UNAVAILABLE);
 }
 
 var TEMPERATURE_DEGREE_SYMBOL_UNAVAILABLE =
@@ -930,6 +976,9 @@ function settingsStateEntities() {
 
   if (CFG.features && CFG.features.screenRotation) {
     items = items.concat(entityStateItems(ENTITY_CATALOG.groups.settings_optional));
+  }
+  if (CFG.features && CFG.features.voiceServices) {
+    items = items.concat(entityStateItems(ENTITY_CATALOG.groups.settings_voice));
   }
 
   return items;
