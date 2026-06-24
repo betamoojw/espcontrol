@@ -120,6 +120,18 @@ inline void apply_vacuum_card_state(VacuumCardCtx *ctx,
   }
 }
 
+inline void refresh_vacuum_card_translated_text(VacuumCardCtx *ctx,
+                                                const ParsedCfg &p) {
+  if (!ctx || !ctx->text_lbl) return;
+  if (p.label.empty()) {
+    ctx->label = espcontrol_i18n(std::string(vacuum_card_mode_label(ctx->mode)));
+  }
+  std::string label = ctx->status_card && !ctx->state.empty()
+    ? vacuum_state_label(ctx->state, ctx->label)
+    : ctx->label;
+  set_wrapped_button_label_text(ctx->text_lbl, label);
+}
+
 inline void subscribe_vacuum_card_state(VacuumCardCtx *ctx) {
   if (!ctx || ctx->entity_id.empty()) return;
   register_ha_control_availability(ctx->btn, ctx->btn, !ctx->status_card);
