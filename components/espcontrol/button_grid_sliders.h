@@ -492,10 +492,24 @@ inline void light_control_apply_tab_visibility() {
 
 inline void light_control_layout_modal(LightControlCtx *ctx);
 
+inline lv_coord_t control_modal_control_tab_min_size(const ControlModalLayout &layout) {
+  if (control_modal_uses_large_landscape_tuning(layout)) return 64;
+  if (control_modal_uses_compact_portrait_tuning(layout)) return 56;
+  return 48;
+}
+
 inline lv_coord_t control_modal_control_tab_size(const ControlModalLayout &layout) {
+  if (control_modal_uses_compact_portrait_tuning(layout)) {
+    lv_coord_t size = control_modal_scaled_px(64, layout.short_side);
+    lv_coord_t min_size = control_modal_control_tab_min_size(layout);
+    lv_coord_t max_size = 72;
+    if (size < min_size) size = min_size;
+    if (size > max_size) size = max_size;
+    return size;
+  }
   lv_coord_t size = layout.back_size * (control_modal_uses_large_landscape_tuning(layout) ? 4 : 7) /
                     (control_modal_uses_large_landscape_tuning(layout) ? 5 : 10);
-  lv_coord_t min_size = control_modal_uses_large_landscape_tuning(layout) ? 64 : 48;
+  lv_coord_t min_size = control_modal_control_tab_min_size(layout);
   lv_coord_t max_size = control_modal_uses_large_landscape_tuning(layout) ? 88 : 68;
   if (size < min_size) size = min_size;
   if (size > max_size) size = max_size;
@@ -798,7 +812,8 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
   lv_coord_t tab_safe_left = layout.back_inset_x + layout.back_size + layout.inset / 2;
   lv_coord_t centered_left = (layout.panel_w - tab_frame_w) / 2;
-  while (show_tab_bar && centered_left < tab_safe_left && tab_size > 48) {
+  lv_coord_t min_tab_size = control_modal_control_tab_min_size(layout);
+  while (show_tab_bar && centered_left < tab_safe_left && tab_size > min_tab_size) {
     tab_size--;
     selected_tab_size = tab_size + tab_size / 8;
     tab_frame_pad = tab_size / 5;
