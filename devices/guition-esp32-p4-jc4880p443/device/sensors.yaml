@@ -72,14 +72,7 @@ script:
           };
           cfg.resume_display_takeover = []() {
             id(display_takeover_suspended) = false;
-            if (id(screensaver_sensor_sleep_pending) &&
-                id(screensaver_mode).state == "sensor" &&
-                !id(presence_detected)) {
-              id(screensaver_sleep_sensor).execute();
-              return;
-            }
-            id(home_screen_idle_check).execute();
-            id(screensaver_idle_check).execute();
+            id(display_takeover_resume_restore).execute();
           };
           static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
             id(image_card_download_1),
@@ -250,14 +243,7 @@ esphome:
             };
             cfg.resume_display_takeover = []() {
               id(display_takeover_suspended) = false;
-              if (id(screensaver_sensor_sleep_pending) &&
-                  id(screensaver_mode).state == "sensor" &&
-                  !id(presence_detected)) {
-                id(screensaver_sleep_sensor).execute();
-                return;
-              }
-              id(home_screen_idle_check).execute();
-              id(screensaver_idle_check).execute();
+              id(display_takeover_resume_restore).execute();
             };
             static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
               id(image_card_download_1),
@@ -420,14 +406,7 @@ esphome:
             };
             cfg.resume_display_takeover = []() {
               id(display_takeover_suspended) = false;
-              if (id(screensaver_sensor_sleep_pending) &&
-                  id(screensaver_mode).state == "sensor" &&
-                  !id(presence_detected)) {
-                id(screensaver_sleep_sensor).execute();
-                return;
-              }
-              id(home_screen_idle_check).execute();
-              id(screensaver_idle_check).execute();
+              id(display_takeover_resume_restore).execute();
             };
             static esphome::artwork_image::ArtworkImage *image_card_downloaders[] = {
               id(image_card_download_1),
