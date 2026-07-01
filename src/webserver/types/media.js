@@ -578,6 +578,17 @@ registerButtonType("media", {
       updateCustomContentTypeVisibility();
       syncContentIdPlaceholder();
 
+      var playerSourceField = helpers.renderCardTextField(panel, b, helpers, {
+        label: "Playback Device",
+        idSuffix: "playlist-player-source",
+        placeholder: "e.g. Kitchen Speaker",
+        value: function () { return mediaPlaylistPlayerSource(b); },
+      });
+      playerSourceField.input.addEventListener("change", function () {
+        setMediaPlaylistPlayerSource(b, playerSourceField.input.value);
+        helpers.saveField("options", b.options);
+      });
+
       helpers.renderCardTextField(panel, b, helpers, {
         label: "Label",
         idSuffix: "label",

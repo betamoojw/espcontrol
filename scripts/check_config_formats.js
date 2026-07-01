@@ -460,17 +460,19 @@ assert.strictEqual(mediaSourcePlaylistParts.id, "music/morning-mix", "media play
 const playlistOptions = { sensor: "playlist" };
 hooks.setMediaPlaylistContentId(playlistOptions, "media-source://music/morning,mix");
 hooks.setMediaPlaylistContentType(playlistOptions, "music");
+hooks.setMediaPlaylistPlayerSource(playlistOptions, "Kitchen Speaker");
 assert.strictEqual(
   hooks.mediaPlaylistContentId(playlistOptions),
   "media-source://music/morning,mix",
   "media playlist content IDs are compact-option encoded"
 );
 assert.strictEqual(hooks.mediaPlaylistContentType(playlistOptions), "music", "media playlist content type is preserved");
+assert.strictEqual(hooks.mediaPlaylistPlayerSource(playlistOptions), "Kitchen Speaker", "media playlist playback source is preserved");
 hooks.setMediaPlaylistContentType(playlistOptions, "playlist");
 assert.strictEqual(
   playlistOptions.options,
-  "playlist_content_id=media-source%3A//music/morning%2Cmix",
-  "media playlist default content type is omitted"
+  "playlist_content_id=media-source%3A//music/morning%2Cmix,playlist_player_source=Kitchen Speaker",
+  "media playlist default content type is omitted while playback source is preserved"
 );
 assert.strictEqual(
   hooks.normalizeMediaOptions("volume_max=40", "volume"),
