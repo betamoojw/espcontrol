@@ -77,6 +77,8 @@ Enter:
 
 The important part is that EspControl uses the same values Home Assistant uses. If the values work in Home Assistant first, they should work from the EspControl button.
 
+When Home Assistant reports the currently playing `media_content_id`, the Playlist Button highlights only while that configured playlist or media item is playing. Some integrations do not report this value reliably; in that case EspControl can start the playlist, but it may not be able to confirm that the specific playlist is active.
+
 ### Find the Media Content ID
 
 The easiest way is to test the media item in Home Assistant first, then copy the working values into EspControl.
@@ -188,6 +190,7 @@ If tapping the Playlist Button does not start playback:
 - Try a different **Media Type**. Some integrations use `playlist`, while others use `music`, `album`, `track`, `channel`, or a custom value.
 - If your integration gives you a full sharing URL, convert it to the ID or URI format that Home Assistant expects.
 - If the preset source builds the wrong value for your integration, choose **Custom / full URI** and paste the exact `media_content_id` that works in Home Assistant.
+- If the button starts the playlist but does not stay highlighted, check whether the media player entity reports a matching `media_content_id` while playing.
 - If the speaker needs repeat or shuffle, create a Home Assistant script that sets those options and starts playback, then trigger that script from an EspControl Action card.
 
 ::: info Requires Home Assistant actions
