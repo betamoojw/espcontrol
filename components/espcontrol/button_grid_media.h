@@ -234,7 +234,6 @@ inline void subscribe_media_control_state(MediaControlCtx *ctx) {
         }
       })
   );
-#ifndef ESPCONTROL_LOW_HEAP_MEDIA_CONTROL
   ha_subscribe_attribute(
     ctx->entity_id, std::string("media_title"),
     std::function<void(esphome::StringRef)>(
@@ -255,6 +254,7 @@ inline void subscribe_media_control_state(MediaControlCtx *ctx) {
         if (media_control_modal_ui().active == ctx) media_control_layout_modal(ctx);
       })
   );
+#ifndef ESPCONTROL_LOW_HEAP_MEDIA_CONTROL
   ha_subscribe_attribute(
     ctx->entity_id, std::string("media_duration"),
     std::function<void(esphome::StringRef)>(
