@@ -148,19 +148,24 @@ jobs:
               rm -rf "${run_cache_root}"
               return "${create_status}"
             fi
+            cleanup_container() {
+              ${DOCKER} rm -f "${container}" >/dev/null 2>&1 || true
+              rm -rf "${run_cache_root}" .esphome "${build_input_dir}" || true
+            }
+            trap cleanup_container EXIT
 
             ${DOCKER} cp "${SOURCE_DIR}/." "${container}:/config"
             copy_status=$?
             if [ "${copy_status}" -ne 0 ]; then
-              ${DOCKER} rm -f "${container}" >/dev/null 2>&1 || true
-              rm -rf "${run_cache_root}"
+              cleanup_container
+              trap - EXIT
               return "${copy_status}"
             fi
 
             ${DOCKER} start -a "${container}"
             compile_status=$?
-            ${DOCKER} rm -f "${container}" >/dev/null 2>&1 || true
-            rm -rf "${run_cache_root}" .esphome "${build_input_dir}"
+            cleanup_container
+            trap - EXIT
             bash scripts/reclaim_actions_disk.sh
             return "${compile_status}"
           }
