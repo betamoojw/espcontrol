@@ -1766,6 +1766,13 @@ function backupFixture(device, slots) {
       presence_sensor_entity: "binary_sensor.office_presence",
       media_player_sleep_prevention: true,
       media_player_sleep_prevention_entity: "media_player.living",
+      cover_art_screensaver: true,
+      cover_art_media_player_entity: "media_player.living",
+      cover_art_attribute_conditions: "app_id=com.apple.TVMusic",
+      cover_art_delay: 30,
+      cover_art_touch_pause: 180,
+      cover_art_track_overlay_duration: 10,
+      cover_art_hide_external_input: false,
       screensaver_action: "dim",
       clock_brightness_day: 44,
       clock_brightness_night: 22,
@@ -1931,6 +1938,128 @@ async function assertBackupImportSmoke(page, posts, testCase) {
     "backup clock bar time reset",
     before,
   );
+  const screensaverImportPosts = [
+    [
+      { domain: "text", name: "screensaver_mode", action: "set", value: "timer" },
+      "backup screensaver mode import",
+    ],
+    [
+      {
+        domain: "text",
+        name: "presence_sensor_entity",
+        action: "set",
+        value: "binary_sensor.office_presence",
+      },
+      "backup screensaver presence import",
+    ],
+    [
+      {
+        domain: "switch",
+        name: "screen_saver__media_player_sleep_prevention",
+        action: "turn_on",
+      },
+      "backup media sleep prevention import",
+    ],
+    [
+      {
+        domain: "text",
+        name: "media_player_sleep_prevention_entity",
+        action: "set",
+        value: "media_player.living",
+      },
+      "backup media sleep prevention entity import",
+    ],
+    [
+      { domain: "switch", name: "screen_saver__cover_art", action: "turn_on" },
+      "backup cover art import",
+    ],
+    [
+      {
+        domain: "text",
+        name: "screen_saver__cover_art_entity",
+        action: "set",
+        value: "media_player.living",
+      },
+      "backup cover art entity import",
+    ],
+    [
+      {
+        domain: "text",
+        name: "screen_saver__cover_art_conditions",
+        action: "set",
+        value: "app_id=com.apple.TVMusic",
+      },
+      "backup cover art conditions import",
+    ],
+    [
+      {
+        domain: "number",
+        name: "screen_saver__cover_art_delay",
+        action: "set",
+        value: "30",
+      },
+      "backup cover art delay import",
+    ],
+    [
+      {
+        domain: "number",
+        name: "screen_saver__cover_art_touch_pause",
+        action: "set",
+        value: "180",
+      },
+      "backup cover art touch pause import",
+    ],
+    [
+      {
+        domain: "number",
+        name: "screen_saver__track_overlay_duration",
+        action: "set",
+        value: "10",
+      },
+      "backup cover art track overlay import",
+    ],
+    [
+      {
+        domain: "switch",
+        name: "screen_saver__hide_cover_art_on_external_input",
+        action: "turn_off",
+      },
+      "backup cover art external input import",
+    ],
+    [
+      {
+        domain: "select",
+        name: "screen_saver__action",
+        action: "set",
+        option: "Screen Dimmed",
+      },
+      "backup screensaver action import",
+    ],
+    [
+      { domain: "switch", name: "screen_saver__clock", action: "turn_off" },
+      "backup clock screensaver switch import",
+    ],
+    [
+      {
+        domain: "number",
+        name: "screen_saver__dimmed_brightness",
+        action: "set",
+        value: "15",
+      },
+      "backup dimmed screensaver brightness import",
+    ],
+    [
+      { domain: "number", name: "screensaver_timeout", action: "set", value: "60" },
+      "backup screensaver timeout import",
+    ],
+    [
+      { domain: "number", name: "home_screen_timeout", action: "set", value: "120" },
+      "backup home screen timeout import",
+    ],
+  ];
+  for (const [expected, label] of screensaverImportPosts) {
+    await waitForPost(posts, expected, label, before);
+  }
   await waitForPost(
     posts,
     {
