@@ -6,9 +6,11 @@ description:
 
 # Voice Control
 
+Voice Control is temporarily disabled in current ESP32-P4 86 firmware while the audio stack is replaced. Normal EspControl touchscreen features continue to work.
+
 Voice Control turns the ESP32-P4 86 Panel into a Home Assistant Assist satellite. You can speak to Home Assistant from the panel, hear responses through the built-in speaker, set timers, control smart home devices, and interrupt voice or media playback with barge-in.
 
-Voice Control is available on the **4-inch ESP32-P4 86 Panel** firmware. It uses the panel's built-in microphones and speaker, and is designed to behave closely to the official Home Assistant Voice Preview Edition while staying integrated with EspControl's screen, clock bar, media controls, and cover-art display.
+These notes describe the intended **4-inch ESP32-P4 86 Panel** Voice Control experience. It uses the panel's built-in microphones and speaker, and is designed to behave closely to the official Home Assistant Voice Preview Edition while staying integrated with EspControl's screen, clock bar, media controls, and cover-art display.
 
 ## What You Can Do
 
@@ -358,4 +360,3 @@ After installing or updating Voice Control, test:
 8. Mute and unmute the microphone from Home Assistant.
 9. Open the local volume control from the clock bar or BOOT/Key2 button.
 10. If using cover art, confirm it hides during a voice turn and restores afterwards.
-
