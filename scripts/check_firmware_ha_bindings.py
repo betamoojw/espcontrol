@@ -1588,15 +1588,10 @@ def firmware_navigation_target_errors(
             errors.append(f"{package_rel}: define a voice-target navigate hook")
         if package_path.parts[-2] == "esp32-p4-86":
             voice_package_found = True
-            voice_disabled = 'voice_assistant_package_suffix: "_disabled"' in package_text
-            if voice_disabled:
-                if "Voice volume target is temporarily disabled on this device" not in package_text:
-                    errors.append(f"{package_rel}: explain disabled voice navigation aliases while the audio stack is unavailable")
-            else:
-                if "id(open_device_volume_control).execute();" not in package_text:
-                    errors.append(f"{package_rel}: open the 86-P4 voice volume modal for voice navigation aliases")
-                if "id(voice_services_enabled).state" not in package_text:
-                    errors.append(f"{package_rel}: only open the voice volume modal when Voice Services are enabled")
+            if "id(open_device_volume_control).execute();" not in package_text:
+                errors.append(f"{package_rel}: open the 86-P4 voice volume modal for voice navigation aliases")
+            if "id(voice_services_enabled).state" not in package_text:
+                errors.append(f"{package_rel}: only open the voice volume modal when Voice Services are enabled")
         elif "open_device_volume_control" in package_text:
             errors.append(f"{package_rel}: keep the voice volume modal hook limited to the 86-P4 package")
     if not voice_package_found:

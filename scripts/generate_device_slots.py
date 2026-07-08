@@ -72,17 +72,6 @@ def voice_substitution_lines(device: dict) -> list[str]:
             '    ESP_LOGW("navigation", "Voice volume target is not available on this device");',
             '  voice_interaction_active_condition: "false"',
         ]
-    package = package_data(device)
-    if package["substitutions"].get("voice_assistant_package_suffix") == '"_disabled"':
-        return [
-            "  voice_clock_bar_hide_code: |-",
-            "    lv_obj_add_flag(id(voice_clock_bar_mute_button), LV_OBJ_FLAG_HIDDEN);",
-            "  voice_clock_bar_apply_code: |-",
-            "    lv_obj_add_flag(id(voice_clock_bar_mute_button), LV_OBJ_FLAG_HIDDEN);",
-            "  navigate_voice_target_code: |-",
-            '    ESP_LOGW("navigation", "Voice volume target is temporarily disabled on this device");',
-            '  voice_interaction_active_condition: "false"',
-        ]
     return [
         "  voice_clock_bar_hide_code: |-",
         "    lv_obj_add_flag(id(voice_clock_bar_mute_button), LV_OBJ_FLAG_HIDDEN);",
