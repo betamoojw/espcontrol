@@ -1452,6 +1452,16 @@ async function assertEmptyCellSettings(page, posts, label) {
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
   await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
   await page.locator("#sp-inp-entity").waitFor({ state: "visible" });
+  assert.strictEqual(
+    await page.locator("#sp-inp-icon").inputValue(),
+    "Auto",
+    `${label}: changing the default Action card type clears its icon default`,
+  );
+  assert.strictEqual(
+    await page.locator("#sp-inp-sensor-when-on-toggle").isChecked(),
+    false,
+    `${label}: changing the default Action card type clears its active display default`,
+  );
   assert(
     await page.locator(".sp-settings-modal .sp-save-btn").isVisible(),
     `${label}: changing the default card type keeps Save visible`,

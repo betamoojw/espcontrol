@@ -383,6 +383,7 @@ function renderButtonSettings(forceOpen) {
     var pickerType = newType;
     newType = defaultButtonTypeForPicker(newType);
     var keepMediaEntity = pickerType === "media_control" && b.type === "media";
+    if (isNewDraft) EspControlModel.copyCardConfig(b, emptyButtonConfig());
     b.type = newType;
     if (state.settingsDraft && state.settingsDraft.key === draftKey) {
       state.settingsDraft.typeSelected = true;
