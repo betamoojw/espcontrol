@@ -1452,6 +1452,7 @@ async function assertEmptyCellSettings(page, posts, label) {
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
   await page.locator("#sp-inp-label").fill("Keep this label");
   await page.locator("#sp-inp-entity").fill("switch.keep_this_entity");
+  await page.locator("#sp-inp-action").selectOption({ label: "Run Script" });
   await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
   await page.locator("#sp-inp-entity").waitFor({ state: "visible" });
   assert.strictEqual(

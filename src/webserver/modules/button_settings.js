@@ -398,6 +398,12 @@ function renderButtonSettings(forceOpen) {
     newType = defaultButtonTypeForPicker(newType);
     var keepMediaEntity = pickerType === "media_control" && b.type === "media";
     clearAutomaticTypeDefaults();
+    if (isNewDraft && b.type === "action" && newType !== "action") {
+      b.sensor = "";
+      b.unit = "";
+      b.precision = "";
+      b.options = "";
+    }
     b.type = newType;
     if (state.settingsDraft && state.settingsDraft.key === draftKey) {
       state.settingsDraft.typeSelected = true;
