@@ -2094,16 +2094,14 @@ script:
                   now.is_valid() ? now.hour : 0,
                   (int) id(schedule_on_hour).state,
                   (int) id(schedule_off_hour).state);
-              return espcontrol::cover_art::display_allowed(
+              return espcontrol::cover_art::feature_allowed(
                   id(cover_art_screensaver_enabled).state,
-                  id(cover_art_media_playing),
                   !id(cover_art_media_player_entity).state.empty(),
                   id(cover_art_attribute_conditions_match),
                   id(cover_art_hide_external_input_enabled).state,
-                  id(cover_art_external_input_active),
-                  schedule_blocks,
-                  alarm_display_takeover_active(),
-                  false);
+                  id(cover_art_external_input_active)) &&
+                  !schedule_blocks &&
+                  !alarm_display_takeover_active();
           then:
             - lambda: |-
                 if (!id(cover_art_runtime).image_available) {
@@ -2116,6 +2114,8 @@ script:
                 condition:
                   lambda: |-
                     return id(media_player_sleep_prevention_enabled).state ||
+                           (id(screensaver_mode).state != "timer" &&
+                            id(screensaver_mode).state != "sensor") ||
                            id(display_asleep) ||
                            id(screen_schedule_asleep) ||
                            id(screensaver_display_off_active) ||

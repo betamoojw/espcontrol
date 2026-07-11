@@ -811,6 +811,8 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
         or "id(cover_art_runtime).retry_url.clear()" not in playback_started_body
     ):
         errors.append(f"{rel}: reset artwork retry state when playback resumes without a visible image")
+    if playback_started_body and "espcontrol::cover_art::display_allowed(" in playback_started_body:
+        errors.append(f"{rel}: let the playback-start event activate cover art before mirrored playback state settles")
     return errors
 
 
@@ -880,10 +882,12 @@ def firmware_media_sleep_prevention_errors(
             "script.execute: cover_art_delay_timer" in playback_started_body
             and (
                 "id(media_player_sleep_prevention_enabled).state" not in playback_started_body
+                or 'id(screensaver_mode).state != "timer"' not in playback_started_body
+                or 'id(screensaver_mode).state != "sensor"' not in playback_started_body
                 or "script.execute: screensaver_idle_check" not in playback_started_body
             )
         ):
-            errors.append(f"{rel}: do not start cover art immediately unless media sleep prevention or screensaver is active")
+            errors.append(f"{rel}: let cover art use its own delay when the normal screensaver is disabled")
 
     return errors
 
@@ -3536,7 +3540,7 @@ def run_self_test() -> int:
         (
             "do not let cover art alone keep the idle timer awake",
             "do not turn on media sleep prevention",
-            "do not start cover art immediately",
+            "let cover art use its own delay",
         ),
     )
     expect_media_sleep_prevention_errors(
@@ -3562,6 +3566,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"
@@ -3600,6 +3606,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"
@@ -3638,6 +3646,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"
