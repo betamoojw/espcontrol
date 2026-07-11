@@ -115,6 +115,16 @@ def self_test() -> None:
     if product_order.index("device-slots") > product_order.index("device-profiles"):
         raise AssertionError("device slot outputs are not checked before device profiles consume them")
 
+    web_order = [item.id for item in plan("ci", "web")]
+    for consumer in ("web-smoke", "web-browser-smoke"):
+        if web_order.index("device-manifest-output") > web_order.index(consumer):
+            raise AssertionError(f"device manifest output is not checked before {consumer} consumes it")
+
+    firmware_order = [item.id for item in plan("fast", "firmware")]
+    for consumer in ("firmware-parser", "firmware-ha-bindings", "device-profiles"):
+        if firmware_order.index("device-slots") > firmware_order.index(consumer):
+            raise AssertionError(f"device slot outputs are not checked before {consumer} consumes them")
+
     def expect_invalid(tasks: tuple[Task, ...], description: str) -> None:
         try:
             validate_registry(tasks)
