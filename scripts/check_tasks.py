@@ -1252,8 +1252,8 @@ def self_test() -> None:
         or "PLAYWRIGHT_BROWSERS_PATH" not in browser.cache_env
     ):
         raise AssertionError("browser cache policy omits required web, layout, or environment inputs")
-    if "node_modules/.bin/esbuild" not in registry["generated"].cache_tools:
-        raise AssertionError("generated-output cache keys omit the esbuild tool version")
+    if not {"node_modules/.bin/esbuild", "esbuild"} <= set(registry["generated"].cache_tools):
+        raise AssertionError("generated-output cache keys omit an esbuild resolution path")
     if (
         "compatibility/**" not in registry["generated"].inputs
         or "builds/**" not in registry["generated"].inputs
