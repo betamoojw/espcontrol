@@ -215,8 +215,10 @@ def parse_name_status(output: str) -> set[str]:
 
 def changed_paths(root: Path, merge_base: str) -> list[str]:
     tracked = git_output(root, "diff", "--name-status", "-z", "-M", merge_base)
+    staged = git_output(root, "diff", "--cached", "--name-status", "-z", "-M", merge_base)
     untracked = git_output(root, "ls-files", "--others", "--exclude-standard", "-z")
     paths = parse_name_status(tracked)
+    paths.update(parse_name_status(staged))
     paths.update(path for path in untracked.split("\0") if path)
     return sorted(paths)
 
@@ -649,6 +651,7 @@ def self_test() -> None:
         run_git("config", "user.email", "check-graph@example.invalid")
         initial = {
             "docs/guide.md": "initial\n",
+            "docs/staged-then-reverted.md": "initial\n",
             "src/webserver/old.js": "initial\n",
             "components/espcontrol/example.h": "initial\n",
             "devices/catalog.json": "{}\n",
@@ -678,12 +681,17 @@ def self_test() -> None:
         (repo / "components/espcontrol/example.h").unlink()
         (repo / "devices/catalog.json").write_text('{"changed": true}\n')
         run_git("add", "devices/catalog.json")
+        staged_then_reverted = repo / "docs/staged-then-reverted.md"
+        staged_then_reverted.write_text("staged\n")
+        run_git("add", "docs/staged-then-reverted.md")
+        staged_then_reverted.write_text("initial\n")
         (repo / "untracked.txt").write_text("untracked\n")
 
         _, merge_base = resolve_changed_base(repo)
         discovered = set(changed_paths(repo, merge_base))
         expected_paths = {
             "docs/guide.md",
+            "docs/staged-then-reverted.md",
             "src/webserver/old.js",
             "src/webserver/new.js",
             "components/espcontrol/example.h",
