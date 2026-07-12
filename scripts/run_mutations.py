@@ -32,13 +32,19 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix=f"espcontrol-{mutation_id}-") as directory:
             copy = Path(directory) / "repo"
             shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git", "node_modules", "build", ".cache"))
+            baseline = subprocess.run(entry["command"], cwd=copy, check=False)
+            if baseline.returncode != 0:
+                raise SystemExit(
+                    f"{mutation_id}: replacement check failed before mutation "
+                    f"(exit {baseline.returncode})"
+                )
             applied = subprocess.run(
                 ["git", "apply", str(patch)], cwd=copy, text=True, capture_output=True, check=False
             )
             if applied.returncode:
                 raise SystemExit(f"{mutation_id}: patch did not apply\n{applied.stderr}")
-            result = subprocess.run(entry["command"], cwd=copy, check=False)
-            if result.returncode == 0:
+            mutated = subprocess.run(entry["command"], cwd=copy, check=False)
+            if mutated.returncode == 0:
                 raise SystemExit(f"{mutation_id}: replacement check did not catch mutation")
             print(f"{mutation_id}: caught")
 
