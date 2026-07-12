@@ -836,6 +836,12 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
         and "if (!id(cover_art_artist).empty()) return id(cover_art_artist);" not in text
     ):
         errors.append(f"{rel}: prefer a real artist name over the external-source fallback label")
+    pause_body = yaml_script_body(text, "cover_art_pause_after_touch")
+    if pause_body is not None and (
+        "return id(cover_art_screensaver_active);" not in pause_body
+        or "id(cover_art_manual_pause_until_ms) = 1;" not in pause_body
+    ):
+        errors.append(f"{rel}: only arm cover art return after an active cover-art dismissal")
     return errors
 
 
@@ -893,6 +899,11 @@ def firmware_media_sleep_prevention_errors(
             and "id(cover_art_delay).state <= 0.0f" not in text
         ):
             errors.append(f"{rel}: re-arm cover art after touch when Show After is immediate")
+        if (
+            "const bool cover_art_immediate_return" in text
+            and "id(cover_art_manual_pause_until_ms) != 0 &&" not in text
+        ):
+            errors.append(f"{rel}: gate immediate cover art return to an actual dismissal")
 
     if display_path.exists():
         rel = display_path.relative_to(root)

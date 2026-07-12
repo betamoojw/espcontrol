@@ -808,6 +808,7 @@ script:
                 id(cover_art_manual_pause_until_ms) != 0 &&
                 (int32_t)(id(cover_art_manual_pause_until_ms) - millis()) > 0;
               const bool cover_art_immediate_return =
+                id(cover_art_manual_pause_until_ms) != 0 &&
                 !std::isnan(id(cover_art_delay).state) && id(cover_art_delay).state <= 0.0f;
               return (id(media_player_sleep_prevention_enabled).state ||
                       cover_art_touch_return_pending ||

@@ -320,20 +320,25 @@ script:
   - id: cover_art_pause_after_touch
     mode: restart
     then:
-      - script.stop: cover_art_delay_timer
-      - lambda: |-
-          if (!id(cover_art_screensaver_enabled).state || !id(cover_art_media_playing)) return;
-          float seconds = id(cover_art_delay).state;
-          if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
-          if (seconds <= 0.0f) {
-            id(cover_art_manual_pause_until_ms) = 0;
-            ESP_LOGI("cover_art", "Cover art returns immediately after touch");
-            return;
-          }
-          if (seconds > 300.0f) seconds = 300.0f;
-          uint32_t duration_ms = (uint32_t)(seconds * 1000.0f);
-          id(cover_art_manual_pause_until_ms) = millis() + duration_ms;
-          ESP_LOGI("cover_art", "Waiting %.0fs to show cover art again after touch", seconds);
+      - if:
+          condition:
+            lambda: 'return id(cover_art_screensaver_active);'
+          then:
+            - script.stop: cover_art_delay_timer
+            - lambda: |-
+                float seconds = id(cover_art_delay).state;
+                if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
+                if (seconds <= 0.0f) {
+                  // A non-zero sentinel distinguishes a real cover-art dismissal
+                  // from an ordinary touchscreen wake when return is immediate.
+                  id(cover_art_manual_pause_until_ms) = 1;
+                  ESP_LOGI("cover_art", "Cover art returns immediately after touch");
+                  return;
+                }
+                if (seconds > 300.0f) seconds = 300.0f;
+                uint32_t duration_ms = (uint32_t)(seconds * 1000.0f);
+                id(cover_art_manual_pause_until_ms) = millis() + duration_ms;
+                ESP_LOGI("cover_art", "Waiting %.0fs to show cover art again after touch", seconds);
 
   - id: cover_art_wake_touch_block
     mode: restart
@@ -1406,6 +1411,9 @@ script:
                      (id(cover_art_manual_pause_until_ms) == 0 ||
                       (int32_t)(id(cover_art_manual_pause_until_ms) - millis()) <= 0);
           then:
+            - globals.set:
+                id: cover_art_manual_pause_until_ms
+                value: '0'
             - script.execute: show_cover_art_view
 
   - id: cover_art_playback_refresh
