@@ -1283,6 +1283,9 @@ def self_test() -> None:
         raise AssertionError("firmware binding cache keys omit common configuration")
     if not {"common/**", "components/**", "src/webserver/**", "compatibility/**"} <= set(registry["device-profiles"].inputs):
         raise AssertionError("device profile cache keys omit cross-layer inputs")
+    for task_id in ("device-manifest", "device-manifest-output", "device-matrix", "device-slots"):
+        if "common/assets/**" not in registry[task_id].inputs:
+            raise AssertionError(f"{task_id} cache keys omit common font assets")
 
     if registry["types"].commands != (("npm", "exec", "--", "tsc", "--noEmit"),):
         raise AssertionError("TypeScript checks do not use the project-managed compiler")

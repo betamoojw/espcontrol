@@ -26,8 +26,8 @@ This detailed routing table is generated directly from `scripts/check_tasks_data
 | Task | Domains | Parallel-safe | Cache | Cache environment | Cache tools | Declared inputs | Focused command |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `generated` | product, firmware, web, docs | Yes | deterministic | — | `node_modules/.bin/esbuild` | `common/**`<br>`devices/**`<br>`src/webserver/**`<br>`compatibility/**`<br>`scripts/build.py`<br>`scripts/web_modules.json` | `npm run check:generated` |
-| `device-manifest` | product, firmware | Yes | deterministic | — | — | `devices/**`<br>`builds/**`<br>`scripts/check_device_manifest.py` | `python3 scripts/check_tasks.py run-task device-manifest` |
-| `device-manifest-output` | product, firmware, docs | Yes | deterministic | — | — | `devices/catalog.json`<br>`scripts/generate_device_manifest.py` | `python3 scripts/check_tasks.py run-task device-manifest-output` |
+| `device-manifest` | product, firmware | Yes | deterministic | — | — | `common/assets/**`<br>`devices/**`<br>`builds/**`<br>`scripts/check_device_manifest.py` | `python3 scripts/check_tasks.py run-task device-manifest` |
+| `device-manifest-output` | product, firmware, docs | Yes | deterministic | — | — | `common/assets/**`<br>`devices/catalog.json`<br>`scripts/generate_device_manifest.py` | `python3 scripts/check_tasks.py run-task device-manifest-output` |
 | `product-schema` | product | Yes | deterministic | — | — | `common/config/**`<br>`devices/**`<br>`scripts/check_product_schema.py` | `npm run check:product-schema` |
 | `product-snapshot` | product | Yes | deterministic | — | — | `common/config/**`<br>`common/assets/**`<br>`devices/**`<br>`compatibility/**` | `npm run check:product-snapshot` |
 | `local-artifacts` | workflow | No | never | — | — | `scripts/check_local_artifacts.py` | `npm run check:local-artifacts` |
@@ -48,12 +48,12 @@ This detailed routing table is generated directly from `scripts/check_tasks_data
 | `firmware-ha-bindings` | firmware | Yes | deterministic | — | — | `common/**`<br>`components/**`<br>`devices/**`<br>`scripts/check_firmware_ha_bindings.py` | `npm run check:firmware-ha-bindings` |
 | `firmware-card-runtime` | firmware, product | Yes | deterministic | — | — | `components/**`<br>`common/config/card_contract.json`<br>`scripts/check_firmware_card_runtime.py` | `npm run check:firmware-card-runtime` |
 | `firmware-release` | firmware, workflow | No | never | — | — | `builds/**`<br>`devices/**`<br>`.github/esphome.env`<br>`.github/workflows/release.yml`<br>`scripts/check_firmware_release.py` | `npm run check:firmware-release` |
-| `device-matrix` | firmware, product | Yes | deterministic | — | — | `builds/**`<br>`devices/**`<br>`scripts/check_device_matrix.py` | `npm run check:device-matrix` |
+| `device-matrix` | firmware, product | Yes | deterministic | — | — | `common/assets/**`<br>`builds/**`<br>`devices/**`<br>`scripts/check_device_matrix.py` | `npm run check:device-matrix` |
 | `device-profiles` | firmware, product | Yes | deterministic | — | — | `common/**`<br>`components/**`<br>`devices/**`<br>`src/webserver/**`<br>`compatibility/**`<br>`scripts/check_device_profiles.py` | `npm run check:device-profiles` |
 | `release-confidence` | product, workflow | No | never | — | — | `builds/**`<br>`devices/**`<br>`scripts/check_release_confidence.py` | `npm run check:release-confidence` |
 | `release-changelog` | docs, workflow | No | never | — | — | `docs/**`<br>`scripts/check_release_changelog.py` | `npm run check:release-changelog` |
 | `card-contract-outputs` | product, firmware, web, docs | Yes | deterministic | — | — | `common/config/card_contract.json`<br>`scripts/check_card_contract_outputs.py` | `npm run check:card-contract-outputs` |
-| `device-slots` | firmware, product | Yes | deterministic | — | — | `devices/**`<br>`scripts/generate_device_slots.py` | `python3 scripts/check_tasks.py run-task device-slots` |
+| `device-slots` | firmware, product | Yes | deterministic | — | — | `common/assets/**`<br>`devices/**`<br>`scripts/generate_device_slots.py` | `python3 scripts/check_tasks.py run-task device-slots` |
 | `icon-groups` | firmware, product, docs | Yes | deterministic | — | — | `common/assets/**`<br>`devices/**`<br>`docs/.vitepress/theme/components/IconGallery.vue`<br>`scripts/check_icon_groups.py` | `python3 scripts/check_tasks.py run-task icon-groups` |
 | `timezones` | firmware, web | Yes | deterministic | `TZ` | — | `common/**`<br>`src/webserver/**`<br>`components/espcontrol/sun_calc.h`<br>`scripts/check_timezones.py` | `npm run check:timezones` |
 | `public-firmware-script` | firmware, workflow | Yes | deterministic | — | — | `scripts/**`<br>`docs/public/**` | `npm run check:public-firmware-script` |
