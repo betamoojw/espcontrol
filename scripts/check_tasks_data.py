@@ -69,7 +69,8 @@ WEB_SOURCE_HELPERS = ("scripts/web_source.js", "scripts/web_modules.json")
 
 # Declaration order is the stable tie-breaker used by the planner.
 TASKS = (
-    task("firmware-tests", ("cmake", "--fresh", "-S", "tests/firmware", "-B", "build/tests/firmware"),
+    task("firmware-tests", ("cmake", "-E", "remove_directory", "build/tests/firmware"),
+         ("cmake", "-S", "tests/firmware", "-B", "build/tests/firmware"),
          ("cmake", "--build", "build/tests/firmware"),
          ("ctest", "--test-dir", "build/tests/firmware", "--output-on-failure"), profiles=FAST,
          domains=("firmware",), inputs=("tests/firmware/**",), parallel_safe=True,
