@@ -862,11 +862,12 @@ def firmware_media_sleep_prevention_errors(
             ):
                 errors.append(f"{rel}: do not let cover art alone keep the idle timer awake")
         if wake_body is not None and (
-            "return id(cover_art_screensaver_active);" not in wake_body
+            "return id(cover_art_screensaver_active)" not in wake_body
+            or "id(cover_art_manual_pause_until_ms) != 0" not in wake_body
             or "script.execute: cover_art_pause_after_touch" not in wake_body
             or "script.wait: cover_art_pause_after_touch" not in wake_body
         ):
-            errors.append(f"{rel}: record the cover art return delay in the shared touchscreen wake path")
+            errors.append(f"{rel}: restart the cover art return delay after every touch while it is pending")
         sleep_body = yaml_script_body(text, "screensaver_sleep_timer")
         if sleep_body is not None:
             cover_art_sleep_match = re.search(

@@ -234,7 +234,9 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return id(cover_art_screensaver_active);'
+            lambda: |-
+              return id(cover_art_screensaver_active) ||
+                     id(cover_art_manual_pause_until_ms) != 0;
           then:
             - script.execute: screensaver_idle_check
           else:
