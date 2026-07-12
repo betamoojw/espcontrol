@@ -322,6 +322,7 @@ script:
     then:
       - script.stop: cover_art_delay_timer
       - lambda: |-
+          if (!id(cover_art_screensaver_enabled).state || !id(cover_art_media_playing)) return;
           float seconds = id(cover_art_delay).state;
           if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
           if (seconds <= 0.0f) {

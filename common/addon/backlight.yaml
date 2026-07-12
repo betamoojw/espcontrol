@@ -234,9 +234,7 @@ script:
     then:
       - if:
           condition:
-            lambda: |-
-              return id(cover_art_screensaver_active) ||
-                     id(cover_art_manual_pause_until_ms) != 0;
+            lambda: 'return id(cover_art_screensaver_active);'
           then:
             - script.execute: screensaver_idle_check
           else:
@@ -676,12 +674,6 @@ script:
   - id: screensaver_wake
     mode: restart
     then:
-      - if:
-          condition:
-            lambda: 'return id(cover_art_screensaver_active);'
-          then:
-            - script.execute: cover_art_pause_after_touch
-            - script.wait: cover_art_pause_after_touch
       - script.stop: screen_schedule_sleep
       - script.stop: backlight_fade_current_ui_to_black
       - script.stop: backlight_sleep_display_off
