@@ -14,6 +14,19 @@ ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = ROOT / "tests" / "mutations" / "registry.json"
 
 
+def copy_tracked_files(destination: Path) -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
+    ).stdout.split(b"\0")
+    for raw_path in tracked:
+        if not raw_path:
+            continue
+        relative = Path(raw_path.decode("utf-8"))
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / relative, target)
+
+
 def main() -> int:
     entries = json.loads(REGISTRY.read_text(encoding="utf-8"))
     if not isinstance(entries, list):
@@ -30,20 +43,27 @@ def main() -> int:
             raise SystemExit(f"Invalid mutation entry: {mutation_id}")
 
         with tempfile.TemporaryDirectory(prefix=f"espcontrol-{mutation_id}-") as directory:
-            copy = Path(directory) / "repo"
-            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git", "node_modules", "build", ".cache"))
-            baseline = subprocess.run(entry["command"], cwd=copy, check=False)
+            baseline_copy = Path(directory) / "baseline"
+            copy_tracked_files(baseline_copy)
+            baseline = subprocess.run(entry["command"], cwd=baseline_copy, check=False)
             if baseline.returncode != 0:
                 raise SystemExit(
                     f"{mutation_id}: replacement check failed before mutation "
                     f"(exit {baseline.returncode})"
                 )
+
+            mutated_copy = Path(directory) / "mutated"
+            copy_tracked_files(mutated_copy)
             applied = subprocess.run(
-                ["git", "apply", str(patch)], cwd=copy, text=True, capture_output=True, check=False
+                ["git", "apply", str(patch)],
+                cwd=mutated_copy,
+                text=True,
+                capture_output=True,
+                check=False,
             )
             if applied.returncode:
                 raise SystemExit(f"{mutation_id}: patch did not apply\n{applied.stderr}")
-            mutated = subprocess.run(entry["command"], cwd=copy, check=False)
+            mutated = subprocess.run(entry["command"], cwd=mutated_copy, check=False)
             if mutated.returncode == 0:
                 raise SystemExit(f"{mutation_id}: replacement check did not catch mutation")
             print(f"{mutation_id}: caught")
