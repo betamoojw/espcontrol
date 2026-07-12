@@ -904,6 +904,13 @@ def firmware_media_sleep_prevention_errors(
             and "id(cover_art_manual_pause_until_ms) != 0 &&" not in text
         ):
             errors.append(f"{rel}: gate immediate cover art return to an actual dismissal")
+        if "const bool cover_art_immediate_return" in text and (
+            "const bool cover_art_disabled_mode_delay" not in text
+            or 'id(screensaver_mode).state != "timer"' not in text
+            or 'id(screensaver_mode).state != "sensor"' not in text
+            or "show_after_seconds > 0.0f" not in text
+        ):
+            errors.append(f"{rel}: restart positive Show After delay after touches in disabled screensaver mode")
 
     if display_path.exists():
         rel = display_path.relative_to(root)
@@ -3626,7 +3633,19 @@ def run_self_test() -> int:
         "            lambda: |-\n"
         "              return id(cover_art_screensaver_active) ||\n"
         "                     (id(media_player_sleep_prevention_enabled).state &&\n"
-        "                      id(media_player_playing));\n",
+        "                      id(media_player_playing));\n"
+        "  - id: screensaver_wake\n"
+        "    then:\n"
+        "      - if:\n"
+        "          condition:\n"
+        "            lambda: |-\n"
+        "              const bool cover_art_immediate_return =\n"
+        "                id(cover_art_manual_pause_until_ms) != 0 &&\n"
+        "                id(cover_art_delay).state <= 0.0f;\n"
+        "              const bool cover_art_disabled_mode_delay =\n"
+        "                id(screensaver_mode).state != \"timer\" &&\n"
+        "                id(screensaver_mode).state != \"sensor\" &&\n"
+        "                show_after_seconds > 0.0f;\n",
         "switch:\n"
         "  - platform: template\n"
         "    id: cover_art_screensaver_enabled\n"
