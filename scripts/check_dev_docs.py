@@ -10,6 +10,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from check_tasks_data import PROFILES, TASKS
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,6 +55,12 @@ SOURCE_TRUTH_ROWS: tuple[SourceTruthRow, ...] = (
         ("common/config/entity_names.yaml", "src/webserver/modules/entity_catalog.js"),
         "python3 scripts/build.py entities",
         "`python3 scripts/build.py entities --check` and `npm run check:product`",
+    ),
+    SourceTruthRow(
+        "devices/catalog.json",
+        ("devices/manifest.json",),
+        "python3 scripts/generate_device_manifest.py",
+        "`python3 scripts/generate_device_manifest.py --check` and `npm run check:product`",
     ),
     SourceTruthRow(
         "devices/manifest.json",
@@ -107,7 +115,7 @@ SOURCE_TRUTH_ROWS: tuple[SourceTruthRow, ...] = (
         "`npm run check:backup-contract` and `npm run check:product`",
     ),
     SourceTruthRow(
-        "`devices/manifest.json`, `common/config/card_contract.json`, `common/config/entity_names.json`, `common/assets/icons.json`, `compatibility/fixtures/product_compatibility.json`",
+        "`devices/catalog.json`, `common/config/card_contract.json`, `common/config/entity_names.json`, `common/assets/icons.json`, `compatibility/fixtures/product_compatibility.json`",
         ("product/product_snapshot.json",),
         "python3 scripts/check_product_snapshot.py --update",
         "`npm run check:product-snapshot` and `npm run check:product`",
@@ -261,6 +269,21 @@ def markdown_table(headers: tuple[str, ...], rows: list[tuple[str, ...]]) -> str
     return "\n".join(lines)
 
 
+def validate_check_guidance(value: str) -> str:
+    """Keep generated command guidance tied to registered tasks and profiles."""
+    task_ids = {item.id for item in TASKS}
+    aliases = {f"check:{item.id}" for item in TASKS}
+    aliases.update(f"check:{profile}" for profile in PROFILES if profile != "release")
+    aliases.add("check:release-preflight")
+    for alias in re.findall(r"npm run (check:[\w:-]+)", value):
+        if alias not in aliases:
+            raise ValueError(f"developer guidance references an unregistered check alias: {alias}")
+        task_id = alias.removeprefix("check:")
+        if task_id not in task_ids and task_id not in PROFILES and alias != "check:release-preflight":
+            raise ValueError(f"developer guidance references an unknown task: {task_id}")
+    return value
+
+
 def source_truth_table() -> str:
     def code_if_path(value: str) -> str:
         if value.startswith(("generated ", "no generated ", "compile ")):
@@ -273,7 +296,7 @@ def source_truth_table() -> str:
     for row in SOURCE_TRUTH_ROWS:
         source = code_if_path(row.source)
         outputs = "<br>".join(code_if_path(output) for output in row.outputs)
-        rows.append((source, outputs, f"`{row.generator}`" if row.generator != "none" else "none", row.checks))
+        rows.append((source, outputs, f"`{row.generator}`" if row.generator != "none" else "none", validate_check_guidance(row.checks)))
     return markdown_table(("Authored source", "Generated outputs", "Generator", "Required check"), rows)
 
 
@@ -413,10 +436,27 @@ def generated_card_map() -> str:
 
 def generated_check_matrix() -> str:
     rows = [
-        (row.changed_paths, row.task, row.run_first, row.broaden_when)
+        (
+            row.changed_paths,
+            row.task,
+            validate_check_guidance(row.run_first),
+            validate_check_guidance(row.broaden_when),
+        )
         for row in CHECK_MATRIX_ROWS
     ]
-    return markdown_table(("Changed paths", "Likely task", "Run first", "Broaden when"), rows)
+    registered_rows = []
+    package = read_json("package.json")["scripts"]  # type: ignore[index]
+    for item in TASKS:
+        alias = f"check:{item.id}"
+        command = f"`npm run {alias}`" if alias in package else f"`python3 scripts/check_tasks.py run-task {item.id}`"
+        inputs = "<br>".join(f"`{path}`" for path in item.inputs)
+        registered_rows.append((f"`{item.id}`", ", ".join(item.domains), inputs, command))
+    return "\n\n".join((
+        markdown_table(("Changed paths", "Likely task", "Run first", "Broaden when"), rows),
+        "### Registered Check Tasks\n\n"
+        "This detailed routing table is generated directly from `scripts/check_tasks_data.py`.\n\n"
+        + markdown_table(("Task", "Domains", "Declared inputs", "Focused command"), registered_rows),
+    ))
 
 
 def update_generated_files() -> None:
