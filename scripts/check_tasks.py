@@ -133,6 +133,11 @@ def self_test() -> None:
     if "docs/.vitepress/theme/components/IconGallery.vue" not in registry["icon-groups"].inputs:
         raise AssertionError("icon gallery changes do not invalidate icon-group checks")
 
+    release_workflow_order = [item.id for item in plan("release", "workflow")]
+    for prerequisite in ("generated", "device-manifest-output"):
+        if release_workflow_order.index(prerequisite) > release_workflow_order.index("release-confidence"):
+            raise AssertionError(f"{prerequisite} is not checked before release confidence consumes it")
+
     def expect_invalid(tasks: tuple[Task, ...], description: str) -> None:
         try:
             validate_registry(tasks)
