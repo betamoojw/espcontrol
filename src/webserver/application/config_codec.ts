@@ -7,11 +7,13 @@ import {
     normalizeSavedConfigVacuumSensor,
 } from "../generated/saved_config_vacuum";
 import { migrateSavedConfigSensorLegacy, normalizeSavedConfigSensor } from "../generated/saved_config_sensor";
-import { migrateSavedConfigActionLegacy } from "../generated/saved_config_action";
+import { migrateSavedConfigActionLegacy, normalizeSavedConfigAction } from "../generated/saved_config_action";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
         if (!b || typeof BUTTON_TYPES === "undefined")
+            return false;
+        if (b.type === "action")
             return false;
         var typeDef: any = BUTTON_TYPES[b.type || ""];
         if (!typeDef || typeof typeDef.normalizeConfig !== "function")
@@ -261,26 +263,8 @@ export function installConfigCodecModule(): GlobalDescriptors {
             applySubpagePresetConfig(b);
             b.options = normalizeSubpageOptions(b.options, b.sensor, b.precision);
         }
-        if (b && actionCardIsOptionSelect(b)) {
-            b.sensor = ACTION_CARD_OPTION_SELECT_ACTION;
-            b.unit = "";
-            b.precision = "";
-            b.icon_on = "Auto";
-            b.options = "";
-            if (!b.icon || b.icon === "Auto" || b.icon === "Chevron Down")
-                b.icon = "Flash";
-        }
-        else if (b && actionCardIsLocal(b)) {
-            b.unit = "";
-            b.precision = "";
-            b.icon_on = "Auto";
-            b.options = "";
-            if (!b.icon || b.icon === "Auto" || b.icon === "Flash")
-                b.icon = "Gesture Tap";
-        }
-        else if (b && b.type === "action") {
-            b.options = normalizeActionOptions(b.options, b.sensor);
-        }
+        if (b)
+            normalizeSavedConfigAction(b, normalizeSavedConfigActionFields, normalizeActionOptions);
         var normalizedSavedSensor: any = !!(b && normalizeSavedConfigSensor(b, wasLegacyTextSensor, normalizeSavedConfigSensorFields, normalizeSensorOptions));
         if (b && !normalizedSavedSensor && !b.type) {
             b.options = normalizeSwitchConfirmationOptions(b.options);

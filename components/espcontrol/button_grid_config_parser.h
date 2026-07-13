@@ -951,6 +951,27 @@ inline std::string action_card_options_normalized(const std::string &options,
   return out;
 }
 
+inline void normalize_saved_config_action_fields(ParsedCfg &p) {
+  if (action_card_option_select(p)) {
+    p.sensor = card_runtime_option_select_canonical_action();
+    p.unit.clear();
+    p.precision.clear();
+    p.options.clear();
+    p.icon_on = "Auto";
+    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
+    return;
+  }
+  if (action_card_local_action(p)) {
+    p.unit.clear();
+    p.precision.clear();
+    p.options.clear();
+    p.icon_on = "Auto";
+    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Flash") p.icon = "Gesture Tap";
+    return;
+  }
+  p.precision.clear();
+}
+
 inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   migrate_saved_config_action_legacy(p);
   const bool was_legacy_text_sensor = p.type == "text_sensor";
@@ -1150,27 +1171,10 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   if (p.type == "subpage") {
     p.options = subpage_card_options_normalized(p.options, p.sensor, p.precision);
   }
-  if (action_card_option_select(p)) {
-    p.sensor = card_runtime_option_select_canonical_action();
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
-  }
-  if (action_card_local_action(p)) {
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Flash") p.icon = "Gesture Tap";
-  }
+  normalize_saved_config_action(p, normalize_saved_config_action_fields,
+                                action_card_options_normalized);
   if (migrate_saved_config_vacuum_legacy(p)) {
     if (p.icon.empty() || p.icon == "Auto") p.icon = card_runtime_vacuum_default_icon_name(p.sensor);
-  }
-  if (p.type == "action") {
-    p.precision.clear();
-    p.options = action_card_options_normalized(p.options, p.sensor);
   }
   if (p.type == "vacuum") {
     p.sensor = normalize_saved_config_vacuum_sensor(p.sensor);

@@ -51,6 +51,23 @@ int main() {
   assert(option_select.icon_on == "Auto");
   Config regular_action{"action", "scene.turn_on", "", "", "", "Auto", "", ""};
   assert(!migrate_saved_config_action_legacy(regular_action));
+  bool action_fields_called = false;
+  bool action_options_called = false;
+  regular_action.precision = "2";
+  regular_action.options = "unknown=1";
+  assert(normalize_saved_config_action(
+    regular_action,
+    [&](Config &config) {
+      action_fields_called = true;
+      config.precision.clear();
+    },
+    [&](const std::string &options, const std::string &action) {
+      action_options_called = action == "scene.turn_on";
+      return options + "option-hook";
+    }
+  ));
+  assert(action_fields_called && action_options_called);
+  assert(regular_action.precision.empty() && regular_action.options == "unknown=1option-hook");
   Config start{"action", "vacuum.start", "area", "2", "unknown=1", "Custom", "", ""};
   assert(migrate_saved_config_vacuum_legacy(start));
   assert(start.type == "vacuum" && start.sensor == "start_stop");
@@ -123,6 +140,22 @@ function main() {
   assert.strictEqual(generatedAction.migrateSavedConfigActionLegacy(optionSelect), true);
   assert.deepStrictEqual(optionSelect, { type: "action", sensor: "input_select.select_option", unit: "", precision: "", options: "", icon_on: "Auto" });
   assert.strictEqual(generatedAction.migrateSavedConfigActionLegacy({ type: "action", sensor: "scene.turn_on" }), false);
+  const normalizedAction = { type: "action", sensor: "scene.turn_on", precision: "2", options: "unknown=1" };
+  let actionFieldsCalled = false;
+  let actionOptionsCalled = false;
+  assert.strictEqual(generatedAction.normalizeSavedConfigAction(
+    normalizedAction,
+    (config) => {
+      actionFieldsCalled = true;
+      config.precision = "";
+    },
+    (options, action) => {
+      actionOptionsCalled = action === "scene.turn_on";
+      return options + "option-hook";
+    },
+  ), true);
+  assert(actionFieldsCalled && actionOptionsCalled);
+  assert.deepStrictEqual(normalizedAction, { type: "action", sensor: "scene.turn_on", precision: "", options: "unknown=1option-hook" });
   const fields = contract.cards.vacuum.normalization.fields;
   assert.strictEqual(fields.sensor.policy, "allowed");
   assert.strictEqual(fields.sensor.fallback, "start_stop");
@@ -198,8 +231,10 @@ function main() {
   assert.doesNotMatch(browser, /else if \(b && b\.type === "sensor"\)/);
   assert.match(browser, /from "\.\.\/generated\/saved_config_action";/);
   assert.match(browser, /migrateSavedConfigActionLegacy\(b\)/);
+  assert.match(browser, /normalizeSavedConfigAction\(b, normalizeSavedConfigActionFields, normalizeActionOptions\)/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "local"\) \{\s*b\.type = "action"/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "option_select"\) \{\s*b\.type = "action"/);
+  assert.doesNotMatch(browser, /else if \(b && b\.type === "action"\)/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -228,11 +263,13 @@ function main() {
   assert.doesNotMatch(firmware, /if \(p\.type == "text_sensor"\)/);
   assert.match(firmware, /#include "button_grid_saved_config_action_generated\.h"/);
   assert.match(firmware, /migrate_saved_config_action_legacy\(p\)/);
+  assert.match(firmware, /normalize_saved_config_action\(p, normalize_saved_config_action_fields,/);
   assert.doesNotMatch(firmware, /if \(p\.type == "local"\)/);
   assert.doesNotMatch(firmware, /if \(p\.type == "option_select"\)/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "action"\) \{\s*p\.precision\.clear\(\);/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Action type migrations plus Vacuum and Sensor routine orchestration use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Action, Sensor, and Vacuum production normalization use generated browser and compiled firmware helpers.");
 }
 
 main();

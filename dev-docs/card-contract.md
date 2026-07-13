@@ -57,9 +57,10 @@ invokes the named `normalize_sensor_fields` hook before
 `normalize_sensor_options`, keeping Sensor-specific decisions explicit and
 reviewed in those hooks.
 
-Action's legacy `local` and `option_select` type migrations are generated for
-browser and firmware. Action-specific field and option decisions remain in the
-reviewed `normalize_action_fields` and `normalize_action_options` hooks.
+Action's legacy `local` and `option_select` type migrations and routine
+orchestration are generated for browser and firmware. The generated routine
+invokes the reviewed `normalize_action_fields` hook before
+`normalize_action_options`.
 
 An `allowed` field policy may declare `aliases` whose targets are in its
 allowed-value list. This preserves renamed legacy values before applying the

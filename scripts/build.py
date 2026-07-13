@@ -673,6 +673,25 @@ def saved_config_action_field_migrations(data):
     return migrations
 
 
+def saved_config_action_normalization(data):
+    normalization = data["cards"]["action"]["normalization"]
+    fields = normalization["fields"]
+    field_hooks = {
+        rule.get("hook")
+        for name, rule in fields.items()
+        if name != "options" and rule.get("policy") == "hook"
+    }
+    if field_hooks != {"normalize_action_fields"}:
+        raise BuildError("action production field normalization requires the authored Action field hook")
+    option_rule = fields.get("options", {})
+    option_hook = normalization.get("optionHook")
+    if option_rule.get("policy") != "hook" or option_rule.get("hook") != option_hook:
+        raise BuildError("action production option normalization requires the authored option hook")
+    if option_hook != "normalize_action_options":
+        raise BuildError("action production normalization requires the authored Action option hook")
+    return "action"
+
+
 def saved_config_sensor_normalization(data):
     normalization = data["cards"]["sensor"]["normalization"]
     fields = normalization["fields"]
@@ -854,6 +873,7 @@ def gen_saved_config_sensor_h(data):
 
 def gen_saved_config_action_ts(data):
     migrations = saved_config_action_field_migrations(data)
+    action_type = json.dumps(saved_config_action_normalization(data), ensure_ascii=False)
     lines = [
         "// =============================================================================\n",
         "// GENERATED SAVED-CONFIG ACTION HELPERS - do not edit by hand\n",
@@ -868,12 +888,27 @@ def gen_saved_config_action_ts(data):
         for field, value in action["set"].items():
             lines.append(f"    config.{field} = {json.dumps(value, ensure_ascii=False)};\n")
         lines.append("    return true;\n  }\n")
-    lines.append("  return false;\n}\n")
+    lines.append("  return false;\n}\n\n")
+    lines.extend([
+        "export type SavedConfigActionFieldHook = (config: CardConfig) => void;\n",
+        "export type SavedConfigActionOptionHook = (options: string, action: string) => string;\n\n",
+        "export function normalizeSavedConfigAction(\n",
+        "  config: CardConfig,\n",
+        "  normalizeFields: SavedConfigActionFieldHook,\n",
+        "  normalizeOptions: SavedConfigActionOptionHook,\n",
+        "): boolean {\n",
+        f"  if (config.type !== {action_type}) return false;\n",
+        "  normalizeFields(config);\n",
+        "  config.options = normalizeOptions(config.options || \"\", config.sensor || \"\");\n",
+        "  return true;\n",
+        "}\n",
+    ])
     return "".join(lines)
 
 
 def gen_saved_config_action_h(data):
     migrations = saved_config_action_field_migrations(data)
+    action_type = json.dumps(saved_config_action_normalization(data), ensure_ascii=False)
     lines = [
         "#pragma once\n\n",
         "// =============================================================================\n",
@@ -891,7 +926,17 @@ def gen_saved_config_action_h(data):
             else:
                 lines.append(f"    config.{field} = {json.dumps(value, ensure_ascii=False)};\n")
         lines.append("    return true;\n  }\n")
-    lines.append("  return false;\n}\n")
+    lines.append("  return false;\n}\n\n")
+    lines.extend([
+        "template<typename Config, typename FieldHook, typename OptionHook>\n",
+        "inline bool normalize_saved_config_action(Config &config, FieldHook normalize_fields,\n",
+        "                                          OptionHook normalize_options) {\n",
+        f"  if (config.type != {action_type}) return false;\n",
+        "  normalize_fields(config);\n",
+        "  config.options = normalize_options(config.options, config.sensor);\n",
+        "  return true;\n",
+        "}\n",
+    ])
     return "".join(lines)
 
 

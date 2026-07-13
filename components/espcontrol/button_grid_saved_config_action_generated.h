@@ -27,3 +27,12 @@ inline bool migrate_saved_config_action_legacy(Config &config) {
   }
   return false;
 }
+
+template<typename Config, typename FieldHook, typename OptionHook>
+inline bool normalize_saved_config_action(Config &config, FieldHook normalize_fields,
+                                          OptionHook normalize_options) {
+  if (config.type != "action") return false;
+  normalize_fields(config);
+  config.options = normalize_options(config.options, config.sensor);
+  return true;
+}

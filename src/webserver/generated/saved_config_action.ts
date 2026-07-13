@@ -25,3 +25,17 @@ export function migrateSavedConfigActionLegacy(config: CardConfig): boolean {
   }
   return false;
 }
+
+export type SavedConfigActionFieldHook = (config: CardConfig) => void;
+export type SavedConfigActionOptionHook = (options: string, action: string) => string;
+
+export function normalizeSavedConfigAction(
+  config: CardConfig,
+  normalizeFields: SavedConfigActionFieldHook,
+  normalizeOptions: SavedConfigActionOptionHook,
+): boolean {
+  if (config.type !== "action") return false;
+  normalizeFields(config);
+  config.options = normalizeOptions(config.options || "", config.sensor || "");
+  return true;
+}
