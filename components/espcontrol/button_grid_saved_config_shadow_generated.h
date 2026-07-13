@@ -101,6 +101,12 @@ inline void saved_config_shadow_append_option(std::string &out, const std::strin
   if (!value.empty()) out += "=" + encode_compact_field(value);
 }
 
+inline std::string saved_config_shadow_trim(const std::string &value) {
+  size_t begin = 0; while (begin < value.size() && (value[begin] == ' ' || value[begin] == '\t' || value[begin] == '\r' || value[begin] == '\n')) ++begin;
+  size_t end = value.size(); while (end > begin && (value[end - 1] == ' ' || value[end - 1] == '\t' || value[end - 1] == '\r' || value[end - 1] == '\n')) --end;
+  return value.substr(begin, end - begin);
+}
+
 template<typename Config>
 inline bool normalize_saved_config_sensor_shadow(Config &config) {
   if (config.type == "text_sensor") { config.type = "sensor"; config.precision = "text"; config.entity.clear(); config.label.clear(); config.unit.clear(); config.icon_on = "Auto"; if (config.icon.empty()) config.icon = "Auto"; }
@@ -115,11 +121,13 @@ inline bool normalize_saved_config_sensor_shadow(Config &config) {
     saved_config_shadow_append_option(out, "state_labels"); std::string input = cfg_option_value(source, "state_input"); std::string output = cfg_option_value(source, "state_output");
     if (input.empty() && !cfg_option_value(source, "state_high_label").empty()) { input = "high"; output = cfg_option_value(source, "state_high_label"); }
     else if (input.empty() && !cfg_option_value(source, "state_low_label").empty()) { input = "low"; output = cfg_option_value(source, "state_low_label"); }
+    input = saved_config_shadow_trim(input); output = saved_config_shadow_trim(output);
     if (!input.empty()) saved_config_shadow_append_option(out, "state_input", input);
     if (!output.empty()) saved_config_shadow_append_option(out, "state_output", output);
     const std::string input_2 = cfg_option_value(source, "state_input_2"); const std::string output_2 = cfg_option_value(source, "state_output_2");
-    if (!input_2.empty()) saved_config_shadow_append_option(out, "state_input_2", input_2);
-    if (!output_2.empty()) saved_config_shadow_append_option(out, "state_output_2", output_2);
+    const std::string input_2_trimmed = saved_config_shadow_trim(input_2); const std::string output_2_trimmed = saved_config_shadow_trim(output_2);
+    if (!input_2_trimmed.empty()) saved_config_shadow_append_option(out, "state_input_2", input_2_trimmed);
+    if (!output_2_trimmed.empty()) saved_config_shadow_append_option(out, "state_output_2", output_2_trimmed);
   }
   config.options = out; return true;
 }
@@ -182,12 +190,6 @@ inline int saved_config_shadow_media_volume(const std::string &value) {
   return static_cast<int>(parsed);
 }
 
-inline std::string saved_config_shadow_trim(const std::string &value) {
-  const size_t first = value.find_first_not_of(" \t\r\n");
-  if (first == std::string::npos) return "";
-  return value.substr(first, value.find_last_not_of(" \t\r\n") - first + 1);
-}
-
 template<typename Config>
 inline bool normalize_saved_config_media_shadow(Config &config) {
   if (config.type != "media") return false;
@@ -213,9 +215,9 @@ inline bool normalize_saved_config_media_shadow(Config &config) {
     if (saved_config_shadow_trim(cfg_option_value(source, "number_display")) == "volume") saved_config_shadow_append_option(out, "number_display", "volume");
     if (max_volume != SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT) saved_config_shadow_append_option(out, "volume_max", std::to_string(max_volume));
   } else if (config.sensor == "playlist") {
-    const std::string content_id = cfg_option_value(source, "playlist_content_id");
-    const std::string content_type = cfg_option_value(source, "playlist_content_type");
-    const std::string player_source = cfg_option_value(source, "playlist_player_source");
+    const std::string content_id = saved_config_shadow_trim(cfg_option_value(source, "playlist_content_id"));
+    const std::string content_type = saved_config_shadow_trim(cfg_option_value(source, "playlist_content_type"));
+    const std::string player_source = saved_config_shadow_trim(cfg_option_value(source, "playlist_player_source"));
     if (!content_id.empty()) saved_config_shadow_append_option(out, "playlist_content_id", content_id);
     if (!content_type.empty() && content_type != "playlist") saved_config_shadow_append_option(out, "playlist_content_type", content_type);
     if (!player_source.empty()) saved_config_shadow_append_option(out, "playlist_player_source", player_source);

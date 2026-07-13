@@ -747,8 +747,9 @@ def gen_saved_config_shadow_ts(data):
         "    let stateInput = optionValue(source, \"state_input\"); let stateOutput = optionValue(source, \"state_output\");\n"
         "    if (!stateInput && optionValue(source, \"state_high_label\")) { stateInput = \"high\"; stateOutput = optionValue(source, \"state_high_label\"); }\n"
         "    else if (!stateInput && optionValue(source, \"state_low_label\")) { stateInput = \"low\"; stateOutput = optionValue(source, \"state_low_label\"); }\n"
-        "    for (const [name, value] of [[\"state_input\", stateInput], [\"state_output\", stateOutput], [\"state_input_2\", optionValue(source, \"state_input_2\")], [\"state_output_2\", optionValue(source, \"state_output_2\")]]) {\n"
-        "      if (value) out.push(name + \"=\" + encodeOptionValue(value));\n"
+        "    for (const [name, value] of [[\"state_input\", stateInput], [\"state_output\", stateOutput], [\"state_input_2\", optionValue(source, \"state_input_2\")], [\"state_output_2\", optionValue(source, \"state_output_2\")]] as const) {\n"
+        "      const trimmed = value.trim();\n"
+        "      if (trimmed) out.push(name + \"=\" + encodeOptionValue(trimmed));\n"
         "    }\n"
         "  }\n"
         "  config.options = out.join(\",\"); return config;\n"
@@ -807,7 +808,7 @@ def gen_saved_config_shadow_ts(data):
         "  if (config.sensor === \"control_modal\") {\n"
         "    if (optionValue(source, \"label_display\").trim() === \"label\") out.push(\"label_display=label\"); if (optionValue(source, \"number_display\").trim() === \"volume\") out.push(\"number_display=volume\"); if (maxVolume !== MEDIA_VOLUME_DEFAULT) out.push(\"volume_max=\" + maxVolume);\n"
         "  } else if (config.sensor === \"playlist\") {\n"
-        "    for (const [name, defaultValue] of [[\"playlist_content_id\", \"\"], [\"playlist_content_type\", \"playlist\"], [\"playlist_player_source\", \"\"]] as const) { const value = optionValue(source, name) || defaultValue; if (value && value !== defaultValue) out.push(name + \"=\" + encodeOptionValue(value)); }\n"
+        "    for (const [name, defaultValue] of [[\"playlist_content_id\", \"\"], [\"playlist_content_type\", \"playlist\"], [\"playlist_player_source\", \"\"]] as const) { const value = optionValue(source, name).trim() || defaultValue; if (value && value !== defaultValue) out.push(name + \"=\" + encodeOptionValue(value)); }\n"
         "  } else if (config.sensor === \"volume\" || config.sensor === \"position\") {\n"
         "    if (config.sensor === \"volume\" && maxVolume !== MEDIA_VOLUME_DEFAULT) out.push(\"volume_max=\" + maxVolume); if (optionValue(source, \"large_numbers\") === \"off\") out.push(\"large_numbers=off\"); else if (optionPresent(source, \"large_numbers\")) out.push(\"large_numbers\");\n"
         "  }\n"
@@ -887,6 +888,11 @@ def gen_saved_config_shadow_h(data):
         "  out += name;\n",
         "  if (!value.empty()) out += \"=\" + encode_compact_field(value);\n",
         "}\n\n",
+        "inline std::string saved_config_shadow_trim(const std::string &value) {\n",
+        "  size_t begin = 0; while (begin < value.size() && (value[begin] == ' ' || value[begin] == '\\t' || value[begin] == '\\r' || value[begin] == '\\n')) ++begin;\n",
+        "  size_t end = value.size(); while (end > begin && (value[end - 1] == ' ' || value[end - 1] == '\\t' || value[end - 1] == '\\r' || value[end - 1] == '\\n')) --end;\n",
+        "  return value.substr(begin, end - begin);\n",
+        "}\n\n",
         "template<typename Config>\ninline bool normalize_saved_config_sensor_shadow(Config &config) {\n",
         "  if (config.type == \"text_sensor\") { config.type = \"sensor\"; config.precision = \"text\"; config.entity.clear(); config.label.clear(); config.unit.clear(); config.icon_on = \"Auto\"; if (config.icon.empty()) config.icon = \"Auto\"; }\n",
         "  if (config.type == \"local_sensor\") { config.type = \"sensor\"; config.sensor = \"local\"; config.icon_on = \"Auto\"; config.options.clear(); }\n",
@@ -900,11 +906,13 @@ def gen_saved_config_shadow_h(data):
         "    saved_config_shadow_append_option(out, \"state_labels\"); std::string input = cfg_option_value(source, \"state_input\"); std::string output = cfg_option_value(source, \"state_output\");\n",
         "    if (input.empty() && !cfg_option_value(source, \"state_high_label\").empty()) { input = \"high\"; output = cfg_option_value(source, \"state_high_label\"); }\n",
         "    else if (input.empty() && !cfg_option_value(source, \"state_low_label\").empty()) { input = \"low\"; output = cfg_option_value(source, \"state_low_label\"); }\n",
+        "    input = saved_config_shadow_trim(input); output = saved_config_shadow_trim(output);\n",
         "    if (!input.empty()) saved_config_shadow_append_option(out, \"state_input\", input);\n",
         "    if (!output.empty()) saved_config_shadow_append_option(out, \"state_output\", output);\n",
         "    const std::string input_2 = cfg_option_value(source, \"state_input_2\"); const std::string output_2 = cfg_option_value(source, \"state_output_2\");\n",
-        "    if (!input_2.empty()) saved_config_shadow_append_option(out, \"state_input_2\", input_2);\n",
-        "    if (!output_2.empty()) saved_config_shadow_append_option(out, \"state_output_2\", output_2);\n",
+        "    const std::string input_2_trimmed = saved_config_shadow_trim(input_2); const std::string output_2_trimmed = saved_config_shadow_trim(output_2);\n",
+        "    if (!input_2_trimmed.empty()) saved_config_shadow_append_option(out, \"state_input_2\", input_2_trimmed);\n",
+        "    if (!output_2_trimmed.empty()) saved_config_shadow_append_option(out, \"state_output_2\", output_2_trimmed);\n",
         "  }\n",
         "  config.options = out; return true;\n}\n\n",
         "template<typename Config>\ninline bool normalize_saved_config_action_shadow(Config &config) {\n",
@@ -959,11 +967,6 @@ def gen_saved_config_shadow_h(data):
         "  if (parsed > SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MAX) return SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MAX;\n",
         "  return static_cast<int>(parsed);\n",
         "}\n\n",
-        "inline std::string saved_config_shadow_trim(const std::string &value) {\n",
-        "  const size_t first = value.find_first_not_of(\" \\t\\r\\n\");\n",
-        "  if (first == std::string::npos) return \"\";\n",
-        "  return value.substr(first, value.find_last_not_of(\" \\t\\r\\n\") - first + 1);\n",
-        "}\n\n",
         "template<typename Config>\ninline bool normalize_saved_config_media_shadow(Config &config) {\n",
         "  if (config.type != \"media\") return false;\n",
         "  const std::string raw_mode = config.sensor;\n",
@@ -988,9 +991,9 @@ def gen_saved_config_shadow_h(data):
         "    if (saved_config_shadow_trim(cfg_option_value(source, \"number_display\")) == \"volume\") saved_config_shadow_append_option(out, \"number_display\", \"volume\");\n",
         "    if (max_volume != SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT) saved_config_shadow_append_option(out, \"volume_max\", std::to_string(max_volume));\n",
         "  } else if (config.sensor == \"playlist\") {\n",
-        "    const std::string content_id = cfg_option_value(source, \"playlist_content_id\");\n",
-        "    const std::string content_type = cfg_option_value(source, \"playlist_content_type\");\n",
-        "    const std::string player_source = cfg_option_value(source, \"playlist_player_source\");\n",
+        "    const std::string content_id = saved_config_shadow_trim(cfg_option_value(source, \"playlist_content_id\"));\n",
+        "    const std::string content_type = saved_config_shadow_trim(cfg_option_value(source, \"playlist_content_type\"));\n",
+        "    const std::string player_source = saved_config_shadow_trim(cfg_option_value(source, \"playlist_player_source\"));\n",
         "    if (!content_id.empty()) saved_config_shadow_append_option(out, \"playlist_content_id\", content_id);\n",
         "    if (!content_type.empty() && content_type != \"playlist\") saved_config_shadow_append_option(out, \"playlist_content_type\", content_type);\n",
         "    if (!player_source.empty()) saved_config_shadow_append_option(out, \"playlist_player_source\", player_source);\n",
