@@ -105,6 +105,11 @@ function shadowCases() {
       input: "scene.movie;Movie;Flash;Auto;scene.turn_on;;action;;state_entity=sensor.mode,state_unit=W,state_precision=icon,large_numbers",
       expected: config({ entity: "scene.movie", label: "Movie", icon: "Flash", sensor: "scene.turn_on", type: "action", options: "state_entity=sensor.mode,state_precision=icon" }),
     },
+    {
+      name: "short action receives default icons",
+      input: "scene.movie;Movie;;;scene.turn_on;;action;;",
+      expected: config({ entity: "scene.movie", label: "Movie", icon: "Auto", sensor: "scene.turn_on", type: "action" }),
+    },
   ]);
   const media = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/media_card_normalization_fixtures.json"), "utf8")).concat([
     {
@@ -116,6 +121,11 @@ function shadowCases() {
       name: "media control modal trims saved choices",
       input: "media_player.office;Media Control;Auto;Auto;control_modal;;media;;label_display=%20label%20,number_display=%20volume%20",
       expected: config({ entity: "media_player.office", label: "Media Control", icon: "Auto", sensor: "control_modal", type: "media", options: "label_display=label,number_display=volume" }),
+    },
+    {
+      name: "short media config receives default icons",
+      input: "media_player.x;;;;play_pause;;media",
+      expected: config({ entity: "media_player.x", label: "", icon: "Auto", sensor: "play_pause", type: "media" }),
     },
   ]);
   return vacuum.concat(sensor, sensorAliases, action, media);
