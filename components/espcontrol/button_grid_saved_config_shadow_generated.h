@@ -125,10 +125,26 @@ inline bool normalize_saved_config_action_shadow(Config &config) {
   config.precision.clear(); const std::string source = config.options; std::string out; const std::string state_entity = cfg_option_value(source, "state_entity");
   if (!state_entity.empty()) { saved_config_shadow_append_option(out, "state_entity", state_entity); const std::string raw_precision = cfg_option_value(source, "state_precision");
     if (raw_precision == "icon" || raw_precision == "text") saved_config_shadow_append_option(out, "state_precision", raw_precision);
-    else { const std::string state_unit = cfg_option_value(source, "state_unit"); const bool numeric_precision = raw_precision == "0" || raw_precision == "1" || raw_precision == "2"; if (!state_unit.empty()) saved_config_shadow_append_option(out, "state_unit", state_unit); if (numeric_precision) saved_config_shadow_append_option(out, "state_precision", raw_precision); if (!state_unit.empty() || numeric_precision) append_large_numbers_option(out, source); }
+    else {
+      const std::string state_unit = cfg_option_value(source, "state_unit");
+      const bool numeric_precision = raw_precision == "0" || raw_precision == "1" || raw_precision == "2";
+      if (!state_unit.empty()) saved_config_shadow_append_option(out, "state_unit", state_unit);
+      if (numeric_precision) saved_config_shadow_append_option(out, "state_precision", raw_precision);
+      if (!state_unit.empty() || numeric_precision) append_large_numbers_option(out, source);
+    }
   }
-  if (config.sensor == "script.turn_on") { const std::string fields = cfg_option_value(source, "script_fields"); if (!fields.empty()) saved_config_shadow_append_option(out, "script_fields", fields);
-    if (cfg_option_token_present(source, "confirm_on")) { saved_config_shadow_append_option(out, "confirm_on"); const std::string message = cfg_option_value(source, "confirm_message"); const std::string yes = cfg_option_value(source, "confirm_yes"); const std::string no = cfg_option_value(source, "confirm_no"); if (!message.empty() && message != "Run this script?") saved_config_shadow_append_option(out, "confirm_message", message); if (!yes.empty() && yes != "Yes") saved_config_shadow_append_option(out, "confirm_yes", yes); if (!no.empty() && no != "No") saved_config_shadow_append_option(out, "confirm_no", no); }
+  if (config.sensor == "script.turn_on") {
+    const std::string fields = cfg_option_value(source, "script_fields");
+    if (!fields.empty()) saved_config_shadow_append_option(out, "script_fields", fields);
+    if (cfg_option_token_present(source, "confirm_on")) {
+      saved_config_shadow_append_option(out, "confirm_on");
+      const std::string message = cfg_option_value(source, "confirm_message");
+      const std::string yes = cfg_option_value(source, "confirm_yes");
+      const std::string no = cfg_option_value(source, "confirm_no");
+      if (!message.empty() && message != "Run this script?") saved_config_shadow_append_option(out, "confirm_message", message);
+      if (!yes.empty() && yes != "Yes") saved_config_shadow_append_option(out, "confirm_yes", yes);
+      if (!no.empty() && no != "No") saved_config_shadow_append_option(out, "confirm_no", no);
+    }
   }
   config.options = out; return true;
 }
