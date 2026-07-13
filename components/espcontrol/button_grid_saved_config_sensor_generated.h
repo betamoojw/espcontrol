@@ -14,5 +14,14 @@ inline bool migrate_saved_config_sensor_legacy(Config &config) {
     config.options = "";
     return true;
   }
+  if (config.type == "text_sensor") {
+    config.type = "sensor";
+    config.entity = "";
+    config.label = "";
+    config.unit = "";
+    config.precision = "text";
+    config.icon_on = "Auto";
+    return true;
+  }
   return false;
 }

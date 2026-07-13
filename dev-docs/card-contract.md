@@ -50,8 +50,8 @@ Vacuum's routine saved-field policies and legacy migration actions are
 generated for both browser and firmware. Its mode-specific unit and icon
 decisions remain in the reviewed `normalize_vacuum_fields` hook.
 
-Sensor's legacy `local_sensor` type migration is also generated for browser
-and firmware. Its precision, icon, and option decisions remain in the reviewed
+Sensor's legacy `local_sensor` and `text_sensor` type migrations are also
+generated for browser and firmware. Its precision, icon, and option decisions remain in the reviewed
 `normalize_sensor_fields` and `normalize_sensor_options` hooks.
 
 An `allowed` field policy may declare `aliases` whose targets are in its
@@ -313,4 +313,4 @@ Saved-configuration normalization moves to generated helpers one card family at 
 
 Shadow helpers are deliberately not included by production firmware yet, so this stage adds 0 bytes of device flash and 0 bytes of RAM. The shadow check fails if the generated C++ header is included from another firmware header; this preserves the 8 KiB flash guard until a later PR deliberately switches a production family.
 
-Production rollout starts with one low-risk field or migration at a time. Vacuum routine fields and legacy actions now use generated browser and firmware helpers. Sensor rollout has begun with its declarative legacy local-sensor migration; the remaining Sensor hooks and other card families stay on their established production paths until their focused production steps.
+Production rollout starts with one low-risk field or migration at a time. Vacuum routine fields and legacy actions now use generated browser and firmware helpers. Sensor rollout has begun with its declarative legacy local-sensor and text-sensor migrations; the remaining Sensor hooks and other card families stay on their established production paths until their focused production steps.

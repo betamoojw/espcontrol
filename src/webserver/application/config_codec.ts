@@ -31,8 +31,11 @@ export function installConfigCodecModule(): GlobalDescriptors {
             if (!b.icon || b.icon === "Auto" || b.icon === "Flash")
                 b.icon = "Gesture Tap";
         }
+        var wasLegacyTextSensor: any = !!(b && b.type === "text_sensor");
         if (b)
             migrateSavedConfigSensorLegacy(b);
+        if (b && wasLegacyTextSensor && !b.icon)
+            b.icon = "Auto";
         if (b && migrateSavedConfigVacuumLegacy(b)) {
             if (!b.icon || b.icon === "Auto")
                 b.icon = vacuumModeDefaultIcon(b.sensor);
@@ -66,17 +69,6 @@ export function installConfigCodecModule(): GlobalDescriptors {
             b.sensor = "";
             b.precision = normalizeWeatherCardMode(b.precision);
             b.options = cardLargeNumbersSupported(b) ? copyLargeNumbersOption("", b.options) : "";
-        }
-        if (b && b.type === "text_sensor") {
-            var textSensorAlias: any = cardContractMigrationAlias(b.type);
-            b.type = textSensorAlias && textSensorAlias.type || "sensor";
-            b.precision = textSensorAlias && textSensorAlias.precision || "text";
-            b.entity = "";
-            b.label = "";
-            b.unit = "";
-            b.icon_on = "Auto";
-            if (!b.icon)
-                b.icon = "Auto";
         }
         if (b && b.type === "media") {
             var rawMediaMode: any = b.sensor;

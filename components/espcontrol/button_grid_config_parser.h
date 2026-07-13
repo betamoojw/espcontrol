@@ -950,16 +950,9 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.icon_on = "Auto";
     if (p.icon.empty() || p.icon == "Auto" || p.icon == "Flash") p.icon = "Gesture Tap";
   }
+  const bool was_legacy_text_sensor = p.type == "text_sensor";
   migrate_saved_config_sensor_legacy(p);
-  if (p.type == "text_sensor") {
-    p.type = "sensor";
-    p.precision = "text";
-    p.entity.clear();
-    p.label.clear();
-    p.unit.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty()) p.icon = "Auto";
-  }
+  if (was_legacy_text_sensor && p.icon.empty()) p.icon = "Auto";
   // Slider cards used to store "h" here for horizontal layout. Sliders are
   // now always vertical, so treat any saved slider sensor value as legacy.
   if (brightness_slider_type(p.type) && !p.sensor.empty()) p.sensor.clear();

@@ -117,6 +117,25 @@ export const CARD_CONTRACT_MIGRATION_ACTIONS: Readonly<Record<string, MigrationA
     },
     "hook": "normalize_sensor_fields"
   },
+  "legacy_text_sensor": {
+    "when": [
+      {
+        "source": "field",
+        "name": "type",
+        "operator": "equals",
+        "value": "text_sensor"
+      }
+    ],
+    "set": {
+      "type": "sensor",
+      "entity": "",
+      "label": "",
+      "unit": "",
+      "precision": "text",
+      "icon_on": "Auto"
+    },
+    "hook": "normalize_sensor_fields"
+  },
   "legacy_sensor_state_high_label": {
     "when": [
       {
@@ -1998,6 +2017,7 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
       "optionHook": "normalize_sensor_options",
       "migrationActions": [
         "legacy_local_sensor",
+        "legacy_text_sensor",
         "legacy_sensor_state_high_label",
         "legacy_sensor_state_low_label"
       ]
