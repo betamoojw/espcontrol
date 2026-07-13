@@ -338,6 +338,7 @@ export function normalizeSavedConfigVacuumShadow(input: Partial<CardConfig>): Ca
 
 export function normalizeSavedConfigSensorShadow(input: Partial<CardConfig>): CardConfig | null {
   const config = shaped(input);
+  if (config.type === "text_sensor") { config.type = "sensor"; config.precision = "text"; config.entity = ""; config.label = ""; config.unit = ""; config.icon_on = "Auto"; }
   if (config.type === "local_sensor") { config.type = "sensor"; config.sensor = "local"; config.icon_on = "Auto"; config.options = ""; }
   if (config.type !== "sensor") return null;
   if (config.sensor === "local") {

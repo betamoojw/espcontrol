@@ -33,9 +33,9 @@ function shape(value) {
 function parseRawButtonConfig(value) {
   const compact = String(value || "").startsWith("~");
   const parts = compact ? String(value).substring(1).split(",") : String(value || "").split(";");
-  const decoded = compact ? parts.map((field) => {
-    try { return decodeURIComponent(field); } catch (_) { return field; }
-  }) : parts;
+  const decoded = compact ? parts.map((field) => field.replace(/(%[0-9a-f]{2})+/gi, (run) => {
+    try { return decodeURIComponent(run); } catch (_) { return run; }
+  })) : parts;
   return shape(Object.fromEntries(FIELDS.map((field, index) => [field, decoded[index] || ""])));
 }
 
@@ -68,7 +68,9 @@ function shadowCases() {
     },
   ]);
   const sensor = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/sensor_card_normalization_fixtures.json"), "utf8"));
-  return vacuum.concat(sensor);
+  const sensorAliases = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/baseline_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "sensor");
+  return vacuum.concat(sensor, sensorAliases);
 }
 
 function compiler() {

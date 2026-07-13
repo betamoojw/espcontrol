@@ -680,6 +680,7 @@ def gen_saved_config_shadow_ts(data):
         "\n"
         "export function normalizeSavedConfigSensorShadow(input: Partial<CardConfig>): CardConfig | null {\n"
         "  const config = shaped(input);\n"
+        "  if (config.type === \"text_sensor\") { config.type = \"sensor\"; config.precision = \"text\"; config.entity = \"\"; config.label = \"\"; config.unit = \"\"; config.icon_on = \"Auto\"; }\n"
         "  if (config.type === \"local_sensor\") { config.type = \"sensor\"; config.sensor = \"local\"; config.icon_on = \"Auto\"; config.options = \"\"; }\n"
         "  if (config.type !== \"sensor\") return null;\n"
         "  if (config.sensor === \"local\") {\n"
@@ -770,6 +771,7 @@ def gen_saved_config_shadow_h(data):
         "  if (!value.empty()) out += \"=\" + encode_compact_field(value);\n",
         "}\n\n",
         "template<typename Config>\ninline bool normalize_saved_config_sensor_shadow(Config &config) {\n",
+        "  if (config.type == \"text_sensor\") { config.type = \"sensor\"; config.precision = \"text\"; config.entity.clear(); config.label.clear(); config.unit.clear(); config.icon_on = \"Auto\"; if (config.icon.empty()) config.icon = \"Auto\"; }\n",
         "  if (config.type == \"local_sensor\") { config.type = \"sensor\"; config.sensor = \"local\"; config.icon_on = \"Auto\"; config.options.clear(); }\n",
         "  if (config.type != \"sensor\") return false;\n",
         "  if (config.sensor == \"local\") { config.icon_on = \"Auto\"; config.options.clear(); if (config.precision != \"text\" && config.precision != \"1\" && config.precision != \"2\") config.precision.clear(); if (config.precision != \"text\" && (config.icon.empty() || config.icon == \"Auto\")) config.icon = \"Auto\"; return true; }\n",
