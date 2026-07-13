@@ -120,8 +120,16 @@ inline bool normalize_saved_config_action_shadow(Config &config) {
   if (config.type == "local") { config.type = "action"; config.sensor = "local"; }
   if (config.type == "option_select") { config.type = "action"; config.sensor = "input_select.select_option"; }
   if (config.type != "action") return false;
-  if (saved_config_shadow_string_in(config.sensor, SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS, sizeof(SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS) / sizeof(SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS[0]))) { config.sensor = "input_select.select_option"; config.unit.clear(); config.precision.clear(); config.options.clear(); config.icon_on = "Auto"; if (config.icon.empty() || config.icon == "Auto" || config.icon == "Chevron Down") config.icon = "Flash"; return true; }
-  if (config.sensor == "local") { config.unit.clear(); config.precision.clear(); config.options.clear(); config.icon_on = "Auto"; if (config.icon.empty() || config.icon == "Auto" || config.icon == "Flash") config.icon = "Gesture Tap"; return true; }
+  if (saved_config_shadow_string_in(config.sensor, SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS, sizeof(SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS) / sizeof(SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS[0]))) {
+    config.sensor = "input_select.select_option"; config.unit.clear(); config.precision.clear(); config.options.clear(); config.icon_on = "Auto";
+    if (config.icon.empty() || config.icon == "Auto" || config.icon == "Chevron Down") config.icon = "Flash";
+    return true;
+  }
+  if (config.sensor == "local") {
+    config.unit.clear(); config.precision.clear(); config.options.clear(); config.icon_on = "Auto";
+    if (config.icon.empty() || config.icon == "Auto" || config.icon == "Flash") config.icon = "Gesture Tap";
+    return true;
+  }
   config.precision.clear(); const std::string source = config.options; std::string out; const std::string state_entity = cfg_option_value(source, "state_entity");
   if (!state_entity.empty()) { saved_config_shadow_append_option(out, "state_entity", state_entity); const std::string raw_precision = cfg_option_value(source, "state_precision");
     if (raw_precision == "icon" || raw_precision == "text") saved_config_shadow_append_option(out, "state_precision", raw_precision);
