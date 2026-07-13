@@ -15,6 +15,7 @@
 #include "button_grid_saved_config_fan_generated.h"
 #include "button_grid_saved_config_media_generated.h"
 #include "button_grid_saved_config_mower_generated.h"
+#include "button_grid_saved_config_occupancy_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
 #include "button_grid_saved_config_static_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
@@ -1023,6 +1024,23 @@ inline void normalize_saved_config_mower_fields(ParsedCfg &p) {
   }
 }
 
+inline void normalize_saved_config_occupancy_fields(ParsedCfg &p) {
+  if (p.type == "door_window") {
+    p.precision = normalize_door_window_subtype(p.precision);
+    if (p.icon.empty() || p.icon == "Auto") p.icon = door_window_closed_icon_name(p.precision);
+    if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = door_window_open_icon_name(p.precision);
+  } else if (p.type == "presence") {
+    if (p.icon.empty() || p.icon == "Auto") p.icon = "Motion Sensor Off";
+    if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Motion Sensor";
+  }
+}
+
+inline std::string normalize_saved_config_occupancy_options(
+    const std::string &options, const ParsedCfg &p) {
+  return p.type == "door_window" ? door_window_card_options_normalized(options)
+                                  : presence_card_options_normalized(options);
+}
+
 inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   migrate_saved_config_action_legacy(p);
   const bool was_legacy_text_sensor = p.type == "text_sensor";
@@ -1157,23 +1175,10 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   if (p.type.empty()) {
     p.options = switch_card_options_normalized(p.options);
   }
-  if (p.type == "door_window") {
-    p.entity.clear();
-    p.unit.clear();
-    p.precision = normalize_door_window_subtype(p.precision);
-    if (p.icon.empty() || p.icon == "Auto") p.icon = door_window_closed_icon_name(p.precision);
-    if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = door_window_open_icon_name(p.precision);
-    p.options = door_window_card_options_normalized(p.options);
-  }
-  if (p.type == "presence") {
-    p.entity.clear();
-    p.unit.clear();
-    p.precision.clear();
-    if (p.icon.empty() || p.icon == "Auto") p.icon = "Motion Sensor Off";
-    if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Motion Sensor";
-    p.options = presence_card_options_normalized(p.options);
-  }
-  if (!normalized_saved_static && !normalized_saved_fan && !normalized_saved_mower && !p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && !climate_card_type(p.type) && p.type != "cover" && p.type != "garage" && p.type != "gate" && p.type != "webhook" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && !card_large_numbers_supported(p)) {
+  const bool normalized_saved_occupancy = normalize_saved_config_occupancy(
+      p, normalize_saved_config_occupancy_fields,
+      normalize_saved_config_occupancy_options);
+  if (!normalized_saved_static && !normalized_saved_fan && !normalized_saved_mower && !normalized_saved_occupancy && !p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && !climate_card_type(p.type) && p.type != "cover" && p.type != "garage" && p.type != "gate" && p.type != "webhook" && p.type != "todo" && p.type != "sensor" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   normalize_saved_config_sensor(p, was_legacy_text_sensor,

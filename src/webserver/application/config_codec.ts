@@ -13,6 +13,7 @@ import { normalizeSavedConfigStatic } from "../generated/saved_config_static";
 import { normalizeSavedConfigFan } from "../generated/saved_config_fan";
 import { normalizeSavedConfigDateTime } from "../generated/saved_config_date_time";
 import { normalizeSavedConfigMower } from "../generated/saved_config_mower";
+import { normalizeSavedConfigOccupancy } from "../generated/saved_config_occupancy";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -103,6 +104,28 @@ export function installConfigCodecModule(): GlobalDescriptors {
         b.sensor = normalizeLawnMowerMode(b.sensor);
         if (!b.icon || b.icon === "Auto")
             b.icon = lawnMowerModeDefaultIcon(b.sensor);
+    }
+    function normalizeSavedConfigOccupancyFields(this: any, b?: any) {
+        if (!b)
+            return;
+        if (b.type === "door_window") {
+            b.precision = normalizeDoorWindowSubtype(b.precision);
+            if (!b.icon || b.icon === "Auto")
+                b.icon = doorWindowClosedIcon(b.precision);
+            if (!b.icon_on || b.icon_on === "Auto")
+                b.icon_on = doorWindowOpenIcon(b.precision);
+        }
+        else if (b.type === "presence") {
+            if (!b.icon || b.icon === "Auto")
+                b.icon = "Motion Sensor Off";
+            if (!b.icon_on || b.icon_on === "Auto")
+                b.icon_on = "Motion Sensor";
+        }
+    }
+    function normalizeSavedConfigOccupancyOptions(this: any, options?: any, b?: any) {
+        return b && b.type === "door_window"
+            ? normalizeDoorWindowOptions(options || "")
+            : normalizePresenceOptions(options || "");
     }
     function normalizeButtonConfig(this: any, b?: any) {
         if (b)
@@ -233,30 +256,11 @@ export function installConfigCodecModule(): GlobalDescriptors {
         if (b)
             normalizeSavedConfigAction(b, normalizeSavedConfigActionFields, normalizeActionOptions);
         var normalizedSavedSensor: any = !!(b && normalizeSavedConfigSensor(b, wasLegacyTextSensor, normalizeSavedConfigSensorFields, normalizeSensorOptions));
+        var normalizedSavedOccupancy: any = !!(b && normalizeSavedConfigOccupancy(b, normalizeSavedConfigOccupancyFields, normalizeSavedConfigOccupancyOptions));
         if (b && !normalizedSavedSensor && !b.type) {
             b.options = normalizeSwitchConfirmationOptions(b.options);
         }
-        else if (b && b.type === "door_window") {
-            b.entity = "";
-            b.unit = "";
-            b.precision = normalizeDoorWindowSubtype(b.precision);
-            if (!b.icon || b.icon === "Auto")
-                b.icon = doorWindowClosedIcon(b.precision);
-            if (!b.icon_on || b.icon_on === "Auto")
-                b.icon_on = doorWindowOpenIcon(b.precision);
-            b.options = normalizeDoorWindowOptions(b.options);
-        }
-        else if (b && b.type === "presence") {
-            b.entity = "";
-            b.unit = "";
-            b.precision = "";
-            if (!b.icon || b.icon === "Auto")
-                b.icon = "Motion Sensor Off";
-            if (!b.icon_on || b.icon_on === "Auto")
-                b.icon_on = "Motion Sensor";
-            b.options = normalizePresenceOptions(b.options);
-        }
-        else if (b && !normalizedSavedSensor && !normalizedSavedStatic && !normalizedSavedFan && !normalizedSavedMower && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "cover" && b.type !== "garage" && b.type !== "gate" && b.type !== "webhook" && b.type !== "todo" && b.type !== "media" && b.type !== "presence" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && !cardLargeNumbersSupported(b)) {
+        else if (b && !normalizedSavedSensor && !normalizedSavedOccupancy && !normalizedSavedStatic && !normalizedSavedFan && !normalizedSavedMower && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "cover" && b.type !== "garage" && b.type !== "gate" && b.type !== "webhook" && b.type !== "todo" && b.type !== "media" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && !cardLargeNumbersSupported(b)) {
             b.options = "";
         }
         return b;

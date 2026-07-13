@@ -10,7 +10,7 @@ type LargeNumbersRule = true | {
 };
 
 export const CARD_CONTRACT_VERSION = 1 as const;
-export const CARD_CONTRACT_NORMALIZATION_HOOKS = ["normalize_action_fields", "action_large_numbers_supported", "normalize_action_options", "normalize_media_fields", "normalize_media_options", "normalize_fan_fields", "normalize_fan_options", "normalize_date_time_fields", "normalize_date_time_options", "normalize_mower_fields", "normalize_sensor_fields", "normalize_sensor_options", "normalize_vacuum_fields"] as const;
+export const CARD_CONTRACT_NORMALIZATION_HOOKS = ["normalize_action_fields", "action_large_numbers_supported", "normalize_action_options", "normalize_media_fields", "normalize_media_options", "normalize_fan_fields", "normalize_fan_options", "normalize_date_time_fields", "normalize_date_time_options", "normalize_mower_fields", "normalize_occupancy_fields", "normalize_occupancy_options", "normalize_sensor_fields", "normalize_sensor_options", "normalize_vacuum_fields"] as const;
 export const CARD_CONTRACT_MIGRATION_ACTIONS: Readonly<Record<string, MigrationActionSpec>> = {
   "legacy_local_action": {
     "when": [
@@ -1181,6 +1181,55 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
       "binary_sensor",
       "sensor"
     ],
+    "options": [
+      {
+        "name": "active_color",
+        "label": "Lit When Open",
+        "kind": "flag",
+        "omitDefault": true
+      }
+    ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "clear"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_fields"
+        },
+        "icon_on": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_fields"
+        },
+        "sensor": {
+          "policy": "keep"
+        },
+        "unit": {
+          "policy": "clear"
+        },
+        "type": {
+          "policy": "default",
+          "value": "door_window"
+        },
+        "precision": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_fields"
+        },
+        "options": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_options"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": [
+        "active_color"
+      ],
+      "optionHook": "normalize_occupancy_options"
+    },
     "default": {
       "entity": "",
       "label": "",
@@ -1201,6 +1250,54 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
       "sensor",
       "text_sensor"
     ],
+    "options": [
+      {
+        "name": "active_color",
+        "label": "Lit When Detected",
+        "kind": "flag",
+        "omitDefault": true
+      }
+    ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "clear"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_fields"
+        },
+        "icon_on": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_fields"
+        },
+        "sensor": {
+          "policy": "keep"
+        },
+        "unit": {
+          "policy": "clear"
+        },
+        "type": {
+          "policy": "default",
+          "value": "presence"
+        },
+        "precision": {
+          "policy": "clear"
+        },
+        "options": {
+          "policy": "hook",
+          "hook": "normalize_occupancy_options"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": [
+        "active_color"
+      ],
+      "optionHook": "normalize_occupancy_options"
+    },
     "default": {
       "entity": "",
       "label": "",

@@ -30,6 +30,7 @@ function checkCompiledHelper() {
 #include "button_grid_saved_config_fan_generated.h"
 #include "button_grid_saved_config_media_generated.h"
 #include "button_grid_saved_config_mower_generated.h"
+#include "button_grid_saved_config_occupancy_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
 #include "button_grid_saved_config_static_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
@@ -235,6 +236,31 @@ int main() {
   assert(mower.icon_on == "Auto" && mower.unit.empty());
   assert(mower.precision.empty() && mower.options.empty());
   assert(!normalize_saved_config_mower(unrelated, [](Config &) {}));
+  Config door_window{"door_window", "binary_sensor.patio", "unit", "bad", "large_numbers,active_color", "Auto", "sensor.old", "Patio", "Auto"};
+  bool occupancy_fields_called = false;
+  bool occupancy_options_called = false;
+  assert(normalize_saved_config_occupancy(
+    door_window,
+    [&](Config &config) {
+      occupancy_fields_called = true;
+      config.precision = "door";
+      config.icon = "Door";
+      config.icon_on = "Door Open";
+    },
+    [&](const std::string &, const Config &config) {
+      occupancy_options_called = config.type == "door_window";
+      return std::string("active_color");
+    }
+  ));
+  assert(occupancy_fields_called && occupancy_options_called);
+  assert(door_window.entity.empty() && door_window.label == "Patio");
+  assert(door_window.sensor == "binary_sensor.patio" && door_window.unit.empty());
+  assert(door_window.precision == "door" && door_window.icon == "Door");
+  assert(door_window.icon_on == "Door Open" && door_window.options == "active_color");
+  assert(!normalize_saved_config_occupancy(
+    unrelated, [](Config &) {},
+    [](const std::string &options, const Config &) { return options; }
+  ));
 }
 `);
     childProcess.execFileSync(compiler(), [
@@ -426,6 +452,19 @@ function main() {
   assert.deepStrictEqual(mower, { type: "lawn_mower", entity: "lawn_mower.backyard", label: "Backyard", icon: "Robot Mower", icon_on: "Auto", sensor: "start_mowing", unit: "", precision: "", options: "" });
   assert.strictEqual(generatedMower.normalizeSavedConfigMower({ type: "sensor", options: "keep" }, () => {}), false);
 
+  const generatedOccupancy = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_occupancy.ts"));
+  const presence = { type: "presence", entity: "sensor.old", label: "Living Room", icon: "Auto", icon_on: "Auto", sensor: "binary_sensor.presence", unit: "unit", precision: "2", options: "large_numbers,active_color" };
+  let occupancyFieldsCalled = false;
+  let occupancyOptionsCalled = false;
+  assert.strictEqual(generatedOccupancy.normalizeSavedConfigOccupancy(
+    presence,
+    (config) => { occupancyFieldsCalled = true; config.icon = "Motion Sensor Off"; config.icon_on = "Motion Sensor"; },
+    (_options, config) => { occupancyOptionsCalled = config.type === "presence"; return "active_color"; },
+  ), true);
+  assert(occupancyFieldsCalled && occupancyOptionsCalled);
+  assert.deepStrictEqual(presence, { type: "presence", entity: "", label: "Living Room", icon: "Motion Sensor Off", icon_on: "Motion Sensor", sensor: "binary_sensor.presence", unit: "", precision: "", options: "active_color" });
+  assert.strictEqual(generatedOccupancy.normalizeSavedConfigOccupancy({ type: "sensor", options: "keep" }, () => {}, (options) => options), false);
+
   const browser = fs.readFileSync(path.join(ROOT, "src/webserver/application/config_codec.ts"), "utf8");
   assert.match(browser, /from "\.\.\/generated\/saved_config_vacuum";/);
   assert.match(browser, /migrateSavedConfigVacuumLegacy\(b\)/);
@@ -467,6 +506,10 @@ function main() {
   assert.match(browser, /from "\.\.\/generated\/saved_config_mower";/);
   assert.match(browser, /normalizeSavedConfigMower\(b, normalizeSavedConfigMowerFields\)/);
   assert.match(browser, /b\.type === "action" \|\| b\.type === "lawn_mower"/);
+  assert.match(browser, /from "\.\.\/generated\/saved_config_occupancy";/);
+  assert.match(browser, /normalizeSavedConfigOccupancy\(b, normalizeSavedConfigOccupancyFields, normalizeSavedConfigOccupancyOptions\)/);
+  assert.doesNotMatch(browser, /else if \(b && b\.type === "door_window"\)/);
+  assert.doesNotMatch(browser, /else if \(b && b\.type === "presence"\)/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -518,9 +561,13 @@ function main() {
   assert.match(firmware, /#include "button_grid_saved_config_mower_generated\.h"/);
   assert.match(firmware, /normalize_saved_config_mower\(p, normalize_saved_config_mower_fields\)/);
   assert.doesNotMatch(firmware, /if \(p\.type == "lawn_mower"\) \{/);
+  assert.match(firmware, /#include "button_grid_saved_config_occupancy_generated\.h"/);
+  assert.match(firmware, /normalize_saved_config_occupancy\(\s*p, normalize_saved_config_occupancy_fields,/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "door_window"\) \{\s*p\.entity\.clear\(\);/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "presence"\) \{\s*p\.entity\.clear\(\);/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Action, Date/Time, Fan, Lawn Mower, Media, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Action, Date/Time, Fan, Lawn Mower, Media, Occupancy, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
 }
 
 main();
