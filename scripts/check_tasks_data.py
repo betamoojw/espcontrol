@@ -162,6 +162,7 @@ TASKS = (
          parallel_safe=True, cache_tools=("c++", "g++", "clang++", "node")),
     task("saved-config-shadow", ("node", "scripts/check_saved_config_shadow.js"), dependencies=("generated",), profiles=FAST,
          domains=("firmware", "web", "product"), inputs=("common/config/card_contract.json", "common/config/vacuum_mower_card_normalization_fixtures.json", "components/espcontrol/button_grid_config_parser.h", "components/espcontrol/button_grid_saved_config_shadow_generated.h", "src/webserver/generated/saved_config_shadow.ts", "src/webserver/**", "scripts/check_saved_config_shadow.js") + WEB_SOURCE_HELPERS,
+         cache_inputs=WEB_BUNDLE_BUILD_HELPERS,
          parallel_safe=True, cache_tools=("c++", "g++", "clang++", "node")),
     task("firmware-parser", ("python3", "scripts/check_firmware_parser.py"), dependencies=("device-slots", "saved-config-parity"), profiles=FAST,
          domains=("firmware",), inputs=("components/**", "common/config/*_card_normalization_fixtures.json", "scripts/check_firmware_parser.py"),
