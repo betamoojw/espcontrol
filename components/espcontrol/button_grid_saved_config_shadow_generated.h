@@ -89,7 +89,9 @@ inline bool normalize_saved_config_vacuum_shadow(Config &config) {
 }
 
 inline void saved_config_shadow_append_option(std::string &out, const std::string &name, const std::string &value = "") {
-  if (!out.empty()) out += ','; out += name; if (!value.empty()) out += "=" + encode_compact_field(value);
+  if (!out.empty()) out += ',';
+  out += name;
+  if (!value.empty()) out += "=" + encode_compact_field(value);
 }
 
 template<typename Config>
@@ -103,14 +105,17 @@ inline bool normalize_saved_config_sensor_shadow(Config &config) {
     saved_config_shadow_append_option(out, "state_labels"); std::string input = cfg_option_value(source, "state_input"); std::string output = cfg_option_value(source, "state_output");
     if (input.empty() && !cfg_option_value(source, "state_high_label").empty()) { input = "high"; output = cfg_option_value(source, "state_high_label"); }
     else if (input.empty() && !cfg_option_value(source, "state_low_label").empty()) { input = "low"; output = cfg_option_value(source, "state_low_label"); }
-    if (!input.empty()) saved_config_shadow_append_option(out, "state_input", input); if (!output.empty()) saved_config_shadow_append_option(out, "state_output", output);
+    if (!input.empty()) saved_config_shadow_append_option(out, "state_input", input);
+    if (!output.empty()) saved_config_shadow_append_option(out, "state_output", output);
     const std::string input_2 = cfg_option_value(source, "state_input_2"); const std::string output_2 = cfg_option_value(source, "state_output_2");
-    if (!input_2.empty()) saved_config_shadow_append_option(out, "state_input_2", input_2); if (!output_2.empty()) saved_config_shadow_append_option(out, "state_output_2", output_2);
+    if (!input_2.empty()) saved_config_shadow_append_option(out, "state_input_2", input_2);
+    if (!output_2.empty()) saved_config_shadow_append_option(out, "state_output_2", output_2);
   }
   config.options = out; return true;
 }
 
 template<typename Config>
 inline bool normalize_saved_config_shadow(Config &config) {
-  if (normalize_saved_config_vacuum_shadow(config)) return true; return normalize_saved_config_sensor_shadow(config);
+  if (normalize_saved_config_vacuum_shadow(config)) return true;
+  return normalize_saved_config_sensor_shadow(config);
 }
