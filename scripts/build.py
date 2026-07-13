@@ -609,6 +609,11 @@ def shadow_pilot_policies(data):
 
 def gen_saved_config_shadow_ts(data):
     policies = shadow_pilot_policies(data)
+    media = data["cards"]["media"]
+    media_behavior = media["behavior"]["media"]
+    media_volume = contract_card_option(media and data["cards"], "media", "volume_max")
+    media_modes = contract_card_option_values(data["cards"], "media", "media_mode")
+    media_now_playing = contract_card_option_values(data["cards"], "media", "media_now_playing_controls")
     migrations = {
         name: data["migrationActions"][name]
         for name in policies["vacuum"].get("migrationActions", [])
@@ -624,6 +629,14 @@ def gen_saved_config_shadow_ts(data):
         f"export const SAVED_CONFIG_SHADOW_PILOT_POLICIES: Readonly<Record<string, CardNormalizationSpec>> = {json.dumps(policies, indent=2)};\n"
         f"const VACUUM_MIGRATIONS: Readonly<Record<string, MigrationActionSpec>> = {json.dumps(migrations, indent=2)};\n"
         f"const ACTION_OPTION_SELECT_ACTIONS = {json.dumps(data['optionSelect']['actions'])} as const;\n"
+        f"const MEDIA_MODES = {json.dumps(media_modes)} as const;\n"
+        f"const MEDIA_DEFAULT_MODE = {json.dumps(media_behavior['defaultMode'])};\n"
+        f"const MEDIA_MODE_ALIASES: Readonly<Record<string, string>> = {json.dumps(media_behavior.get('legacyModes', {}))};\n"
+        f"const MEDIA_STATE_DISPLAY_MODES = {json.dumps(media_behavior.get('stateDisplayModes', []))} as const;\n"
+        f"const MEDIA_NOW_PLAYING_CONTROLS = {json.dumps(media_now_playing)} as const;\n"
+        f"const MEDIA_VOLUME_MIN = {int(media_volume['min'])};\n"
+        f"const MEDIA_VOLUME_MAX = {int(media_volume['max'])};\n"
+        f"const MEDIA_VOLUME_DEFAULT = {json.dumps(media_volume['defaultValue'])};\n"
         "\n"
         "function conditionMatches(config: CardConfig, condition: NormalizationCondition): boolean {\n"
         "  const actual = condition.source === \"field\" ? config[condition.name as keyof CardConfig] : \"\";\n"
@@ -741,8 +754,34 @@ def gen_saved_config_shadow_ts(data):
         "  config.options = out.join(\",\"); return config;\n"
         "}\n"
         "\n"
+        "function normalizedMediaVolume(value: string): string {\n"
+        "  if (!value) return MEDIA_VOLUME_DEFAULT; const parsed = parseInt(value, 10);\n"
+        "  if (!isFinite(parsed)) return MEDIA_VOLUME_DEFAULT; return String(Math.max(MEDIA_VOLUME_MIN, Math.min(MEDIA_VOLUME_MAX, parsed)));\n"
+        "}\n"
+        "export function normalizeSavedConfigMediaShadow(input: Partial<CardConfig>): CardConfig | null {\n"
+        "  const config = shaped(input); if (config.type !== \"media\") return null; const rawMode = config.sensor;\n"
+        "  const aliasedMode = MEDIA_MODE_ALIASES[rawMode] || rawMode; config.sensor = MEDIA_MODES.indexOf(aliasedMode as typeof MEDIA_MODES[number]) >= 0 ? aliasedMode : MEDIA_DEFAULT_MODE;\n"
+        "  if (rawMode === \"controls\" && (!config.icon || config.icon === \"Speaker\")) config.icon = \"Auto\";\n"
+        "  if (config.sensor === \"previous\" && config.label === \"Skip Previous\") config.label = \"Previous\";\n"
+        "  if (config.sensor === \"next\" && config.label === \"Skip Next\") config.label = \"Next\";\n"
+        "  if (config.sensor === \"volume\") { if (!config.label || config.label === \"Media\") config.label = \"Volume\"; config.icon = \"Auto\"; }\n"
+        "  if (config.sensor === \"playlist\") { if (!config.label || config.label === \"Media\") config.label = \"Playlist\"; if (!config.icon || config.icon === \"Auto\") config.icon = \"Music\"; }\n"
+        "  if (config.sensor === \"position\" && (!config.label || config.label === \"Track\")) config.label = \"Position\";\n"
+        "  if (config.sensor === \"now_playing\") config.precision = MEDIA_NOW_PLAYING_CONTROLS.indexOf(config.precision as typeof MEDIA_NOW_PLAYING_CONTROLS[number]) >= 0 ? config.precision : \"\";\n"
+        "  else if (MEDIA_STATE_DISPLAY_MODES.indexOf(config.sensor as typeof MEDIA_STATE_DISPLAY_MODES[number]) < 0 || config.precision !== \"state\") config.precision = \"\";\n"
+        "  const source = config.options; const out: string[] = []; const maxVolume = normalizedMediaVolume(optionValue(source, \"volume_max\"));\n"
+        "  if (config.sensor === \"control_modal\") {\n"
+        "    if (optionValue(source, \"label_display\") === \"label\") out.push(\"label_display=label\"); if (optionValue(source, \"number_display\") === \"volume\") out.push(\"number_display=volume\"); if (maxVolume !== MEDIA_VOLUME_DEFAULT) out.push(\"volume_max=\" + maxVolume);\n"
+        "  } else if (config.sensor === \"playlist\") {\n"
+        "    for (const [name, defaultValue] of [[\"playlist_content_id\", \"\"], [\"playlist_content_type\", \"playlist\"], [\"playlist_player_source\", \"\"]] as const) { const value = optionValue(source, name) || defaultValue; if (value && value !== defaultValue) out.push(name + \"=\" + encodeOptionValue(value)); }\n"
+        "  } else if (config.sensor === \"volume\" || config.sensor === \"position\") {\n"
+        "    if (config.sensor === \"volume\" && maxVolume !== MEDIA_VOLUME_DEFAULT) out.push(\"volume_max=\" + maxVolume); if (optionValue(source, \"large_numbers\") === \"off\") out.push(\"large_numbers=off\"); else if (optionPresent(source, \"large_numbers\")) out.push(\"large_numbers\");\n"
+        "  }\n"
+        "  config.options = out.join(\",\"); return config;\n"
+        "}\n"
+        "\n"
         "export function normalizeSavedConfigShadow(input: Partial<CardConfig>): CardConfig | null {\n"
-        "  return normalizeSavedConfigVacuumShadow(input) || normalizeSavedConfigSensorShadow(input) || normalizeSavedConfigActionShadow(input);\n"
+        "  return normalizeSavedConfigVacuumShadow(input) || normalizeSavedConfigSensorShadow(input) || normalizeSavedConfigActionShadow(input) || normalizeSavedConfigMediaShadow(input);\n"
         "}\n"
     )
 
@@ -759,6 +798,8 @@ def gen_saved_config_shadow_h(data):
     vacuum = policies["vacuum"]
     hook = vacuum["hookData"]["normalize_vacuum_fields"]
     icons = hook["defaultIcons"]
+    media_behavior = data["cards"]["media"]["behavior"]["media"]
+    media_volume = contract_card_option(data["cards"], "media", "volume_max")
     lines = [
         "#pragma once\n\n",
         "// =============================================================================\n",
@@ -782,6 +823,12 @@ def gen_saved_config_shadow_h(data):
         cpp_string_array("SAVED_CONFIG_SHADOW_VACUUM_MODES", modes),
         cpp_string_array("SAVED_CONFIG_SHADOW_VACUUM_UNIT_MODES", hook["preserveUnitForModes"]),
         cpp_string_array("SAVED_CONFIG_SHADOW_ACTION_OPTION_SELECT_ACTIONS", data["optionSelect"]["actions"]),
+        cpp_string_array("SAVED_CONFIG_SHADOW_MEDIA_MODES", contract_card_option_values(data["cards"], "media", "media_mode")),
+        cpp_string_array("SAVED_CONFIG_SHADOW_MEDIA_STATE_DISPLAY_MODES", media_behavior.get("stateDisplayModes", [])),
+        cpp_string_array("SAVED_CONFIG_SHADOW_MEDIA_NOW_PLAYING_CONTROLS", contract_card_option_values(data["cards"], "media", "media_now_playing_controls")),
+        f"constexpr int SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MIN = {int(media_volume['min'])};\n",
+        f"constexpr int SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MAX = {int(media_volume['max'])};\n",
+        f"constexpr int SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT = {int(media_volume['defaultValue'])};\n",
         "\ninline bool saved_config_shadow_string_in(const std::string &value, const char *const *values, size_t count) {\n",
         "  for (size_t index = 0; index < count; ++index) if (value == values[index]) return true;\n",
         "  return false;\n}\n\n",
@@ -863,10 +910,59 @@ def gen_saved_config_shadow_h(data):
         "    }\n",
         "  }\n",
         "  config.options = out; return true;\n}\n\n",
+        "inline std::string saved_config_shadow_media_mode(const std::string &mode) {\n",
+        f"  if (mode == \"controls\") return {json.dumps(media_behavior['defaultMode'])};\n",
+        "  if (saved_config_shadow_string_in(mode, SAVED_CONFIG_SHADOW_MEDIA_MODES, sizeof(SAVED_CONFIG_SHADOW_MEDIA_MODES) / sizeof(SAVED_CONFIG_SHADOW_MEDIA_MODES[0]))) return mode;\n",
+        f"  return {json.dumps(media_behavior['defaultMode'])};\n}}\n\n",
+        "inline int saved_config_shadow_media_volume(const std::string &value) {\n",
+        "  if (value.empty()) return SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT;\n",
+        "  char *end = nullptr;\n",
+        "  long parsed = std::strtol(value.c_str(), &end, 10);\n",
+        "  if (end == value.c_str()) return SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT;\n",
+        "  if (parsed < SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MIN) return SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MIN;\n",
+        "  if (parsed > SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MAX) return SAVED_CONFIG_SHADOW_MEDIA_VOLUME_MAX;\n",
+        "  return static_cast<int>(parsed);\n",
+        "}\n\n",
+        "template<typename Config>\ninline bool normalize_saved_config_media_shadow(Config &config) {\n",
+        "  if (config.type != \"media\") return false;\n",
+        "  const std::string raw_mode = config.sensor;\n",
+        "  config.sensor = saved_config_shadow_media_mode(raw_mode);\n",
+        "  if (raw_mode == \"controls\" && (config.icon.empty() || config.icon == \"Speaker\")) config.icon = \"Auto\";\n",
+        "  if (config.sensor == \"previous\" && config.label == \"Skip Previous\") config.label = \"Previous\";\n",
+        "  if (config.sensor == \"next\" && config.label == \"Skip Next\") config.label = \"Next\";\n",
+        "  if (config.sensor == \"volume\") {\n",
+        "    if (config.label.empty() || config.label == \"Media\") config.label = \"Volume\";\n",
+        "    config.icon = \"Auto\";\n",
+        "  }\n",
+        "  if (config.sensor == \"playlist\") {\n",
+        "    if (config.label.empty() || config.label == \"Media\") config.label = \"Playlist\";\n",
+        "    if (config.icon.empty() || config.icon == \"Auto\") config.icon = \"Music\";\n",
+        "  }\n",
+        "  if (config.sensor == \"position\" && (config.label.empty() || config.label == \"Track\")) config.label = \"Position\";\n",
+        "  if (config.sensor == \"now_playing\") { if (!saved_config_shadow_string_in(config.precision, SAVED_CONFIG_SHADOW_MEDIA_NOW_PLAYING_CONTROLS, sizeof(SAVED_CONFIG_SHADOW_MEDIA_NOW_PLAYING_CONTROLS) / sizeof(SAVED_CONFIG_SHADOW_MEDIA_NOW_PLAYING_CONTROLS[0]))) config.precision.clear(); }\n",
+        "  else if (!saved_config_shadow_string_in(config.sensor, SAVED_CONFIG_SHADOW_MEDIA_STATE_DISPLAY_MODES, sizeof(SAVED_CONFIG_SHADOW_MEDIA_STATE_DISPLAY_MODES) / sizeof(SAVED_CONFIG_SHADOW_MEDIA_STATE_DISPLAY_MODES[0])) || config.precision != \"state\") config.precision.clear();\n",
+        "  const std::string source = config.options; std::string out; const int max_volume = saved_config_shadow_media_volume(cfg_option_value(source, \"volume_max\"));\n",
+        "  if (config.sensor == \"control_modal\") {\n",
+        "    if (cfg_option_value(source, \"label_display\") == \"label\") saved_config_shadow_append_option(out, \"label_display\", \"label\");\n",
+        "    if (cfg_option_value(source, \"number_display\") == \"volume\") saved_config_shadow_append_option(out, \"number_display\", \"volume\");\n",
+        "    if (max_volume != SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT) saved_config_shadow_append_option(out, \"volume_max\", std::to_string(max_volume));\n",
+        "  } else if (config.sensor == \"playlist\") {\n",
+        "    const std::string content_id = cfg_option_value(source, \"playlist_content_id\");\n",
+        "    const std::string content_type = cfg_option_value(source, \"playlist_content_type\");\n",
+        "    const std::string player_source = cfg_option_value(source, \"playlist_player_source\");\n",
+        "    if (!content_id.empty()) saved_config_shadow_append_option(out, \"playlist_content_id\", content_id);\n",
+        "    if (!content_type.empty() && content_type != \"playlist\") saved_config_shadow_append_option(out, \"playlist_content_type\", content_type);\n",
+        "    if (!player_source.empty()) saved_config_shadow_append_option(out, \"playlist_player_source\", player_source);\n",
+        "  } else if (config.sensor == \"volume\" || config.sensor == \"position\") {\n",
+        "    if (config.sensor == \"volume\" && max_volume != SAVED_CONFIG_SHADOW_MEDIA_VOLUME_DEFAULT) saved_config_shadow_append_option(out, \"volume_max\", std::to_string(max_volume));\n",
+        "    append_large_numbers_option(out, source);\n",
+        "  }\n",
+        "  config.options = out; return true;\n}\n\n",
         "template<typename Config>\ninline bool normalize_saved_config_shadow(Config &config) {\n",
         "  if (normalize_saved_config_vacuum_shadow(config)) return true;\n",
         "  if (normalize_saved_config_sensor_shadow(config)) return true;\n",
-        "  return normalize_saved_config_action_shadow(config);\n",
+        "  if (normalize_saved_config_action_shadow(config)) return true;\n",
+        "  return normalize_saved_config_media_shadow(config);\n",
         "}\n",
     ])
     return "".join(lines)
