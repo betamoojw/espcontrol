@@ -928,7 +928,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.type == "fan_switch") {
       if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Fan";
     } else {
-      p.icon_on.clear();
+      p.icon_on = "Auto";
     }
   }
   if (p.type == "weather_forecast") {
@@ -1117,7 +1117,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.unit.clear();
     p.precision.clear();
     p.options.clear();
-    p.icon_on.clear();
+    p.icon_on = "Auto";
     if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
   }
   if (action_card_option_select(p)) {
@@ -1125,7 +1125,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.unit.clear();
     p.precision.clear();
     p.options.clear();
-    p.icon_on.clear();
+    p.icon_on = "Auto";
     if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
   }
   if (action_card_local_action(p)) {
