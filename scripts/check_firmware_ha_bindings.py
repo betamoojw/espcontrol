@@ -1511,6 +1511,43 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
     if schedule_path.exists():
         schedule_rel = schedule_path.relative_to(root)
         schedule_text = schedule_path.read_text(encoding="utf-8")
+        migrated_live_schedule = (
+            reconcile_body is not None
+            and "schedule_was_active" in reconcile_body
+            and "DisplayRequestSource::BOOT_GUARD" in reconcile_body
+            and "DisplayRequestSource::SCREEN_SCHEDULE" in reconcile_body
+        )
+        if migrated_live_schedule:
+            boot_guard_index = schedule_text.find("script.execute: screen_schedule_boot_guard")
+            boot_guard_prefix = schedule_text[:boot_guard_index] if boot_guard_index != -1 else ""
+            if (
+                "priority: -190" not in boot_guard_prefix
+                or "screen_schedule_waiting_for_time(" not in boot_guard_prefix
+                or "screen_schedule_night_active(" not in boot_guard_prefix
+                or "id(screen_schedule_asleep) =" not in boot_guard_prefix
+            ):
+                errors.append(
+                    f"{schedule_rel}: publish the live fail-dark schedule before the loading screen can light the panel"
+                )
+
+            loading_path = backlight_path.parent.parent / "device" / "screen_loading.yaml"
+            if loading_path.exists():
+                loading_rel = loading_path.relative_to(root)
+                loading_text = loading_path.read_text(encoding="utf-8")
+                setup_index = loading_text.find("id: connectivity_setup_display_active")
+                setup_true_index = loading_text.find("value: 'true'", setup_index)
+                reconcile_index = loading_text.find("script.execute: display_mode_reconcile", setup_true_index)
+                if not (0 <= setup_index < setup_true_index < reconcile_index):
+                    errors.append(
+                        f"{loading_rel}: bypass the boot guard before showing WiFi setup"
+                    )
+                if reconcile_body is None or (
+                    "id(connectivity_setup_display_active)" not in reconcile_body
+                    or "!connectivity_setup" not in reconcile_body
+                ):
+                    errors.append(
+                        f"{rel}: let connectivity setup override boot guard and scheduled night requests"
+                    )
         sleep_body = yaml_script_body(schedule_text, "screen_schedule_sleep")
         if sleep_body is None:
             errors.append(f"{schedule_rel}: missing screen_schedule_sleep script")

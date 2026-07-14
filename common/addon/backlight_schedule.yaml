@@ -57,7 +57,9 @@ text_sensor:
 
 esphome:
   on_boot:
-    priority: -250
+    # Publish the live fail-dark decision before the loading screen's -200
+    # handler can decide whether it is safe to light the panel.
+    priority: -190
     then:
       - lambda: |-
           std::string mode = id(schedule_mode).current_option();
@@ -71,6 +73,20 @@ esphome:
                 auto call = id(screen_schedule_trigger).make_call();
                 call.set_value("time");
                 call.perform();
+      - lambda: |-
+          auto now = panel_time_or_fallback(id(panel_time).now(), id(homeassistant_time).now());
+          const bool waiting_for_time = screen_schedule_waiting_for_time(
+              id(screen_schedule_trigger).state, id(schedule_enabled).state, now.is_valid());
+          const bool schedule_night = screen_schedule_night_active(
+              id(screen_schedule_trigger).state,
+              id(schedule_enabled).state,
+              id(presence_detected),
+              now.is_valid(),
+              now.is_valid() ? now.hour : 0,
+              (int) id(schedule_on_hour).state,
+              (int) id(schedule_off_hour).state);
+          id(screen_schedule_asleep) = !id(connectivity_setup_display_active) &&
+              (waiting_for_time || (schedule_night && !id(schedule_mode_always_on)));
       - script.execute: screen_schedule_boot_guard
 
 # =============================================================================

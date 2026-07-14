@@ -93,6 +93,11 @@ globals:
   - id: setup_screen_dimmed_shadow_active
     type: bool
     initial_value: 'false'
+  # Connectivity setup must remain visible even when a restored time-based
+  # schedule would otherwise keep the panel dark while time is unavailable.
+  - id: connectivity_setup_display_active
+    type: bool
+    initial_value: 'false'
 
 esphome:
   on_boot:
@@ -376,9 +381,10 @@ script:
           };
 
           auto now = panel_time_or_fallback(id(panel_time).now(), id(homeassistant_time).now());
-          const bool waiting_for_time = screen_schedule_waiting_for_time(
+          const bool connectivity_setup = id(connectivity_setup_display_active);
+          const bool waiting_for_time = !connectivity_setup && screen_schedule_waiting_for_time(
               id(screen_schedule_trigger).state, id(schedule_enabled).state, now.is_valid());
-          const bool schedule_night = screen_schedule_night_active(
+          const bool schedule_night = !connectivity_setup && screen_schedule_night_active(
               id(screen_schedule_trigger).state,
               id(schedule_enabled).state,
               id(presence_detected),
