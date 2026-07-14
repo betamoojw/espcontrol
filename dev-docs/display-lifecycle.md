@@ -100,7 +100,7 @@ particular:
 | Dimmed inactive while the dim touch guard is visible | Hide the guard before accepting normal UI interaction. |
 | Dimmed active while the dim touch guard is hidden | Restore the guard before the mode is considered complete. |
 | Takeover active while an automatic delayed effect finishes | Reject the obsolete effect; the takeover remains visible. |
-| Schedule marker restored at boot while time is invalid | Select `DISPLAY_OFF` from `BOOT_GUARD`; do not restore clock or another transient mode. |
+| Enabled time-based schedule is waiting for valid time at boot | Select `DISPLAY_OFF` from `BOOT_GUARD`, regardless of the restored schedule marker; do not restore clock or another transient mode. |
 | Manual off and temporary wake both set | Manual sleep wins and clears the temporary wake. |
 
 ## Request priority
@@ -113,7 +113,7 @@ first matching row wins.
 | 1 | Critical alarm takeover | `ACTIVE`, alarm overlay foreground | Alarm arming delay or triggered state prevents ordinary display transitions. |
 | 2 | Manual sleep | `DISPLAY_OFF` / `MANUAL_SLEEP` | Closes ordinary and interactive modals; next deliberate user wake clears it. |
 | 3 | Temporary user wake | `ACTIVE` / `USER_WAKE` | Uses configured wake brightness until the existing 10–3600 second timeout expires. |
-| 4 | Night schedule | Off, `CLOCK`, or `ACTIVE` / `SCREEN_SCHEDULE` | Off and clock close image modals; always-on uses scheduled brightness. Invalid boot time fails dark when a saved sleep marker exists. |
+| 4 | Night schedule | Off, `CLOCK`, or `ACTIVE` / `SCREEN_SCHEDULE` | Off and clock close image modals; always-on uses scheduled brightness. An enabled time-based schedule fails dark until local time is valid, whether or not a saved sleep marker exists. |
 | 5 | Interactive takeover | `ACTIVE`, image modal foreground | Automatic idle or presence sleep is deferred. Manual sleep and scheduled off or clock may close it. |
 | 6 | Eligible media playback | `COVER_ART` / `MEDIA_PLAYBACK` | Eligibility still includes entity, attribute, external-input, voice, schedule, and alarm checks. |
 | 7 | Idle timer or absence | Configured `DIMMED`, `CLOCK`, or `DISPLAY_OFF` | Presence detected defers sensor sleep. Media sleep prevention and alarm takeover defer idle sleep. |
@@ -191,7 +191,7 @@ tests. `gN` denotes a transition generation.
 | Sequence | Events | Expected decisions and checks |
 |---|---|---|
 | Default boot | Boot, valid time, schedule normal | Resolve `ACTIVE`; normal UI and normal brightness; idle timer starts. |
-| Fail-dark boot | Saved schedule-asleep marker, boot, time invalid | `BOOT_GUARD` requests `DISPLAY_OFF`; PWM remains off. When time becomes valid, clear boot guard and resolve the live schedule. |
+| Fail-dark boot | Enabled time-based schedule; boot; time invalid; repeat with and without a saved schedule-asleep marker | `BOOT_GUARD` requests `DISPLAY_OFF` in both cases; PWM remains off. When time becomes valid, clear boot guard and resolve the live schedule. |
 | Idle dim | `ACTIVE`; idle timeout; configured action Dim | `IDLE_TIMER` requests `DIMMED` at `g1`; normal UI remains beneath the dim guard; dim brightness applies. |
 | Idle clock | `ACTIVE`; idle timeout; configured action Clock | `IDLE_TIMER` requests `CLOCK`; full-screen clock alone is visible at day/night clock brightness. |
 | Idle off | `ACTIVE`; idle timeout; configured action Off | `IDLE_TIMER` requests `DISPLAY_OFF`; fade completes, off page is selected, logical backlight and PWM are off. |
