@@ -1484,6 +1484,7 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
 
     schedule_off_body = yaml_script_body(text, "backlight_schedule_display_off")
     controller_off_body = yaml_script_body(text, "display_mode_effect_off")
+    reconcile_body = yaml_script_body(text, "display_mode_reconcile")
     if schedule_off_body is None:
         errors.append(f"{rel}: missing backlight_schedule_display_off script")
     elif not (
@@ -1495,6 +1496,16 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
         or "script.execute: hide_cover_art_view" not in schedule_off_body
     ):
         errors.append(f"{rel}: screen schedule display-off should clear cover art before forcing the screen off")
+
+    if reconcile_body is not None and "DisplayRequestSource::SCREEN_SCHEDULE" in reconcile_body and (
+        "if (schedule_night && id(cover_art_screensaver_active))" not in reconcile_body
+        and not (
+            "if (id(cover_art_screensaver_active))" in reconcile_body
+            and "id(cover_art_screensaver_active) = false;" in reconcile_body
+            and "id(hide_cover_art_view).execute();" in reconcile_body
+        )
+    ):
+        errors.append(f"{rel}: scheduled night modes should clear active cover art before resolving")
 
     schedule_path = backlight_path.with_name("backlight_schedule.yaml")
     if schedule_path.exists():
@@ -4409,6 +4420,34 @@ def run_self_test() -> int:
         "night schedule overrides timer and sensor screensaver",
         valid_schedule_screensaver_override,
         (),
+        valid_schedule_sleep_order,
+    )
+    migrated_schedule_reconcile = (
+        valid_schedule_screensaver_override
+        + "  - id: display_mode_reconcile\n"
+        "    then:\n"
+        "      - lambda: |-\n"
+        "          if (schedule_night) {\n"
+        "            controller.request(espcontrol::DisplayRequestSource::SCREEN_SCHEDULE,\n"
+        "                               espcontrol::DisplayMode::CLOCK);\n"
+        "            if (id(cover_art_screensaver_active)) {\n"
+        "              id(cover_art_screensaver_active) = false;\n"
+        "              id(hide_cover_art_view).execute();\n"
+        "            }\n"
+        "          }\n"
+    )
+    expect_screen_schedule_screensaver_override_errors(
+        "migrated schedule clears active cover art",
+        migrated_schedule_reconcile,
+        (),
+        valid_schedule_sleep_order,
+    )
+    expect_screen_schedule_screensaver_override_errors(
+        "migrated schedule leaves active cover art visible",
+        migrated_schedule_reconcile.replace(
+            "              id(hide_cover_art_view).execute();\n", "", 1
+        ),
+        ("scheduled night modes should clear active cover art",),
         valid_schedule_sleep_order,
     )
     expect_screen_schedule_screensaver_override_errors(

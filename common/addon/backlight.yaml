@@ -410,6 +410,15 @@ script:
                                            : espcontrol::DisplayMode::DISPLAY_OFF);
             controller.request(espcontrol::DisplayRequestSource::SCREEN_SCHEDULE,
                                schedule_mode);
+
+            // A live night schedule replaces an existing cover-art
+            // presentation, including non-off modes such as Clock and
+            // Screen Dimmed/Always On. Clear its legacy state before the
+            // controller mirrors the media request below.
+            if (id(cover_art_screensaver_active)) {
+              id(cover_art_screensaver_active) = false;
+              id(hide_cover_art_view).execute();
+            }
           } else {
             controller.clear(espcontrol::DisplayRequestSource::SCREEN_SCHEDULE);
           }
