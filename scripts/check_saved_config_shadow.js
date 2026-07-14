@@ -39,13 +39,13 @@ function parseRawButtonConfig(value) {
   return shape(Object.fromEntries(FIELDS.map((field, index) => [field, decoded[index] || ""])));
 }
 
-function vacuumCases() {
+function shadowCases() {
   const fixtures = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/vacuum_mower_card_normalization_fixtures.json"), "utf8"));
   const config = (overrides) => Object.assign({
     entity: "vacuum.robot", label: "", icon: "Robot Vacuum", icon_on: "Auto",
     sensor: "start_stop", unit: "", type: "vacuum", precision: "", options: "",
   }, overrides);
-  return fixtures.filter((fixture) => fixture.expected.type === "vacuum").concat([
+  const vacuum = fixtures.filter((fixture) => fixture.expected.type === "vacuum").concat([
     {
       name: "compact vacuum preserves encoded Unicode and area",
       input: "~vacuum.robot,%E5%8E%A8%E6%88%BF%20Vacuum,Auto,Auto,clean_area,zone%3A1,vacuum,text,unknown",
@@ -72,6 +72,63 @@ function vacuumCases() {
       expected: config({}),
     },
   ]);
+  const sensor = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/sensor_card_normalization_fixtures.json"), "utf8"));
+  sensor.push({
+    name: "short sensor config receives default icons",
+    input: "sensor.x;;;;sensor.x;;sensor;1;large_numbers",
+    expected: {
+      entity: "sensor.x", label: "", icon: "Auto", icon_on: "Auto", sensor: "sensor.x",
+      unit: "", type: "sensor", precision: "1", options: "large_numbers",
+    },
+  }, {
+    name: "text sensor trims padded state translations",
+    input: "sensor.x;State;Auto;Auto;sensor.x;;sensor;text;state_labels,state_input=%20on%20,state_output=%20On%20,state_input_2=%20off%20,state_output_2=%20Off%20",
+    expected: {
+      entity: "sensor.x", label: "State", icon: "Auto", icon_on: "Auto", sensor: "sensor.x",
+      unit: "", type: "sensor", precision: "text", options: "state_labels,state_input=on,state_output=On,state_input_2=off,state_output_2=Off",
+    },
+  });
+  const sensorAliases = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/baseline_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "sensor");
+  const confirmation = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/confirmation_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "action");
+  const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/baseline_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "action");
+  const action = confirmation.concat(baseline, [
+    {
+      name: "legacy local action receives safe action defaults",
+      input: "local.tap;Tap;Flash;Swap;ignored;unit;local;2;unknown=1",
+      expected: config({ entity: "local.tap", label: "Tap", icon: "Gesture Tap", sensor: "local", type: "action" }),
+    },
+    {
+      name: "action icon state drops numeric-only state options",
+      input: "scene.movie;Movie;Flash;Auto;scene.turn_on;;action;;state_entity=sensor.mode,state_unit=W,state_precision=icon,large_numbers",
+      expected: config({ entity: "scene.movie", label: "Movie", icon: "Flash", sensor: "scene.turn_on", type: "action", options: "state_entity=sensor.mode,state_precision=icon" }),
+    },
+    {
+      name: "short action receives default icons",
+      input: "scene.movie;Movie;;;scene.turn_on;;action;;",
+      expected: config({ entity: "scene.movie", label: "Movie", icon: "Auto", sensor: "scene.turn_on", type: "action" }),
+    },
+  ]);
+  const media = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/media_card_normalization_fixtures.json"), "utf8")).concat([
+    {
+      name: "media control modal preserves non-default controls",
+      input: "media_player.office;Media Control;Auto;Auto;control_modal;;media;;label_display=label,number_display=volume,volume_max=40",
+      expected: config({ entity: "media_player.office", label: "Media Control", icon: "Auto", sensor: "control_modal", type: "media", options: "label_display=label,number_display=volume,volume_max=40" }),
+    },
+    {
+      name: "media control modal trims saved choices",
+      input: "media_player.office;Media Control;Auto;Auto;control_modal;;media;;label_display=%20label%20,number_display=%20volume%20",
+      expected: config({ entity: "media_player.office", label: "Media Control", icon: "Auto", sensor: "control_modal", type: "media", options: "label_display=label,number_display=volume" }),
+    },
+    {
+      name: "short media config receives default icons",
+      input: "media_player.x;;;;play_pause;;media",
+      expected: config({ entity: "media_player.x", label: "", icon: "Auto", sensor: "play_pause", type: "media" }),
+    },
+  ]);
+  return vacuum.concat(sensor, sensorAliases, action, media);
 }
 
 function compiler() {
@@ -113,7 +170,7 @@ ParsedCfg raw_cfg(const std::string &cfg) {
 }
 void quoted(const std::string &v) { std::cout << '"'; for (char c : v) { if (c == '"' || c == '\\\\') std::cout << '\\\\'; std::cout << c; } std::cout << '"'; }
 void print_cfg(const ParsedCfg &p) { const std::string values[] = {p.entity,p.label,p.icon,p.icon_on,p.sensor,p.unit,p.type,p.precision,p.options}; std::cout << '['; for (int i=0;i<9;++i) { if(i) std::cout << ','; quoted(values[i]); } std::cout << ']'; }
-int main() { const std::vector<std::string> inputs = { ${inputs} }; std::cout << '['; for (size_t i=0;i<inputs.size();++i) { if(i) std::cout << ','; ParsedCfg p=raw_cfg(inputs[i]); normalize_saved_config_vacuum_shadow(p); print_cfg(p); } std::cout << ']'; }
+int main() { const std::vector<std::string> inputs = { ${inputs} }; std::cout << '['; for (size_t i=0;i<inputs.size();++i) { if(i) std::cout << ','; ParsedCfg p=raw_cfg(inputs[i]); normalize_saved_config_shadow(p); print_cfg(p); } std::cout << ']'; }
 `;
 }
 
@@ -131,7 +188,7 @@ function compiledShadow(cases) {
 }
 
 function main() {
-  const cases = vacuumCases();
+  const cases = shadowCases();
   const codec = loadBrowserCodec();
   const shadow = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_shadow.ts"));
   const firmwareShadow = compiledShadow(cases);
@@ -139,18 +196,18 @@ function main() {
   cases.forEach((fixture, index) => {
     const expected = shape(fixture.expected);
     const production = shape(codec.parseButtonConfig(fixture.input));
-    const browserShadow = shape(shadow.normalizeSavedConfigVacuumShadow(parseRawButtonConfig(fixture.input)));
+    const browserShadow = shape(shadow.normalizeSavedConfigShadow(parseRawButtonConfig(fixture.input)));
     const compiled = Object.fromEntries(FIELDS.map((field, fieldIndex) => [field, firmwareShadow[index][fieldIndex]]));
     assert.deepStrictEqual(production, expected, `${fixture.name}: production`);
     assert.deepStrictEqual(browserShadow, expected, `${fixture.name}: browser shadow`);
     assert.deepStrictEqual(compiled, expected, `${fixture.name}: compiled shadow`);
-    assert.deepStrictEqual(shape(shadow.normalizeSavedConfigVacuumShadow(browserShadow)), browserShadow, `${fixture.name}: shadow idempotence`);
+    assert.deepStrictEqual(shape(shadow.normalizeSavedConfigShadow(browserShadow)), browserShadow, `${fixture.name}: shadow idempotence`);
   });
   const firmwareUsers = fs.readdirSync(path.join(ROOT, "components/espcontrol"))
     .filter((name) => name.endsWith(".h") && name !== "button_grid_saved_config_shadow_generated.h")
     .filter((name) => fs.readFileSync(path.join(ROOT, "components/espcontrol", name), "utf8").includes("button_grid_saved_config_shadow_generated"));
   assert.deepStrictEqual(firmwareUsers, [], "shadow header must remain outside production firmware");
-  console.log(`Saved-config shadow agreement passed for ${cases.length} vacuum inputs across browser and compiled C++ helpers.`);
+  console.log(`Saved-config shadow agreement passed for ${cases.length} Vacuum, Sensor, Action, and Media inputs across browser and compiled C++ helpers.`);
   console.log("Production firmware footprint delta: 0 bytes flash / 0 bytes RAM (test-only shadow; 8 KiB guard passed).");
 }
 

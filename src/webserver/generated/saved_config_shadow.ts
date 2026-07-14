@@ -111,6 +111,7 @@ export const SAVED_CONFIG_SHADOW_PILOT_POLICIES: Readonly<Record<string, CardNor
     "optionHook": "normalize_sensor_options",
     "migrationActions": [
       "legacy_local_sensor",
+      "legacy_text_sensor",
       "legacy_sensor_state_high_label",
       "legacy_sensor_state_low_label"
     ]
@@ -190,6 +191,10 @@ export const SAVED_CONFIG_SHADOW_PILOT_POLICIES: Readonly<Record<string, CardNor
           "locate",
           "clean_area"
         ],
+        "aliases": {
+          "vacuum.start": "start_stop",
+          "vacuum.return_to_base": "dock"
+        },
         "fallback": "start_stop"
       },
       "unit": {
@@ -281,6 +286,15 @@ const VACUUM_MIGRATIONS: Readonly<Record<string, MigrationActionSpec>> = {
     "hook": "normalize_vacuum_fields"
   }
 };
+const ACTION_OPTION_SELECT_ACTIONS = ["input_select.select_option", "select.select_option"] as const;
+const MEDIA_MODES = ["control_modal", "play_pause", "previous", "next", "volume", "position", "now_playing", "playlist"] as const;
+const MEDIA_DEFAULT_MODE = "play_pause";
+const MEDIA_MODE_ALIASES: Readonly<Record<string, string>> = {"controls": "play_pause"};
+const MEDIA_STATE_DISPLAY_MODES = ["play_pause", "position"] as const;
+const MEDIA_NOW_PLAYING_CONTROLS = ["", "progress", "play_pause"] as const;
+const MEDIA_VOLUME_MIN = 1;
+const MEDIA_VOLUME_MAX = 100;
+const MEDIA_VOLUME_DEFAULT = "100";
 
 function conditionMatches(config: CardConfig, condition: NormalizationCondition): boolean {
   const actual = condition.source === "field" ? config[condition.name as keyof CardConfig] : "";
@@ -299,6 +313,21 @@ function shaped(input: Partial<CardConfig>): CardConfig {
   };
 }
 
+function optionPresent(options: string, name: string): boolean {
+  return options.split(",").indexOf(name) >= 0;
+}
+function decodeOptionValue(value: string): string {
+  return value.replace(/(%[0-9a-fA-F]{2})+/g, (run) => { try { return decodeURIComponent(run); } catch { return run; } });
+}
+function optionValue(options: string, name: string): string {
+  const prefix = name + "=";
+  for (const part of options.split(",")) if (part.indexOf(prefix) === 0) return decodeOptionValue(part.substring(prefix.length));
+  return "";
+}
+function encodeOptionValue(value: string): string {
+  return value.replace(/[%,;|:]/g, (character) => "%" + character.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+}
+
 export function normalizeSavedConfigVacuumShadow(input: Partial<CardConfig>): CardConfig | null {
   const config = shaped(input);
   for (const action of Object.values(VACUUM_MIGRATIONS)) {
@@ -310,7 +339,7 @@ export function normalizeSavedConfigVacuumShadow(input: Partial<CardConfig>): Ca
     const policy = spec.fields[field];
     if (policy.policy === "clear") config[field] = "";
     else if (policy.policy === "default") config[field] = policy.value;
-    else if (policy.policy === "allowed" && policy.values.indexOf(config[field]) < 0) config[field] = policy.fallback;
+    else if (policy.policy === "allowed") { config[field] = policy.aliases?.[config[field]] || config[field]; if (policy.values.indexOf(config[field]) < 0) config[field] = policy.fallback; }
     else if (policy.policy === "alias") config[field] = policy.aliases[config[field]] || config[field];
   }
   const hook = spec.hookData!.normalize_vacuum_fields as {
@@ -319,4 +348,97 @@ export function normalizeSavedConfigVacuumShadow(input: Partial<CardConfig>): Ca
   if (hook.preserveUnitForModes.indexOf(config.sensor) < 0) config.unit = "";
   if (!config.icon || config.icon === "Auto") config.icon = hook.defaultIcons[config.sensor] || hook.defaultIcons.default || "Auto";
   return config;
+}
+
+export function normalizeSavedConfigSensorShadow(input: Partial<CardConfig>): CardConfig | null {
+  const config = shaped(input);
+  if (config.type === "text_sensor") { config.type = "sensor"; config.precision = "text"; config.entity = ""; config.label = ""; config.unit = ""; config.icon_on = "Auto"; }
+  if (config.type === "local_sensor") { config.type = "sensor"; config.sensor = "local"; config.icon_on = "Auto"; config.options = ""; }
+  if (config.type !== "sensor") return null;
+  if (config.sensor === "local") {
+    config.icon_on = "Auto"; config.options = "";
+    if (["text", "1", "2"].indexOf(config.precision) < 0) config.precision = "";
+    if (config.precision !== "text" && (!config.icon || config.icon === "Auto")) config.icon = "Auto";
+    return config;
+  }
+  const source = config.options; const out: string[] = [];
+  if (config.precision !== "icon" && config.precision !== "text") {
+    if (optionValue(source, "large_numbers") === "off") out.push("large_numbers=off");
+    else if (optionPresent(source, "large_numbers")) out.push("large_numbers");
+  }
+  if (config.precision === "text" && optionPresent(source, "state_labels")) {
+    out.push("state_labels");
+    let stateInput = optionValue(source, "state_input"); let stateOutput = optionValue(source, "state_output");
+    if (!stateInput && optionValue(source, "state_high_label")) { stateInput = "high"; if (!stateOutput) stateOutput = optionValue(source, "state_high_label"); }
+    else if (!stateInput && optionValue(source, "state_low_label")) { stateInput = "low"; if (!stateOutput) stateOutput = optionValue(source, "state_low_label"); }
+    for (const [name, value] of [["state_input", stateInput], ["state_output", stateOutput], ["state_input_2", optionValue(source, "state_input_2")], ["state_output_2", optionValue(source, "state_output_2")]] as const) {
+      const trimmed = value.trim();
+      if (trimmed) out.push(name + "=" + encodeOptionValue(trimmed));
+    }
+  }
+  config.options = out.join(","); return config;
+}
+
+export function normalizeSavedConfigActionShadow(input: Partial<CardConfig>): CardConfig | null {
+  const config = shaped(input);
+  if (config.type === "local") { config.type = "action"; config.sensor = "local"; }
+  if (config.type === "option_select") { config.type = "action"; config.sensor = "input_select.select_option"; }
+  if (config.type !== "action") return null;
+  if (ACTION_OPTION_SELECT_ACTIONS.indexOf(config.sensor as typeof ACTION_OPTION_SELECT_ACTIONS[number]) >= 0) {
+    config.sensor = "input_select.select_option"; config.unit = ""; config.precision = ""; config.options = ""; config.icon_on = "Auto";
+    if (!config.icon || config.icon === "Auto" || config.icon === "Chevron Down") config.icon = "Flash"; return config;
+  }
+  if (config.sensor === "local") {
+    config.unit = ""; config.precision = ""; config.options = ""; config.icon_on = "Auto";
+    if (!config.icon || config.icon === "Auto" || config.icon === "Flash") config.icon = "Gesture Tap"; return config;
+  }
+  config.precision = ""; const source = config.options; const out: string[] = []; const stateEntity = optionValue(source, "state_entity").trim();
+  if (stateEntity) {
+    out.push("state_entity=" + encodeOptionValue(stateEntity)); const rawPrecision = optionValue(source, "state_precision");
+    if (rawPrecision === "icon" || rawPrecision === "text") out.push("state_precision=" + rawPrecision);
+    else {
+      const stateUnit = optionValue(source, "state_unit").trim(); const numericPrecision = ["0", "1", "2"].indexOf(rawPrecision) >= 0;
+      if (stateUnit) out.push("state_unit=" + encodeOptionValue(stateUnit));
+      if (numericPrecision) out.push("state_precision=" + rawPrecision);
+      if (optionValue(source, "large_numbers") === "off") out.push("large_numbers=off"); else if (optionPresent(source, "large_numbers")) out.push("large_numbers");
+    }
+  }
+  if (config.sensor === "script.turn_on") {
+    const fields = optionValue(source, "script_fields").trim(); if (fields) out.push("script_fields=" + encodeOptionValue(fields));
+    if (optionPresent(source, "confirm_on")) {
+      out.push("confirm_on"); const values: readonly (readonly [string, string])[] = [["confirm_message", "Run this script?"], ["confirm_yes", "Yes"], ["confirm_no", "No"]];
+      for (const [name, defaultValue] of values) { const value = optionValue(source, name).trim(); if (value && value !== defaultValue) out.push(name + "=" + encodeOptionValue(value)); }
+    }
+  }
+  config.options = out.join(","); return config;
+}
+
+function normalizedMediaVolume(value: string): string {
+  if (!value) return MEDIA_VOLUME_DEFAULT; const parsed = parseInt(value, 10);
+  if (!isFinite(parsed)) return MEDIA_VOLUME_DEFAULT; return String(Math.max(MEDIA_VOLUME_MIN, Math.min(MEDIA_VOLUME_MAX, parsed)));
+}
+export function normalizeSavedConfigMediaShadow(input: Partial<CardConfig>): CardConfig | null {
+  const config = shaped(input); if (config.type !== "media") return null; const rawMode = config.sensor;
+  const aliasedMode = MEDIA_MODE_ALIASES[rawMode] || rawMode; config.sensor = MEDIA_MODES.indexOf(aliasedMode as typeof MEDIA_MODES[number]) >= 0 ? aliasedMode : MEDIA_DEFAULT_MODE;
+  if (rawMode === "controls" && (!config.icon || config.icon === "Speaker")) config.icon = "Auto";
+  if (config.sensor === "previous" && config.label === "Skip Previous") config.label = "Previous";
+  if (config.sensor === "next" && config.label === "Skip Next") config.label = "Next";
+  if (config.sensor === "volume") { if (!config.label || config.label === "Media") config.label = "Volume"; config.icon = "Auto"; }
+  if (config.sensor === "playlist") { if (!config.label || config.label === "Media") config.label = "Playlist"; if (!config.icon || config.icon === "Auto") config.icon = "Music"; }
+  if (config.sensor === "position" && (!config.label || config.label === "Track")) config.label = "Position";
+  if (config.sensor === "now_playing") config.precision = MEDIA_NOW_PLAYING_CONTROLS.indexOf(config.precision as typeof MEDIA_NOW_PLAYING_CONTROLS[number]) >= 0 ? config.precision : "";
+  else if (MEDIA_STATE_DISPLAY_MODES.indexOf(config.sensor as typeof MEDIA_STATE_DISPLAY_MODES[number]) < 0 || config.precision !== "state") config.precision = "";
+  const source = config.options; const out: string[] = []; const maxVolume = normalizedMediaVolume(optionValue(source, "volume_max"));
+  if (config.sensor === "control_modal") {
+    if (optionValue(source, "label_display").trim() === "label") out.push("label_display=label"); if (optionValue(source, "number_display").trim() === "volume") out.push("number_display=volume"); if (maxVolume !== MEDIA_VOLUME_DEFAULT) out.push("volume_max=" + maxVolume);
+  } else if (config.sensor === "playlist") {
+    for (const [name, defaultValue] of [["playlist_content_id", ""], ["playlist_content_type", "playlist"], ["playlist_player_source", ""]] as const) { const value = optionValue(source, name).trim() || defaultValue; if (value && value !== defaultValue) out.push(name + "=" + encodeOptionValue(value)); }
+  } else if (config.sensor === "volume" || config.sensor === "position") {
+    if (config.sensor === "volume" && maxVolume !== MEDIA_VOLUME_DEFAULT) out.push("volume_max=" + maxVolume); if (optionValue(source, "large_numbers") === "off") out.push("large_numbers=off"); else if (optionPresent(source, "large_numbers")) out.push("large_numbers");
+  }
+  config.options = out.join(","); return config;
+}
+
+export function normalizeSavedConfigShadow(input: Partial<CardConfig>): CardConfig | null {
+  return normalizeSavedConfigVacuumShadow(input) || normalizeSavedConfigSensorShadow(input) || normalizeSavedConfigActionShadow(input) || normalizeSavedConfigMediaShadow(input);
 }
