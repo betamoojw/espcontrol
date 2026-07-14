@@ -69,7 +69,7 @@ not brief values observed part-way through a fade.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | Normal UI | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `ACTIVE` / default |
 | Temporary off-hours wake | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | `ACTIVE` / `USER_WAKE` |
-| Schedule always-on period | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `ACTIVE` / `SCREEN_SCHEDULE` |
+| Scheduled Screen Dimmed period | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `ACTIVE` / `SCREEN_SCHEDULE` |
 | Setup page dimmed after timeout | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `SETUP_DIMMED` / `SETUP_TIMEOUT` |
 | Idle or presence dimmed | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | `DIMMED` / `IDLE_TIMER` or `PRESENCE_SENSOR` |
 | Idle or presence clock | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | `CLOCK` / `IDLE_TIMER` or `PRESENCE_SENSOR` |
@@ -113,7 +113,7 @@ first matching row wins.
 | 1 | Critical alarm takeover | `ACTIVE`, alarm overlay foreground | Alarm arming delay or triggered state prevents ordinary display transitions. |
 | 2 | Manual sleep | `DISPLAY_OFF` / `MANUAL_SLEEP` | Closes ordinary and interactive modals; next deliberate user wake clears it. |
 | 3 | Temporary user wake | `ACTIVE` / `USER_WAKE` | Uses configured wake brightness until the existing 10–3600 second timeout expires. |
-| 4 | Night schedule | Off, `CLOCK`, or `ACTIVE` / `SCREEN_SCHEDULE` | Off and clock close image modals; always-on uses scheduled brightness. An enabled time-based schedule fails dark until local time is valid, whether or not a saved sleep marker exists. |
+| 4 | Night schedule | Off, `CLOCK`, or `ACTIVE` / `SCREEN_SCHEDULE` | Off and clock close image modals; Screen Dimmed keeps the active UI at `schedule_dimmed_brightness`. An enabled time-based schedule fails dark until local time is valid, whether or not a saved sleep marker exists. |
 | 5 | Interactive takeover | `ACTIVE`, image modal foreground | Automatic idle or presence sleep is deferred. Manual sleep and scheduled off or clock may close it. |
 | 6 | Eligible media playback | `COVER_ART` / `MEDIA_PLAYBACK` | Eligibility still includes entity, attribute, external-input, voice, schedule, and alarm checks. |
 | 7 | Idle timer or absence | Configured `DIMMED`, `CLOCK`, or `DISPLAY_OFF` | Presence detected defers sensor sleep. Media sleep prevention and alarm takeover defer idle sleep. |
@@ -201,7 +201,7 @@ tests. `gN` denotes a transition generation.
 | Scheduled off and automatic wake | `ACTIVE`; enter off-hours Off; enter normal hours | `SCREEN_SCHEDULE` selects `DISPLAY_OFF`; later clearing that request selects `ACTIVE` and restarts idle handling. |
 | Scheduled clock | `ACTIVE`; enter off-hours Clock; setting or time changes | Select `CLOCK` with scheduled clock brightness. Re-evaluate current schedule on every change; do not restore a previous transient mode. |
 | Temporary off-hours wake | Scheduled off or clock; touch; timeout | `USER_WAKE` selects `ACTIVE` at temporary-wake brightness. On existing timeout, clear it and re-resolve to the current scheduled off or clock mode. |
-| Scheduled always-on | Enter off-hours Always on | `SCREEN_SCHEDULE` selects `ACTIVE` at scheduled brightness and suppresses idle sleep for that period. |
+| Scheduled Screen Dimmed | Enter off-hours Screen Dimmed | `SCREEN_SCHEDULE` selects `ACTIVE` at `schedule_dimmed_brightness` and suppresses idle sleep for that period. The internal `screen_schedule_always_on_mode` helper name does not change the user-facing mode or its brightness contract. |
 | Eligible playback | Active or idle request; eligible playback starts; delay completes | `MEDIA_PLAYBACK` selects `COVER_ART` unless a higher request blocks it. Artwork state stays outside the controller. |
 | Playback stops | `COVER_ART`; playback stops | Clear media request and resolve live schedule, presence, idle, or default state. Never assume the result is `ACTIVE`. |
 | Cover-art dismissal race | Start delayed activation `g1`; user wake or replacement creates `g2`; `g1` delay/download/retry/progress callback fires | Every `g1` callback is rejected. It cannot reopen cover art, modify its widgets, change brightness, or release resources belonging to `g2`. |
