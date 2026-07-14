@@ -976,6 +976,15 @@ def firmware_cover_art_lifecycle_controller_errors(
         errors.append(f"{backlight_rel}: dismiss cover art by clearing its controller media request")
     if "DisplayRequestSource::MEDIA_PLAYBACK" in reconcile:
         errors.append(f"{backlight_rel}: do not rebuild media requests from the compatibility cover art flag")
+    if (
+        "previous_cover_generation" not in reconcile
+        or "id(cover_art_transition_generation) = transition.generation" not in reconcile
+        or "id(cover_art_download_generation) = transition.generation" not in reconcile
+        or "!transition_required" not in reconcile
+    ):
+        errors.append(
+            f"{backlight_rel}: preserve active cover art across lower-priority generation changes"
+        )
 
     if "globals.set:" in cover_art_text and re.search(
         r"globals\.set:\s*(?:\{\s*)?id:\s*cover_art_screensaver_active",
@@ -1010,6 +1019,15 @@ def firmware_cover_art_lifecycle_controller_errors(
         body = yaml_script_body(cover_art_text, script_id) or ""
         if marker not in body:
             errors.append(f"{cover_art_rel}: guard {script_id} against obsolete display generations")
+    stopped_body = yaml_script_body(cover_art_text, "cover_art_delayed_playback_stopped") or ""
+    if (
+        "id: cover_art_media_playing" not in stopped_body
+        or "id: cover_art_delay_interrupted_by_transition" not in stopped_body
+        or "script.execute: display_mode_clear_cover_art" not in stopped_body
+    ):
+        errors.append(
+            f"{cover_art_rel}: retire stopped playback state before clearing an obsolete cover art request"
+        )
     return errors
 
 
@@ -4039,7 +4057,7 @@ def run_self_test() -> int:
         "      - script.execute: display_mode_reconcile\n"
         "  - id: display_mode_reconcile\n"
         "    then:\n"
-        "      - lambda: 'auto transition = controller.resolve();'\n"
+        "      - lambda: 'auto transition = controller.resolve(); bool transition_required = controller.transition_required(transition); if (!transition_required) { auto previous_cover_generation = id(cover_art_transition_generation); id(cover_art_transition_generation) = transition.generation; if (id(cover_art_download_generation) == previous_cover_generation) id(cover_art_download_generation) = transition.generation; }'\n"
     )
     valid_cover_art_effects = (
         "globals:\n"
@@ -4070,6 +4088,9 @@ def run_self_test() -> int:
         "  - id: cover_art_delayed_playback_stopped\n"
         "    then:\n"
         "      - lambda: 'id(display_mode_controller).generation_is_current(generation);'\n"
+        "      - globals.set: { id: cover_art_delay_interrupted_by_transition, value: 'false' }\n"
+        "      - globals.set: { id: cover_art_media_playing, value: 'false' }\n"
+        "      - script.execute: display_mode_clear_cover_art\n"
     )
     expect_cover_art_lifecycle_controller_errors(
         "controller-owned cover art lifecycle",

@@ -2358,6 +2358,24 @@ script:
                 then:
                   # The obsolete callback may retire its old request from live
                   # playback state, but it must not touch presentation widgets.
+                  # Reset the non-visual playback state first so later schedule
+                  # and wake checks cannot reopen cover art for stopped media.
+                  - globals.set:
+                      id: cover_art_delay_interrupted_by_transition
+                      value: 'false'
+                  - globals.set:
+                      id: cover_art_media_playing
+                      value: 'false'
+                  - globals.set:
+                      id: cover_art_manual_pause_until_ms
+                      value: '0'
+                  - lambda: |-
+                      id(cover_art_media_position) = 0.0f;
+                      id(cover_art_position_anchor) = 0.0f;
+                      id(cover_art_media_duration) = 0.0f;
+                      id(cover_art_position_anchor_epoch) = 0;
+                      id(cover_art_last_position_timestamp) = 0;
+                      id(cover_art_last_progress_percent) = -1;
                   - script.execute: display_mode_clear_cover_art
             - script.stop: cover_art_delayed_playback_stopped
       - if:

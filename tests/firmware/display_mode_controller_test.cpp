@@ -151,8 +151,10 @@ int main() {
 
   CHECK(cover_art.request(DisplayRequestSource::IDLE_TIMER, DisplayMode::DIMMED));
   const uint32_t artwork_generation = cover_art.generation();
+  const auto cover_over_idle = cover_art.resolve();
   CHECK(decision_is(cover_art, DisplayMode::COVER_ART,
                     DisplayRequestSource::MEDIA_PLAYBACK));
+  CHECK(!cover_art.transition_required(cover_over_idle));
   CHECK(cover_art.request(DisplayRequestSource::SCREEN_SCHEDULE,
                           DisplayMode::DISPLAY_OFF));
   CHECK(!cover_art.generation_is_current(artwork_generation));

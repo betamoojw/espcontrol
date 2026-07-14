@@ -511,7 +511,21 @@ script:
             default:
               break;
           }
-          if ((!migrated_target || !controller.transition_required(transition)) &&
+          const bool transition_required = controller.transition_required(transition);
+          if (transition.target_mode == espcontrol::DisplayMode::COVER_ART &&
+              !transition_required && !compatibility_mismatch &&
+              id(cover_art_transition_generation) != transition.generation) {
+            // A lower-priority idle or presence request can change the global
+            // controller generation while media remains the winner. Adopt that
+            // generation so in-flight artwork remains current; actual cover-art
+            // dismissal or replacement still runs the guarded hide adapter.
+            const uint32_t previous_cover_generation = id(cover_art_transition_generation);
+            id(cover_art_transition_generation) = transition.generation;
+            if (id(cover_art_download_generation) == previous_cover_generation) {
+              id(cover_art_download_generation) = transition.generation;
+            }
+          }
+          if ((!migrated_target || !transition_required) &&
               !compatibility_mismatch) return;
           id(display_mode_apply_transition).execute(
               static_cast<int32_t>(transition.generation),
