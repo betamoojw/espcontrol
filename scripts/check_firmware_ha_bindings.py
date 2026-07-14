@@ -1531,6 +1531,11 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
             and "screen_schedule_night_active(" in text
             and "DisplayRequestSource::SCREEN_SCHEDULE" in text
         )
+        if controller_presence_wake and (
+            "id(cover_art_screensaver_active)" not in wake_body
+            or "script.execute: screensaver_wake" not in wake_body
+        ):
+            errors.append(f"{rel}: clear cover art when presence wakes the screensaver")
         wake_index = wake_body.find("script.execute: screensaver_wake")
         pre_wake_body = wake_body[:wake_index] if wake_index != -1 else wake_body
         required_tokens = (

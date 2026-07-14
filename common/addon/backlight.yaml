@@ -664,9 +664,26 @@ script:
             lambda: 'return id(screensaver_mode).state == "sensor";'
           then:
             - globals.set: { id: screensaver_sensor_sleep_pending, value: 'false' }
-            - script.execute: display_mode_clear_automatic
-            - script.execute: screensaver_idle_check
-            - script.execute: home_screen_idle_check
+            - if:
+                condition:
+                  lambda: |-
+                    if (!id(cover_art_screensaver_active)) return false;
+                    if (!id(schedule_enabled).state) return true;
+                    auto now = panel_time_or_fallback(id(panel_time).now(), id(homeassistant_time).now());
+                    return screen_schedule_normal_active(
+                        id(screen_schedule_trigger).state,
+                        id(schedule_enabled).state,
+                        id(presence_detected),
+                        now.is_valid(),
+                        now.is_valid() ? now.hour : 0,
+                        (int) id(schedule_on_hour).state,
+                        (int) id(schedule_off_hour).state);
+                then:
+                  - script.execute: screensaver_wake
+                else:
+                  - script.execute: display_mode_clear_automatic
+                  - script.execute: screensaver_idle_check
+                  - script.execute: home_screen_idle_check
 
   - id: screensaver_presence_sleep
     mode: restart
