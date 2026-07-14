@@ -90,7 +90,45 @@ function shadowCases() {
   });
   const sensorAliases = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/baseline_card_normalization_fixtures.json"), "utf8"))
     .filter((fixture) => fixture.expected.type === "sensor");
-  return vacuum.concat(sensor, sensorAliases);
+  const confirmation = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/confirmation_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "action");
+  const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/baseline_card_normalization_fixtures.json"), "utf8"))
+    .filter((fixture) => fixture.expected.type === "action");
+  const action = confirmation.concat(baseline, [
+    {
+      name: "legacy local action receives safe action defaults",
+      input: "local.tap;Tap;Flash;Swap;ignored;unit;local;2;unknown=1",
+      expected: config({ entity: "local.tap", label: "Tap", icon: "Gesture Tap", sensor: "local", type: "action" }),
+    },
+    {
+      name: "action icon state drops numeric-only state options",
+      input: "scene.movie;Movie;Flash;Auto;scene.turn_on;;action;;state_entity=sensor.mode,state_unit=W,state_precision=icon,large_numbers",
+      expected: config({ entity: "scene.movie", label: "Movie", icon: "Flash", sensor: "scene.turn_on", type: "action", options: "state_entity=sensor.mode,state_precision=icon" }),
+    },
+    {
+      name: "short action receives default icons",
+      input: "scene.movie;Movie;;;scene.turn_on;;action;;",
+      expected: config({ entity: "scene.movie", label: "Movie", icon: "Auto", sensor: "scene.turn_on", type: "action" }),
+    },
+  ]);
+  const media = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/media_card_normalization_fixtures.json"), "utf8")).concat([
+    {
+      name: "media control modal preserves non-default controls",
+      input: "media_player.office;Media Control;Auto;Auto;control_modal;;media;;label_display=label,number_display=volume,volume_max=40",
+      expected: config({ entity: "media_player.office", label: "Media Control", icon: "Auto", sensor: "control_modal", type: "media", options: "label_display=label,number_display=volume,volume_max=40" }),
+    },
+    {
+      name: "media control modal trims saved choices",
+      input: "media_player.office;Media Control;Auto;Auto;control_modal;;media;;label_display=%20label%20,number_display=%20volume%20",
+      expected: config({ entity: "media_player.office", label: "Media Control", icon: "Auto", sensor: "control_modal", type: "media", options: "label_display=label,number_display=volume" }),
+    },
+    {
+      name: "short media config receives default icons",
+      input: "media_player.x;;;;play_pause;;media",
+      expected: config({ entity: "media_player.x", label: "", icon: "Auto", sensor: "play_pause", type: "media" }),
+    },
+  ]);
+  return vacuum.concat(sensor, sensorAliases, action, media);
 }
 
 function compiler() {
@@ -169,7 +207,7 @@ function main() {
     .filter((name) => name.endsWith(".h") && name !== "button_grid_saved_config_shadow_generated.h")
     .filter((name) => fs.readFileSync(path.join(ROOT, "components/espcontrol", name), "utf8").includes("button_grid_saved_config_shadow_generated"));
   assert.deepStrictEqual(firmwareUsers, [], "shadow header must remain outside production firmware");
-  console.log(`Saved-config shadow agreement passed for ${cases.length} Vacuum and Sensor inputs across browser and compiled C++ helpers.`);
+  console.log(`Saved-config shadow agreement passed for ${cases.length} Vacuum, Sensor, Action, and Media inputs across browser and compiled C++ helpers.`);
   console.log("Production firmware footprint delta: 0 bytes flash / 0 bytes RAM (test-only shadow; 8 KiB guard passed).");
 }
 
