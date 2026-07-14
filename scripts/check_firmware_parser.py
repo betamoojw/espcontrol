@@ -34,6 +34,7 @@ SAVED_CONFIG_IMAGE_HEADER = ROOT / "components" / "espcontrol" / "button_grid_sa
 SAVED_CONFIG_CLIMATE_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_climate_generated.h"
 SAVED_CONFIG_LIGHT_CONTROL_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_light_control_generated.h"
 SAVED_CONFIG_WEBHOOK_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_webhook_generated.h"
+SAVED_CONFIG_SUBPAGE_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_subpage_generated.h"
 BACKLIGHT_HEADER = ROOT / "components" / "espcontrol" / "backlight.h"
 CLOCK_BAR_HEADER = ROOT / "components" / "espcontrol" / "clock_bar.h"
 LAYOUT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_layout.h"
@@ -712,6 +713,7 @@ def main() -> int:
         shutil.copy2(SAVED_CONFIG_CLIMATE_HEADER, tmp_path / "button_grid_saved_config_climate_generated.h")
         shutil.copy2(SAVED_CONFIG_LIGHT_CONTROL_HEADER, tmp_path / "button_grid_saved_config_light_control_generated.h")
         shutil.copy2(SAVED_CONFIG_WEBHOOK_HEADER, tmp_path / "button_grid_saved_config_webhook_generated.h")
+        shutil.copy2(SAVED_CONFIG_SUBPAGE_HEADER, tmp_path / "button_grid_saved_config_subpage_generated.h")
         shutil.copy2(CLOCK_BAR_HEADER, tmp_path / "clock_bar.h")
         shutil.copy2(BACKLIGHT_HEADER, tmp_path / "backlight.h")
         shutil.copy2(LAYOUT_HEADER, tmp_path / "button_grid_layout.h")

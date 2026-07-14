@@ -21,6 +21,7 @@ import { normalizeSavedConfigImage } from "../generated/saved_config_image";
 import { normalizeSavedConfigClimate } from "../generated/saved_config_climate";
 import { normalizeSavedConfigLightControl } from "../generated/saved_config_light_control";
 import { normalizeSavedConfigWebhook } from "../generated/saved_config_webhook";
+import { normalizeSavedConfigSubpage } from "../generated/saved_config_subpage";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -231,6 +232,12 @@ export function installConfigCodecModule(): GlobalDescriptors {
         var headers: any = configOptionValue(options || "", "webhook_headers");
         return headers ? setConfigOptionValue("", "webhook_headers", headers) : "";
     }
+    function normalizeSavedConfigSubpageFields(this: any, b?: any) {
+        applySubpagePresetConfig(b);
+    }
+    function normalizeSavedConfigSubpageOptions(this: any, options?: any, b?: any) {
+        return normalizeSubpageOptions(options || "", b && b.sensor, b && b.precision);
+    }
     function normalizeButtonConfig(this: any, b?: any) {
         if (b)
             b.options = b.options || "";
@@ -274,10 +281,8 @@ export function installConfigCodecModule(): GlobalDescriptors {
             normalizeSavedConfigImage(b, normalizeSavedConfigImageFields, normalizeSavedConfigImageOptions);
         if (b)
             normalizeSavedConfigLightControl(b, normalizeSavedConfigLightControlOptions);
-        if (b && b.type === "subpage") {
-            applySubpagePresetConfig(b);
-            b.options = normalizeSubpageOptions(b.options, b.sensor, b.precision);
-        }
+        if (b)
+            normalizeSavedConfigSubpage(b, normalizeSavedConfigSubpageFields, normalizeSavedConfigSubpageOptions);
         if (b)
             normalizeSavedConfigAction(b, normalizeSavedConfigActionFields, normalizeActionOptions);
         var normalizedSavedSensor: any = !!(b && normalizeSavedConfigSensor(b, wasLegacyTextSensor, normalizeSavedConfigSensorFields, normalizeSensorOptions));
