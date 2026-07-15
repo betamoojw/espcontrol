@@ -1,4 +1,5 @@
 #include "artwork_image.h"
+#include "image_pipeline_policy.h"
 
 #include <algorithm>
 #include <atomic>
@@ -137,6 +138,7 @@ struct P4PipelineJob {
   ArtworkImage *owner{nullptr};
   uint32_t generation{0};
   uint8_t priority{0};
+  uint64_t sequence{0};
   std::string url;
   std::vector<http_request::Header> headers;
   std::atomic<bool> cancelled{false};
@@ -188,6 +190,7 @@ class P4ImagePipeline {
 
     this->lock_();
     this->cancel_locked_(owner);
+    job->sequence = this->next_sequence_++;
     this->pending_.push_back(job);
     this->unlock_();
     xTaskNotifyGive(this->task_);
@@ -213,7 +216,8 @@ class P4ImagePipeline {
         continue;
       }
       it = this->completed_.erase(it);
-      if (candidate->generation == generation && match == nullptr) {
+      if (p4_pipeline_result_is_current(generation, candidate->generation, false) &&
+          match == nullptr) {
         match = candidate;
       } else {
         delete candidate;
@@ -270,7 +274,11 @@ class P4ImagePipeline {
         it = this->pending_.erase(it);
         continue;
       }
-      if (best == this->pending_.end() || (*it)->priority > (*best)->priority) best = it;
+      if (best == this->pending_.end() ||
+          p4_pipeline_candidate_precedes((*it)->priority, (*it)->sequence,
+                                         (*best)->priority, (*best)->sequence)) {
+        best = it;
+      }
       ++it;
     }
     if (best == this->pending_.end()) {
@@ -417,6 +425,7 @@ class P4ImagePipeline {
   std::vector<std::shared_ptr<P4PipelineJob>> pending_;
   std::shared_ptr<P4PipelineJob> active_;
   std::vector<P4PipelineResult *> completed_;
+  uint64_t next_sequence_{0};
   esp_http_client_handle_t client_{nullptr};
   std::vector<std::string> header_names_;
 };
