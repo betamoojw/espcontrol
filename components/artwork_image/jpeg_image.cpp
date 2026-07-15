@@ -208,10 +208,10 @@ int JpegDecoder::decode_hardware_(uint8_t *buffer, size_t size) {
     return 0;
   }
 
-  uint32_t mcu_width = info.sample_method == JPEG_DOWN_SAMPLING_YUV444 ? 8 : 16;
-  uint32_t mcu_height = info.sample_method == JPEG_DOWN_SAMPLING_YUV420 ? 16 : 8;
-  uint32_t padded_width = align_up(info.width, mcu_width);
-  uint32_t padded_height = align_up(info.height, mcu_height);
+  // The ESP32-P4 decoder reports an output surface aligned to 16 pixels in
+  // both dimensions, independently of the JPEG's chroma sampling mode.
+  uint32_t padded_width = align_up(info.width, 16);
+  uint32_t padded_height = align_up(info.height, 16);
   size_t requested_output_size = static_cast<size_t>(padded_width) * padded_height * 2;
 
   P4JpegWorkspace &workspace = p4_jpeg_workspace();

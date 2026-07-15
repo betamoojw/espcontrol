@@ -297,8 +297,7 @@ class P4ImagePipeline {
     if (!transfer || !transfer->job) return ESP_OK;
     if (transfer->job->cancelled.load()) return ESP_FAIL;
     uint32_t now = millis();
-    if ((evt->event_id == HTTP_EVENT_ON_CONNECTED || evt->event_id == HTTP_EVENT_ON_HEADER) &&
-        transfer->response_ready_ms == 0) {
+    if (evt->event_id == HTTP_EVENT_ON_HEADER && transfer->response_ready_ms == 0) {
       transfer->response_ready_ms = now;
     }
     if (evt->event_id != HTTP_EVENT_ON_DATA || evt->data_len <= 0) return ESP_OK;
