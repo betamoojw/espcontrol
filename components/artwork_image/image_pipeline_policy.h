@@ -31,5 +31,11 @@ constexpr bool image_pipeline_should_requeue_preempted_tile(bool context_active,
   return context_active && has_source_url;
 }
 
+// The P4 decoder emits packed RGB565 pixels. Other configured target formats
+// must stay on the software path, which performs the required conversion.
+constexpr bool p4_jpeg_hardware_target_supported(bool target_is_rgb565) {
+  return target_is_rgb565;
+}
+
 }  // namespace artwork_image
 }  // namespace esphome

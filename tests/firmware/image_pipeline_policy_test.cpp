@@ -5,6 +5,7 @@
 using esphome::artwork_image::p4_pipeline_candidate_precedes;
 using esphome::artwork_image::p4_pipeline_result_is_current;
 using esphome::artwork_image::image_pipeline_should_requeue_preempted_tile;
+using esphome::artwork_image::p4_jpeg_hardware_target_supported;
 
 int main() {
   // Modal work preempts queued tile work.
@@ -25,4 +26,9 @@ int main() {
   assert(image_pipeline_should_requeue_preempted_tile(true, true));
   assert(!image_pipeline_should_requeue_preempted_tile(false, true));
   assert(!image_pipeline_should_requeue_preempted_tile(true, false));
+
+  // Packed RGB565 output is safe only for RGB565 image targets. Every other
+  // configured type must fall back to the format-aware software decoder.
+  assert(p4_jpeg_hardware_target_supported(true));
+  assert(!p4_jpeg_hardware_target_supported(false));
 }

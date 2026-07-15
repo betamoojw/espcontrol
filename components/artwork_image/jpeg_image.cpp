@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include "artwork_image.h"
+#include "image_pipeline_policy.h"
 #if defined(USE_ESP_IDF) && defined(CONFIG_IDF_TARGET_ESP32P4)
 #include "driver/jpeg_decode.h"
 #include "driver/ppa.h"
@@ -199,6 +200,10 @@ int HOT JpegDecoder::decode(uint8_t *buffer, size_t size) {
 
 #if defined(USE_ESP_IDF) && defined(CONFIG_IDF_TARGET_ESP32P4)
 int JpegDecoder::decode_hardware_(uint8_t *buffer, size_t size) {
+  if (!p4_jpeg_hardware_target_supported(
+        this->image_->image_type() == image::ImageType::IMAGE_TYPE_RGB565)) {
+    return 0;
+  }
   jpeg_decoder_handle_t decoder = p4_jpeg_decoder();
   if (decoder == nullptr) return 0;
 
