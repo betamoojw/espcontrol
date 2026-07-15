@@ -9,6 +9,7 @@ using esphome::artwork_image::image_pipeline_should_requeue_interrupted_tile;
 using esphome::artwork_image::image_pipeline_modal_can_open;
 using esphome::artwork_image::image_pipeline_modal_cache_matches;
 using esphome::artwork_image::image_pipeline_can_start_followup_inline;
+using esphome::artwork_image::image_pipeline_cached_target_changed;
 using esphome::artwork_image::image_pipeline_should_cancel_modal_cleanup;
 using esphome::artwork_image::image_pipeline_should_preempt_stale_modal;
 using esphome::artwork_image::p4_cover_scale_plan;
@@ -71,6 +72,12 @@ int main() {
   // Loop-based targets retain their UI-friendly scheduling delay.
   assert(image_pipeline_can_start_followup_inline(true));
   assert(!image_pipeline_can_start_followup_inline(false));
+
+  // Reusing a ready tile at a different card size keeps the preview but must
+  // force a correctly sized refresh. Stable or not-yet-ready targets do not.
+  assert(image_pipeline_cached_target_changed(true, 320, 240, 480, 320));
+  assert(!image_pipeline_cached_target_changed(true, 320, 240, 320, 240));
+  assert(!image_pipeline_cached_target_changed(false, 320, 240, 480, 320));
 
   // PPA stores scale in sixteenth-step units. The old arbitrary ratio was
   // truncated (for example 0.672 to 0.625), leaving noisy right/bottom strips.

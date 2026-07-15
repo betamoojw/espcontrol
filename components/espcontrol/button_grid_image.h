@@ -2128,7 +2128,15 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
   ctx->width_compensation_percent = cfg.width_compensation_percent;
   ctx->media_artwork_width_compensation_percent = 100;
   image_card_log_diagnostics(ctx, "bind-card");
+  int cached_target_width = ctx->image->get_fixed_width();
+  int cached_target_height = ctx->image->get_fixed_height();
   image_card_apply_widget_geometry(ctx->btn, ctx->widget, ctx->image);
+  if (esphome::artwork_image::image_pipeline_cached_target_changed(
+        ctx->image_ready, cached_target_width, cached_target_height,
+        ctx->image->get_fixed_width(), ctx->image->get_fixed_height())) {
+    ctx->last_download_completed_ms = 0;
+    image_card_log_diagnostics(ctx, "cached-tile-resize-refresh");
+  }
   if (ctx->image_ready) {
     image_card_hide_loading(ctx);
     image_card_set_widget_source(ctx->widget, ctx->image);

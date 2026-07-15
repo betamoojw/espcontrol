@@ -79,6 +79,18 @@ constexpr bool image_pipeline_can_start_followup_inline(bool background_pipeline
   return background_pipeline;
 }
 
+// A cached tile remains a useful immediate preview after a grid rebuild, but a
+// different target size must bypass the recent-URL suppression and refresh in
+// the background.
+constexpr bool image_pipeline_cached_target_changed(bool image_ready,
+                                                    int previous_width,
+                                                    int previous_height,
+                                                    int current_width,
+                                                    int current_height) {
+  return image_ready && current_width > 0 && current_height > 0 &&
+         (previous_width != current_width || previous_height != current_height);
+}
+
 struct P4CoverScalePlan {
   bool valid{false};
   uint32_t crop_width{0};
