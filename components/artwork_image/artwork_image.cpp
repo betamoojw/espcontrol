@@ -1038,13 +1038,19 @@ bool ArtworkImage::consume_p4_pipeline_result_() {
   this->transfer_complete_ms_ = result->transfer_complete_ms;
   this->completed_transfer_bytes_ = result->size;
 
-  if (result->error != ESP_OK ||
-      (result->status != HTTP_CODE_OK && result->status != HTTP_CODE_NOT_MODIFIED)) {
+  bool status_ok = p4_pipeline_http_status_is_success(
+      result->status, this->last_error_was_ha_media_proxy_);
+  if (result->error != ESP_OK || !status_ok) {
     ESP_LOGE(TAG, "ESP32-P4 image pipeline request failed: error=%s status=%d bytes=%zu",
              esp_err_to_name(result->error), result->status, result->size);
     delete result;
     this->fail_download_();
     return true;
+  }
+  if (result->status <= 0 && this->last_error_was_ha_media_proxy_) {
+    ESP_LOGW(TAG, "Home Assistant media proxy returned an unknown HTTP status; trying artwork bytes anyway");
+    result->status = HTTP_CODE_OK;
+    this->last_http_status_ = HTTP_CODE_OK;
   }
   if (result->status == HTTP_CODE_NOT_MODIFIED) {
     delete result;

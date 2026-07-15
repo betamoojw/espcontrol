@@ -3,6 +3,7 @@
 #include "image_pipeline_policy.h"
 
 using esphome::artwork_image::p4_pipeline_candidate_precedes;
+using esphome::artwork_image::p4_pipeline_http_status_is_success;
 using esphome::artwork_image::p4_pipeline_result_is_current;
 using esphome::artwork_image::image_pipeline_should_requeue_interrupted_tile;
 using esphome::artwork_image::image_pipeline_modal_cache_matches;
@@ -23,6 +24,13 @@ int main() {
   assert(p4_pipeline_result_is_current(4, 4, false));
   assert(!p4_pipeline_result_is_current(4, 3, false));
   assert(!p4_pipeline_result_is_current(4, 4, true));
+
+  // Only Home Assistant's media proxy may return valid bytes with status 0.
+  assert(p4_pipeline_http_status_is_success(200, false));
+  assert(p4_pipeline_http_status_is_success(304, false));
+  assert(p4_pipeline_http_status_is_success(0, true));
+  assert(!p4_pipeline_http_status_is_success(0, false));
+  assert(!p4_pipeline_http_status_is_success(404, true));
 
   // Preemption must requeue both active tiles and the selected card when it was
   // waiting in the tile queue. Inactive, source-less, or idle work is discarded.

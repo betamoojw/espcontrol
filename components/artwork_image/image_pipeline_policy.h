@@ -23,6 +23,13 @@ constexpr bool p4_pipeline_result_is_current(uint32_t expected_generation,
   return !cancelled && expected_generation == result_generation;
 }
 
+// Home Assistant's local media proxy can provide valid image bytes while the
+// ESP-IDF client reports an unknown/zero status. Match the established local
+// downloader behaviour without weakening status checks for other URLs.
+constexpr bool p4_pipeline_http_status_is_success(int status, bool ha_media_proxy) {
+  return status == 200 || status == 304 || (status <= 0 && ha_media_proxy);
+}
+
 // Modal work may cancel an active or queued tile to become responsive. The
 // interrupted tile still needs another turn or its card can remain blank after
 // the modal closes.
