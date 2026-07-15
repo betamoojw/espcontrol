@@ -1039,6 +1039,8 @@ declare global {
   var showContextMenu: any;
   var showEmptySlotMenu: any;
   var showImageCardLimitBanner: any;
+  var showCopyCardCode: any;
+  var showPasteCardCode: any;
   var showSelectionMenu: any;
   var sizeClass: any;
   var sizeColSpan: any;
