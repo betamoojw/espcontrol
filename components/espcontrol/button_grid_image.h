@@ -934,11 +934,16 @@ inline bool image_card_modal_has_tile_fallback(ImageCardCtx *ctx) {
   return ctx && ctx->image && ctx->image_ready;
 }
 
-inline bool image_card_modal_has_preview(ImageCardCtx *ctx) {
+inline bool image_card_modal_cache_matches(ImageCardCtx *ctx) {
   if (!ctx) return false;
   ImageCardModalCache &cache = image_card_modal_cache();
-  return (cache.ready && cache.image == ctx->modal_image && cache.entity_id == ctx->entity_id) ||
-         image_card_modal_has_tile_fallback(ctx);
+  return esphome::artwork_image::image_pipeline_modal_cache_matches(
+      cache.ready, cache.image == ctx->modal_image,
+      cache.entity_id == ctx->entity_id, cache.source_url == ctx->source_url);
+}
+
+inline bool image_card_modal_has_preview(ImageCardCtx *ctx) {
+  return image_card_modal_cache_matches(ctx) || image_card_modal_has_tile_fallback(ctx);
 }
 
 inline void image_card_show_modal_image(ImageCardCtx *ctx,
@@ -1795,8 +1800,7 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
   lv_label_set_text(loading_label, espcontrol_i18n("Loading"));
 
   ImageCardModalCache &modal_cache = image_card_modal_cache();
-  if (modal_cache.ready && modal_cache.image == ctx->modal_image &&
-      modal_cache.entity_id == ctx->entity_id) {
+  if (image_card_modal_cache_matches(ctx)) {
     image_card_show_modal_image(ctx, modal_cache.image);
     image_card_log_diagnostics(ctx, "modal-cache-shown");
   } else if (ctx->image_ready) {

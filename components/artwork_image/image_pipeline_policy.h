@@ -32,6 +32,14 @@ constexpr bool image_pipeline_should_requeue_interrupted_tile(bool was_active_or
   return was_active_or_queued && context_active && has_source_url;
 }
 
+// A modal-quality image is reusable only while every part of its cache key
+// still matches. Camera and image entities can keep the same entity ID while
+// publishing a new source URL.
+constexpr bool image_pipeline_modal_cache_matches(bool ready, bool same_image,
+                                                   bool same_entity, bool same_source) {
+  return ready && same_image && same_entity && same_source;
+}
+
 // The P4 decoder emits packed RGB565 pixels. Other configured target formats
 // must stay on the software path, which performs the required conversion.
 constexpr bool p4_jpeg_hardware_target_supported(bool target_is_rgb565) {

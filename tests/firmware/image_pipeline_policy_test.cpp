@@ -5,6 +5,7 @@
 using esphome::artwork_image::p4_pipeline_candidate_precedes;
 using esphome::artwork_image::p4_pipeline_result_is_current;
 using esphome::artwork_image::image_pipeline_should_requeue_interrupted_tile;
+using esphome::artwork_image::image_pipeline_modal_cache_matches;
 using esphome::artwork_image::p4_jpeg_hardware_target_supported;
 
 int main() {
@@ -27,6 +28,11 @@ int main() {
   assert(!image_pipeline_should_requeue_interrupted_tile(false, true, true));
   assert(!image_pipeline_should_requeue_interrupted_tile(true, false, true));
   assert(!image_pipeline_should_requeue_interrupted_tile(true, true, false));
+
+  // A changed source URL invalidates an otherwise matching modal cache entry.
+  assert(image_pipeline_modal_cache_matches(true, true, true, true));
+  assert(!image_pipeline_modal_cache_matches(true, true, true, false));
+  assert(!image_pipeline_modal_cache_matches(false, true, true, true));
 
   // Packed RGB565 output is safe only for RGB565 image targets. Every other
   // configured type must fall back to the format-aware software decoder.
