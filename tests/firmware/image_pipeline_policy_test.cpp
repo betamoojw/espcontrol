@@ -8,6 +8,7 @@ using esphome::artwork_image::p4_pipeline_result_is_current;
 using esphome::artwork_image::image_pipeline_should_requeue_interrupted_tile;
 using esphome::artwork_image::image_pipeline_modal_can_open;
 using esphome::artwork_image::image_pipeline_modal_cache_matches;
+using esphome::artwork_image::image_pipeline_can_start_followup_inline;
 using esphome::artwork_image::image_pipeline_should_cancel_modal_cleanup;
 using esphome::artwork_image::image_pipeline_should_preempt_stale_modal;
 using esphome::artwork_image::p4_cover_scale_plan;
@@ -65,6 +66,11 @@ int main() {
   assert(!image_pipeline_should_preempt_stale_modal(true, false, true, true));
   assert(!image_pipeline_should_preempt_stale_modal(true, true, false, true));
   assert(!image_pipeline_should_preempt_stale_modal(true, true, true, false));
+
+  // The P4 background worker can accept the next tile or modal immediately.
+  // Loop-based targets retain their UI-friendly scheduling delay.
+  assert(image_pipeline_can_start_followup_inline(true));
+  assert(!image_pipeline_can_start_followup_inline(false));
 
   // PPA stores scale in sixteenth-step units. The old arbitrary ratio was
   // truncated (for example 0.672 to 0.625), leaving noisy right/bottom strips.

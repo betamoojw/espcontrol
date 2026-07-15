@@ -72,6 +72,13 @@ constexpr bool image_pipeline_should_preempt_stale_modal(bool switching_context,
          shares_modal_image;
 }
 
+// Starting the next request inline is safe only when download and decode work
+// run on the background pipeline. Loop-based targets retain their short delay
+// so rendering can progress between image requests.
+constexpr bool image_pipeline_can_start_followup_inline(bool background_pipeline) {
+  return background_pipeline;
+}
+
 struct P4CoverScalePlan {
   bool valid{false};
   uint32_t crop_width{0};

@@ -100,6 +100,15 @@ inline ImageCardCtx *image_card_contexts() {
 
 inline void image_card_schedule_source_refresh(ImageCardCtx *ctx, uint32_t delay_ms,
                                                const char *reason);
+inline void image_card_request_source_url(ImageCardCtx *ctx);
+
+inline constexpr bool image_card_uses_background_pipeline() {
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+  return true;
+#else
+  return false;
+#endif
+}
 
 inline ImageCardCtx *&image_card_active_download_context() {
   static ImageCardCtx *ctx = nullptr;
@@ -112,8 +121,13 @@ inline void image_card_start_next_queued_download(ImageCardCtx *finished_ctx) {
     ImageCardCtx *next = &contexts[i];
     if (!next->active || !next->download_queued || next == finished_ctx) continue;
     next->download_queued = false;
-    image_card_schedule_source_refresh(next, IMAGE_CARD_API_RETRY_INTERVAL_MS,
-                                       "image download queue");
+    if (esphome::artwork_image::image_pipeline_can_start_followup_inline(
+          image_card_uses_background_pipeline())) {
+      image_card_request_source_url(next);
+    } else {
+      image_card_schedule_source_refresh(next, IMAGE_CARD_API_RETRY_INTERVAL_MS,
+                                         "image download queue");
+    }
     return;
   }
 }
@@ -1647,6 +1661,13 @@ inline bool image_card_queue_modal_source_request(ImageCardCtx *ctx) {
   ImageCardModalUi &ui = image_card_modal_ui();
   if (!image_card_modal_has_preview(ctx)) image_card_show_modal_loading(ctx, "Loading");
   image_card_cancel_modal_request_timer();
+  if (esphome::artwork_image::image_pipeline_can_start_followup_inline(
+        image_card_uses_background_pipeline())) {
+    image_card_log_diagnostics(ctx, "modal-request-immediate");
+    bool requested = image_card_request_modal_source_url(ctx);
+    if (!requested) image_card_show_modal_download_failure(ctx);
+    return requested;
+  }
   ui.request_timer = lv_timer_create(
     image_card_modal_request_timer_cb, IMAGE_CARD_MODAL_REQUEST_DELAY_MS, ctx);
   if (!ui.request_timer) {
