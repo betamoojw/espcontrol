@@ -221,5 +221,16 @@ void DownloadBuffer::shrink_to(size_t size) {
   this->size_ = size;
 }
 
+bool DownloadBuffer::adopt(uint8_t *buffer, size_t size) {
+  if (!buffer || size == 0) return false;
+  if (buffer != this->buffer_) {
+    this->allocator_.deallocate(this->buffer_, this->size_);
+    this->buffer_ = buffer;
+  }
+  this->size_ = size;
+  this->unread_ = size;
+  return true;
+}
+
 }  // namespace artwork_image
 }  // namespace esphome

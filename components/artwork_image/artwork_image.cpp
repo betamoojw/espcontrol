@@ -157,6 +157,12 @@ struct P4PipelineResult {
   uint32_t transfer_complete_ms{0};
 
   ~P4PipelineResult() { heap_caps_free(this->data); }
+
+  uint8_t *release_data() {
+    uint8_t *data = this->data;
+    this->data = nullptr;
+    return data;
+  }
 };
 
 struct P4PipelineTransfer {
@@ -1100,16 +1106,24 @@ bool ArtworkImage::consume_p4_pipeline_result_() {
     this->start_pending_update_();
     return true;
   }
-  if (result->size < 12 || result->size > this->max_download_buffer_size_ ||
-      this->download_buffer_.resize(result->size) < result->size) {
+  if (result->size < 12 || result->size > this->max_download_buffer_size_) {
     ESP_LOGE(TAG, "ESP32-P4 image pipeline returned an invalid image size: %zu", result->size);
     delete result;
     this->fail_download_();
     return true;
   }
 
-  memcpy(this->download_buffer_.data(), result->data, result->size);
-  this->download_buffer_.write(result->size);
+  size_t result_size = result->size;
+  uint8_t *result_data = result->release_data();
+  if (!this->download_buffer_.adopt(result_data, result_size)) {
+    heap_caps_free(result_data);
+    ESP_LOGE(TAG, "ESP32-P4 image pipeline returned an invalid transfer buffer");
+    delete result;
+    this->fail_download_();
+    return true;
+  }
+  this->peak_download_buffer_size_ =
+      std::max(this->peak_download_buffer_size_, result_size);
   delete result;
 
   ImageFormat resolved = this->detect_format_();

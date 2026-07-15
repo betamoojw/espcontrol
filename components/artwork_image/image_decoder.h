@@ -133,6 +133,9 @@ class DownloadBuffer {
   size_t resize(size_t size);
   void shrink_to(size_t size);
 
+  /** Replace the current allocation and take ownership of a complete transfer. */
+  bool adopt(uint8_t *buffer, size_t size);
+
  protected:
   RAMAllocator<uint8_t> allocator_{};
   uint8_t *buffer_;
