@@ -91,6 +91,21 @@ if "std::make_shared<P4PipelineJob>" in downloader:
     raise SystemExit("P4 artwork jobs must fail cleanly instead of throwing during allocation")
 if "std::vector<P4PipelineResult *> completed_" in downloader:
     raise SystemExit("P4 artwork result publication must not allocate while holding the pipeline lock")
+if "header_names_" in downloader:
+    raise SystemExit("P4 artwork requests must remove moved headers without retaining allocating copies")
+for forbidden in (
+    "job->url = url",
+    "job->headers = headers",
+):
+    if forbidden in downloader:
+        raise SystemExit(f"P4 artwork job metadata must use checked or moved storage: {forbidden}")
+for required in (
+    "job->url = static_cast<char *>(heap_caps_malloc(",
+    "job->headers = std::move(headers)",
+    "if (job->cancelled.load()) {\n      delete result;\n      this->reset_client_();",
+):
+    if required not in downloader:
+        raise SystemExit(f"P4 artwork job safety contract missing: {required}")
 
 jpeg_decoder = (ROOT / "components" / "artwork_image" / "jpeg_image.cpp").read_text(encoding="utf-8")
 for required in (

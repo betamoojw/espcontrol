@@ -199,7 +199,7 @@ class ArtworkImage : public PollingComponent,
   void invalidate_lvgl_cache_();
   bool ensure_download_buffer_capacity_();
   bool decode_buffered_data_();
-  bool start_p4_pipeline_(const std::vector<http_request::Header> &headers);
+  bool start_p4_pipeline_(std::vector<http_request::Header> &headers);
   bool consume_p4_pipeline_result_();
   void cancel_p4_pipeline_();
   void note_response_bytes_();

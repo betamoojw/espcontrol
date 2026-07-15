@@ -139,9 +139,11 @@ struct P4PipelineJob {
   uint32_t generation{0};
   uint8_t priority{0};
   uint64_t sequence{0};
-  std::string url;
+  char *url{nullptr};
   std::vector<http_request::Header> headers;
   std::atomic<bool> cancelled{false};
+
+  ~P4PipelineJob() { heap_caps_free(this->url); }
 };
 
 struct P4PipelineResult {
@@ -193,15 +195,20 @@ class P4ImagePipeline {
   }
 
   bool submit(ArtworkImage *owner, uint32_t generation, uint8_t priority,
-              const std::string &url, const std::vector<http_request::Header> &headers) {
+              const std::string &url, std::vector<http_request::Header> &headers) {
     if (!this->ready_ || !owner || url.empty()) return false;
     auto *job = new (std::nothrow) P4PipelineJob();
     if (!job) return false;
+    job->url = static_cast<char *>(heap_caps_malloc(
+        url.size() + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!job->url) {
+      delete job;
+      return false;
+    }
+    memcpy(job->url, url.c_str(), url.size() + 1);
     job->owner = owner;
     job->generation = generation;
     job->priority = priority;
-    job->url = url;
-    job->headers = headers;
 
     this->lock_();
     this->cancel_locked_(owner);
@@ -211,6 +218,7 @@ class P4ImagePipeline {
       return false;
     }
     job->sequence = this->next_sequence_++;
+    job->headers = std::move(headers);
     this->pending_[this->pending_count_++] = job;
     this->unlock_();
     xTaskNotifyGive(this->task_);
@@ -410,7 +418,7 @@ class P4ImagePipeline {
 
     if (!this->client_) {
       esp_http_client_config_t config{};
-      config.url = job->url.c_str();
+      config.url = job->url;
       config.method = HTTP_METHOD_GET;
       config.timeout_ms = LOCAL_ARTWORK_HTTP_TIMEOUT_MS;
       config.disable_auto_redirect = false;
@@ -422,7 +430,7 @@ class P4ImagePipeline {
       config.buffer_size = 8192;
       this->client_ = esp_http_client_init(&config);
     } else {
-      esp_http_client_set_url(this->client_, job->url.c_str());
+      esp_http_client_set_url(this->client_, job->url);
       esp_http_client_set_user_data(this->client_, &transfer);
       esp_http_client_set_method(this->client_, HTTP_METHOD_GET);
     }
@@ -435,13 +443,14 @@ class P4ImagePipeline {
       return result;
     }
 
-    for (const auto &name : this->header_names_) {
-      esp_http_client_delete_header(this->client_, name.c_str());
-    }
-    this->header_names_.clear();
     for (const auto &header : job->headers) {
       esp_http_client_set_header(this->client_, header.name.c_str(), header.value.c_str());
-      this->header_names_.push_back(header.name);
+    }
+
+    if (job->cancelled.load()) {
+      delete result;
+      this->reset_client_();
+      return nullptr;
     }
 
     esp_err_t error = esp_http_client_perform(this->client_);
@@ -451,6 +460,9 @@ class P4ImagePipeline {
       delete result;
       this->reset_client_();
       return nullptr;
+    }
+    for (const auto &header : job->headers) {
+      esp_http_client_delete_header(this->client_, header.name.c_str());
     }
 
     result->status = esp_http_client_get_status_code(this->client_);
@@ -502,7 +514,6 @@ class P4ImagePipeline {
     if (!this->client_) return;
     esp_http_client_cleanup(this->client_);
     this->client_ = nullptr;
-    this->header_names_.clear();
   }
 
   void lock_() { xSemaphoreTake(this->mutex_, portMAX_DELAY); }
@@ -519,7 +530,6 @@ class P4ImagePipeline {
   P4PipelineAllocationFailure allocation_failures_[P4_PIPELINE_ALLOCATION_FAILURE_SLOTS]{};
   uint64_t next_sequence_{0};
   esp_http_client_handle_t client_{nullptr};
-  std::vector<std::string> header_names_;
 };
 #endif
 
@@ -1098,7 +1108,7 @@ void ArtworkImage::loop() {
   }
 }
 
-bool ArtworkImage::start_p4_pipeline_(const std::vector<http_request::Header> &headers) {
+bool ArtworkImage::start_p4_pipeline_(std::vector<http_request::Header> &headers) {
 #if defined(USE_ESP_IDF) && defined(CONFIG_IDF_TARGET_ESP32P4)
   this->download_buffer_.reset();
   this->p4_pipeline_generation_++;
