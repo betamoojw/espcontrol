@@ -1706,7 +1706,9 @@ def firmware_image_card_startup_errors(
         or "if (ctx->media_artwork)" not in text
         or "image_card_request_media_artwork(ctx);" not in text
         or "image_card_refresh_current_picture(ctx);" not in text
-        or "if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;" not in text
+        or "ctx->media_artwork_retry_mask = 0;" not in text
+        or "ctx->media_artwork_sources.clear();" not in text
+        or "artwork_picture_response_clears_retry" not in text
         or "inline void image_card_refresh_due()" not in text
         or text.count("image_card_request_current_picture(ctx);") < 2
         or "media_artwork_retry_mask" not in text
@@ -5255,8 +5257,16 @@ def run_self_test() -> int:
         "  }\n"
         "}\n"
         "inline void image_card_refresh_current_picture(ImageCardCtx *ctx) {\n"
-        "  if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;\n"
+        "  if (ctx->media_artwork) {\n"
+        "    ctx->media_artwork_retry_mask = 0;\n"
+        "    ctx->media_artwork_sources.clear();\n"
+        "  }\n"
         "  image_card_request_current_picture(ctx);\n"
+        "}\n"
+        "inline void image_card_handle_picture(ImageCardCtx *ctx) {\n"
+        "  if (artwork_picture_response_clears_retry(ctx->media_artwork, ctx->media_artwork_retry_mask)) {\n"
+        "    ctx->next_picture_retry_ms = 0;\n"
+        "  }\n"
         "}\n"
         "inline bool image_card_context_current(ImageCardCtx *ctx,\n"
         "                                       const std::string &entity_id,\n"

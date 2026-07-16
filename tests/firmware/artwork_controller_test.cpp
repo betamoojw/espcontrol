@@ -11,6 +11,7 @@ using espcontrol::artwork::ARTWORK_SOURCE_REMOTE;
 using espcontrol::artwork::artwork_source_failed_mask;
 using espcontrol::artwork::artwork_source_mark_received;
 using espcontrol::artwork::artwork_source_request_mask;
+using espcontrol::artwork::artwork_picture_response_clears_retry;
 using espcontrol::artwork::source_response_can_apply_immediately;
 using espcontrol::cover_art::RuntimeState;
 
@@ -67,6 +68,9 @@ int main() {
          ARTWORK_SOURCE_LOCAL);
   assert(artwork_source_mark_received(ARTWORK_SOURCE_BOTH, true) ==
          ARTWORK_SOURCE_REMOTE);
+  assert(artwork_picture_response_clears_retry(false, ARTWORK_SOURCE_LOCAL));
+  assert(artwork_picture_response_clears_retry(true, 0));
+  assert(!artwork_picture_response_clears_retry(true, ARTWORK_SOURCE_LOCAL));
 
   // When a stable local proxy URL still points at the previous track, a fresh
   // remote URL wins for the refresh and the local URL remains the fallback.

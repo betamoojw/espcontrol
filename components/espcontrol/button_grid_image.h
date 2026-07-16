@@ -1373,7 +1373,15 @@ inline void image_card_request_current_picture(ImageCardCtx *ctx) {
 // the source that previously failed to queue.
 inline void image_card_refresh_current_picture(ImageCardCtx *ctx) {
   if (!ctx) return;
-  if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;
+  if (ctx->media_artwork) {
+    ctx->media_artwork_retry_mask = 0;
+    ctx->media_artwork_sources.clear();
+    ctx->pending_fallback_picture.clear();
+    if (ctx->media_artwork_timer) {
+      lv_timer_del(ctx->media_artwork_timer);
+      ctx->media_artwork_timer = nullptr;
+    }
+  }
   image_card_request_current_picture(ctx);
 }
 
@@ -1956,7 +1964,10 @@ inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef pict
     }
     return;
   }
-  ctx->next_picture_retry_ms = 0;
+  if (espcontrol::artwork::artwork_picture_response_clears_retry(
+        ctx->media_artwork, ctx->media_artwork_retry_mask)) {
+    ctx->next_picture_retry_ms = 0;
+  }
   uint32_t now = esphome::millis();
   if (ctx->image_ready && ctx->source_url == url && ctx->last_download_completed_ms != 0 &&
       (uint32_t)(now - ctx->last_download_completed_ms) < IMAGE_CARD_MIN_REPEAT_REFRESH_MS) {

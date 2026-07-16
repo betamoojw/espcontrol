@@ -50,6 +50,13 @@ constexpr uint8_t artwork_source_mark_received(uint8_t retry_mask, bool local) {
   return retry_mask & static_cast<uint8_t>(~artwork_source_mask(local));
 }
 
+// A successful response must not cancel a retry that is still needed for the
+// other media-artwork source.
+constexpr bool artwork_picture_response_clears_retry(bool media_artwork,
+                                                     uint8_t retry_mask) {
+  return !media_artwork || retry_mask == 0;
+}
+
 // A usable local proxy response is already the preferred source, so there is
 // no benefit in waiting for the remote fallback response before applying it.
 constexpr bool source_response_can_apply_immediately(bool local_response,
