@@ -1683,9 +1683,9 @@ def firmware_image_card_startup_errors(
         or "if (ctx->media_artwork)" not in text
         or "image_card_request_media_artwork(ctx);" not in text
         or text.count("image_card_request_current_picture(ctx);") < 2
-        or "bool requested_remote = ha_get_attribute(" not in text
-        or "bool requested_local = ha_get_attribute(" not in text
-        or "if (!requested_remote || !requested_local)" not in text
+        or "media_artwork_retry_mask" not in text
+        or "artwork_source_request_mask" not in text
+        or "artwork_source_failed_mask" not in text
     ):
         errors.append(f"{rel}: retry media cover artwork when Home Assistant reconnects")
     if "IMAGE_CARD_API_RETRY_INTERVAL_MS" not in text:
@@ -5215,9 +5215,11 @@ def run_self_test() -> int:
         "  ha_get_attribute(ctx->entity_id, std::string(\"entity_picture\"), callback);\n"
         "}\n"
         "inline void image_card_request_media_artwork(ImageCardCtx *ctx) {\n"
-        "  bool requested_remote = ha_get_attribute(ctx->entity_id, std::string(\"entity_picture\"), callback);\n"
-        "  bool requested_local = ha_get_attribute(ctx->entity_id, std::string(\"entity_picture_local\"), callback);\n"
-        "  if (!requested_remote || !requested_local) image_card_schedule_picture_retry(ctx, 250);\n"
+        "  uint8_t request_mask = artwork_source_request_mask(ctx->media_artwork_retry_mask);\n"
+        "  bool remote_queued = ha_get_attribute(ctx->entity_id, std::string(\"entity_picture\"), callback);\n"
+        "  bool local_queued = ha_get_attribute(ctx->entity_id, std::string(\"entity_picture_local\"), callback);\n"
+        "  ctx->media_artwork_retry_mask = artwork_source_failed_mask(request_mask, remote_queued, local_queued);\n"
+        "  if (ctx->media_artwork_retry_mask != 0) image_card_schedule_picture_retry(ctx, 250);\n"
         "}\n"
         "inline void image_card_request_current_picture(ImageCardCtx *ctx) {\n"
         "  if (ctx->media_artwork) {\n"
