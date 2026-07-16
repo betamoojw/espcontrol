@@ -1223,7 +1223,8 @@ inline void media_playback_subscribe_state(MediaPlaybackState *state) {
 inline void media_playback_reset_cover_art_progress_subscriptions() {
   for (MediaPlaybackState *state : media_playback_states()) {
     if (!state || !state->used || !state->progress_subscribed ||
-        state->progress_subscription_scope != HA_SUBSCRIPTION_SCOPE_COVER_ART) {
+        (state->progress_subscription_scope &
+         HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS) == 0) {
       continue;
     }
     state->progress_subscribed = false;
@@ -1250,7 +1251,10 @@ inline MediaPlaybackState *media_playback_prepare_cover_art_progress(
   MediaPlaybackState *state = media_playback_ensure_state(entity_id);
   if (!state) return nullptr;
   media_playback_set_playing_hint(state, playing);
-  media_playback_subscribe_progress(state, HA_SUBSCRIPTION_SCOPE_COVER_ART);
+  media_playback_subscribe_progress(
+      state,
+      HA_SUBSCRIPTION_SCOPE_COVER_ART |
+          HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS);
   return state;
 }
 

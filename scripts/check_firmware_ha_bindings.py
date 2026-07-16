@@ -1339,6 +1339,7 @@ def firmware_cover_art_low_heap_progress_errors(
     firmware_dir: Path, cover_art_path: Path, root: Path
 ) -> list[str]:
     media_path = firmware_dir / "button_grid_media.h"
+    ha_path = firmware_dir / "button_grid_ha.h"
     errors: list[str] = []
 
     if media_path.exists():
@@ -1371,7 +1372,9 @@ def firmware_cover_art_low_heap_progress_errors(
             for token in (
                 "media_playback_ensure_state(entity_id)",
                 "media_playback_set_playing_hint(state, playing)",
-                "media_playback_subscribe_progress(state, HA_SUBSCRIPTION_SCOPE_COVER_ART)",
+                "media_playback_subscribe_progress(",
+                "HA_SUBSCRIPTION_SCOPE_COVER_ART",
+                "HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS",
             )
         ) or "media_playback_subscribe_playback_state" in prepare_body:
             errors.append(f"{rel}: prepare S3 progress idempotently without another playback-state subscription")
@@ -1473,7 +1476,7 @@ def firmware_cover_art_low_heap_progress_errors(
         if any(
             token not in cover_cleanup_body
             for token in (
-                "HA_SUBSCRIPTION_SCOPE_COVER_ART",
+                "HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS",
                 "state->progress_subscribed = false",
                 "state->progress_subscription_scope = 0",
                 "state->has_position = false",
@@ -1483,6 +1486,22 @@ def firmware_cover_art_low_heap_progress_errors(
             errors.append(f"{rel}: release cover-art-owned progress and preserve active card consumers")
     else:
         errors.append(f"{media_path.relative_to(root)}: missing media card helpers")
+
+    if ha_path.exists():
+        ha_rel = ha_path.relative_to(root)
+        ha_text = ha_path.read_text(encoding="utf-8")
+        bump_match = re.search(
+            r"inline\s+void\s+bump_ha_subscription_generation\s*\([^)]*\)\s*\{"
+            r"(?P<body>.*?)\n\}",
+            ha_text,
+            re.DOTALL,
+        )
+        bump_body = bump_match.group("body") if bump_match else ""
+        if (
+            "HA_SUBSCRIPTION_SCOPE_DEFAULT" not in bump_body
+            or "HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS" not in bump_body
+        ):
+            errors.append(f"{ha_rel}: release cover-art progress subscriptions on generation bumps")
 
     if not cover_art_path.exists():
         return errors
@@ -4992,7 +5011,7 @@ def run_self_test() -> int:
         "  media_playback_apply_progress_consumers(state);\n"
         "}\n"
         "inline void media_playback_reset_cover_art_progress_subscriptions() {\n"
-        "  if (state->progress_subscription_scope != HA_SUBSCRIPTION_SCOPE_COVER_ART) return;\n"
+        "  if ((state->progress_subscription_scope & HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS) == 0) return;\n"
         "  state->progress_subscribed = false;\n"
         "  state->progress_subscription_scope = 0;\n"
         "  state->has_position = false;\n"
@@ -5001,7 +5020,8 @@ def run_self_test() -> int:
         "inline MediaPlaybackState *media_playback_prepare_cover_art_progress(const std::string &entity_id, bool playing) {\n"
         "  MediaPlaybackState *state = media_playback_ensure_state(entity_id);\n"
         "  media_playback_set_playing_hint(state, playing);\n"
-        "  media_playback_subscribe_progress(state, HA_SUBSCRIPTION_SCOPE_COVER_ART);\n"
+        "  media_playback_subscribe_progress(\n"
+        "    state, HA_SUBSCRIPTION_SCOPE_COVER_ART | HA_SUBSCRIPTION_SCOPE_COVER_ART_PROGRESS);\n"
         "  return state;\n"
         "}\n"
         "inline void subscribe_media_slider_state(lv_obj_t *btn_ptr, lv_obj_t *slider, const std::string &entity_id) {\n"
