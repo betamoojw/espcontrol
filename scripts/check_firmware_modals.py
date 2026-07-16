@@ -326,6 +326,9 @@ def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
     light_driver_path = (
         root / "components" / "espcontrol" / "button_grid_light_control_driver.h"
     )
+    fan_driver_path = (
+        root / "components" / "espcontrol" / "button_grid_fan_control_driver.h"
+    )
     subpages_path = root / "components" / "espcontrol" / "button_grid_subpages.h"
     errors: list[str] = []
 
@@ -386,19 +389,17 @@ def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
     ):
         errors.append("components/espcontrol/button_grid_grid.h: open light control modals from subpage cards")
 
-    fan_block = re.search(
-        r'if\s*\(\s*sb_cfg\.type\s*==\s*"fan_control"\s*\)\s*\{(?P<body>.*?)\n      \}',
-        text,
-        re.S,
-    )
-    if fan_block is None:
+    if (
+        "fan_control_driver_bind_subpage(" not in text
+        or not fan_driver_path.exists()
+    ):
         errors.append("components/espcontrol/button_grid_grid.h: keep fan control modal cards available in subpages")
     else:
-        body = fan_block.group("body")
+        body = fan_driver_path.read_text(encoding="utf-8")
         if (
             "create_fan_card_context" not in body
-            or "subscribe_fan_card_state(ctx);" not in body
-            or "fan_control_open_modal(ctx);" not in body
+            or "subscribe_fan_card_state(" not in body
+            or "fan_control_open_modal(" not in body
             or "LV_EVENT_CLICKED" not in body
         ):
             errors.append("components/espcontrol/button_grid_grid.h: open fan control modals from subpage cards")
@@ -879,6 +880,7 @@ def expect_subpage_modal_wiring_errors(
     grid_text: str,
     expected: tuple[str, ...],
     light_driver_text: str | None = None,
+    fan_driver_text: str | None = None,
 ) -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -887,6 +889,7 @@ def expect_subpage_modal_wiring_errors(
         path.write_text(
             grid_text +
             "light_control_driver_bind_subpage(sub_slot, sb_cfg, context, environment);\n" +
+            "fan_control_driver_bind_subpage(sub_slot, sb_cfg, context, environment);\n" +
             '  if (mode == "control_modal") {\n'
             "    MediaControlCtx *ctx = grid_media_control_runtime_for_owner(s.btn);\n"
             "    setup_media_control_button(\n"
@@ -901,19 +904,7 @@ def expect_subpage_modal_wiring_errors(
             "            s, p, DEFAULT_SLIDER_COLOR, DEFAULT_OFF_COLOR, DEFAULT_TERTIARY_COLOR,\n"
             "            nullptr, nullptr, nullptr, nullptr, 100));\n"
             "          subscribe_media_control_state(ctx);\n"
-            '        } else if (mode == "volume") {\n'
-            '      if (sb_cfg.type == "fan_control") {\n'
-            "        if (!sb_cfg.entity.empty()) {\n"
-            "          FanCardCtx *ctx = create_fan_card_context(\n"
-            "            sub_slot, sb_cfg, DEFAULT_SLIDER_COLOR, DEFAULT_OFF_COLOR, DEFAULT_TERTIARY_COLOR, nullptr, nullptr, 100);\n"
-            "          subscribe_fan_card_state(ctx);\n"
-            "          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {\n"
-            "            FanCardCtx *ctx = (FanCardCtx *)lv_event_get_user_data(e);\n"
-            "            if (ctx) fan_control_open_modal(ctx);\n"
-            "          }, LV_EVENT_CLICKED, ctx);\n"
-            "        }\n"
-            "        continue;\n"
-            "      }\n",
+            '        } else if (mode == "volume") {\n',
             encoding="utf-8",
         )
         light_driver = (
@@ -929,6 +920,20 @@ def expect_subpage_modal_wiring_errors(
         )
         (path.parent / "button_grid_light_control_driver.h").write_text(
             light_driver, encoding="utf-8"
+        )
+        fan_driver = (
+            fan_driver_text
+            if fan_driver_text is not None
+            else (
+                "FanCardCtx *ctx = create_fan_card_context();\n"
+                "subscribe_fan_card_state(ctx);\n"
+                "lv_obj_add_event_cb(slot.btn, [](lv_event_t *event) {\n"
+                "  if (ctx) fan_control_open_modal(ctx);\n"
+                "}, LV_EVENT_CLICKED, ctx);\n"
+            )
+        )
+        (path.parent / "button_grid_fan_control_driver.h").write_text(
+            fan_driver, encoding="utf-8"
         )
         (path.parent / "button_grid_subpages.h").write_text(
             'if (b.type == "light_control") {\n'
@@ -1284,6 +1289,16 @@ def run_self_test() -> int:
         "subpage light modal click handler",
         "",
         (),
+    )
+    expect_subpage_modal_wiring_errors(
+        "subpage fan modal missing click handler",
+        "",
+        ("open fan control modals from subpage cards",),
+        None,
+        (
+            "FanCardCtx *ctx = create_fan_card_context();\n"
+            "subscribe_fan_card_state(ctx);\n"
+        ),
     )
     expect_climate_step_errors(
         "climate modal allows 0.1C steps",
