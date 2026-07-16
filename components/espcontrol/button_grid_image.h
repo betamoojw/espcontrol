@@ -1368,6 +1368,15 @@ inline void image_card_request_current_picture(ImageCardCtx *ctx) {
   }
 }
 
+// Explicit refreshes (for example after Home Assistant reconnects) must read
+// both artwork attributes. Timed retries keep the mask so they only resubmit
+// the source that previously failed to queue.
+inline void image_card_refresh_current_picture(ImageCardCtx *ctx) {
+  if (!ctx) return;
+  if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;
+  image_card_request_current_picture(ctx);
+}
+
 inline void image_card_schedule_picture_retry(ImageCardCtx *ctx, uint32_t delay_ms) {
   if (!ctx || !ctx->active) return;
   ctx->next_picture_retry_ms = esphome::millis() + delay_ms;
@@ -2079,7 +2088,7 @@ inline void refresh_image_cards() {
       image_card_set_loading_state(ctx, "Loading", true);
     }
     ctx->next_picture_retry_ms = 0;
-    image_card_request_current_picture(ctx);
+    image_card_refresh_current_picture(ctx);
   }
 }
 

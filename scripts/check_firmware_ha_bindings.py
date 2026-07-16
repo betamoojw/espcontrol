@@ -1705,6 +1705,9 @@ def firmware_image_card_startup_errors(
         "image_card_request_current_picture" not in text
         or "if (ctx->media_artwork)" not in text
         or "image_card_request_media_artwork(ctx);" not in text
+        or "image_card_refresh_current_picture(ctx);" not in text
+        or "if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;" not in text
+        or "inline void image_card_refresh_due()" not in text
         or text.count("image_card_request_current_picture(ctx);") < 2
         or "media_artwork_retry_mask" not in text
         or "artwork_source_request_mask" not in text
@@ -5251,6 +5254,10 @@ def run_self_test() -> int:
         "    image_card_request_picture(ctx);\n"
         "  }\n"
         "}\n"
+        "inline void image_card_refresh_current_picture(ImageCardCtx *ctx) {\n"
+        "  if (ctx->media_artwork) ctx->media_artwork_retry_mask = 0;\n"
+        "  image_card_request_current_picture(ctx);\n"
+        "}\n"
         "inline bool image_card_context_current(ImageCardCtx *ctx,\n"
         "                                       const std::string &entity_id,\n"
         "                                       uint32_t generation) {\n"
@@ -5277,7 +5284,7 @@ def run_self_test() -> int:
         "}\n"
         "inline void refresh_image_cards() {\n"
         "  if (!ha_api_connected()) return;\n"
-        "  image_card_request_current_picture(ctx);\n"
+        "  image_card_refresh_current_picture(ctx);\n"
         "}\n"
         "inline void image_card_refresh_due() {\n"
         "  image_card_request_current_picture(ctx);\n"
