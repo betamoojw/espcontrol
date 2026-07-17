@@ -168,6 +168,27 @@ def check_root(root: Path) -> list[str]:
                 failures.append(
                     f"components/espcontrol/{GRID_HEADER}: restore persistent button clickability before visual driver dispatch"
                 )
+            unsupported_clear = "clear_unsupported_card_slot_visuals(s);"
+            unsupported_clear_index = visual_setup.find(unsupported_clear)
+            unsupported_warning_index = visual_setup.find(
+                'ESP_LOGW("card_runtime", "Unsupported card type has no visual driver:'
+            )
+            if (
+                unsupported_clear_index < 0
+                or unsupported_warning_index < 0
+                or unsupported_clear_index > unsupported_warning_index
+            ):
+                failures.append(
+                    f"components/espcontrol/{GRID_HEADER}: clear stale slot visuals before leaving unsupported cards inert"
+                )
+        unsupported_clear_body = function_body(text, "clear_unsupported_card_slot_visuals")
+        if unsupported_clear_body is None or any(
+            f"lv_label_set_text(s.{label}, \"\");" not in unsupported_clear_body
+            for label in ("icon_lbl", "text_lbl", "sensor_lbl", "unit_lbl")
+        ):
+            failures.append(
+                f"components/espcontrol/{GRID_HEADER}: clear every persistent label for unsupported cards"
+            )
         if (
             "card_runtime_context(p)" not in text
             or "card_runtime_information_only(context)" not in text
@@ -957,6 +978,19 @@ def run_self_test() -> None:
                 )
             },
             ("restore persistent button clickability before visual driver dispatch",),
+        ),
+        (
+            {
+                "button_grid_grid.h": (
+                    "inline void clear_unsupported_card_slot_visuals() {}\n"
+                    "inline void setup_card_visual() {\n"
+                    "  lv_obj_add_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);\n"
+                    "  if (espcontrol::cards::image_driver_setup_visual()) return;\n"
+                    "  ESP_LOGW(\"card_runtime\", \"Unsupported card type has no visual driver: type=%s\", type);\n"
+                    "}\n"
+                )
+            },
+            ("clear stale slot visuals before leaving unsupported cards inert",),
         ),
         (
             {

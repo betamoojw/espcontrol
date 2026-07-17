@@ -290,6 +290,15 @@ inline void reset_card_slot_dynamic_children(BtnSlot &s) {
   }
 }
 
+inline void clear_unsupported_card_slot_visuals(BtnSlot &s) {
+  // Slot widgets persist across dashboard reloads. An unsupported replacement
+  // must not keep showing the icon, label, or value from the previous card.
+  if (s.icon_lbl) lv_label_set_text(s.icon_lbl, "");
+  if (s.text_lbl) lv_label_set_text(s.text_lbl, "");
+  if (s.sensor_lbl) lv_label_set_text(s.sensor_lbl, "");
+  if (s.unit_lbl) lv_label_set_text(s.unit_lbl, "");
+}
+
 inline bool info_only_hidden_card_type(const espcontrol::cards::Context &context) {
   return !card_runtime_information_only(context);
 }
@@ -581,6 +590,7 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
         s, p, context, palette, display, row_span, col_span)) {
     return;
   }
+  clear_unsupported_card_slot_visuals(s);
   ESP_LOGW("card_runtime", "Unsupported card type has no visual driver: type=%s",
            p.type.c_str());
   lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
