@@ -131,6 +131,7 @@ function assertNormalizationFixtures(hooks, groups) {
 
 const hooks = loadHooks();
 const tenInchHooks = loadHooks("?device=guition-esp32-p4-jc8012p4a1");
+const s3Hooks = loadHooks("?device=guition-esp32-s3-4848s040");
 const fixtures = JSON.parse(fs.readFileSync(COMPAT_FIXTURES, "utf8"));
 const cardNormalizationFixtures = JSON.parse(fs.readFileSync(CARD_NORMALIZATION_FIXTURES, "utf8"));
 const imageCardNormalizationFixtures = JSON.parse(fs.readFileSync(IMAGE_CARD_NORMALIZATION_FIXTURES, "utf8"));
@@ -345,6 +346,56 @@ assert.strictEqual(
   Array.from(tenInchHooks.cardSizeMenuOptions({ type: "media", sensor: "cover_art" })).some((option) => option.size === 10 && option.label === "Portrait (3x4)"),
   true,
   "10-inch cover art size menu exposes Portrait (3x4)",
+);
+const transferredSensor = tenInchHooks.cardTransferEntriesFromEnvelopeForTest({
+  cards: [{ type: "sensor", entity: "sensor.office", label: "Office", size: 10 }],
+}, false);
+assert.strictEqual(transferredSensor.entries[0].size, 1, "card transfer downgrades unsupported 3x4 sensor size");
+assert.strictEqual(transferredSensor.warnings.cardResized, true, "card transfer reports normalized card sizes");
+const transferredCoverArt = tenInchHooks.cardTransferEntriesFromEnvelopeForTest({
+  cards: [{ type: "media", sensor: "cover_art", entity: "media_player.office", label: "Cover Art", size: 10 }],
+}, false);
+assert.strictEqual(transferredCoverArt.entries[0].size, 10, "card transfer keeps supported 3x4 cover art size");
+const transferredSubpage = tenInchHooks.cardTransferEntriesFromEnvelopeForTest({
+  cards: [{
+    type: "subpage",
+    label: "Sensors",
+    size: 1,
+    subpage: {
+      order: ["1p", "B"],
+      back_label: "Back",
+      buttons: [{ type: "sensor", entity: "sensor.office", label: "Office" }],
+    },
+  }],
+}, false);
+assert.strictEqual(transferredSubpage.warnings.subpageResized, true, "card transfer reports normalized subpage sizes");
+assert.strictEqual(
+  Array.from(tenInchHooks.parseSubpageConfig(transferredSubpage.entries[0].subpageConfig).order).includes("1p"),
+  false,
+  "card transfer downgrades unsupported 3x4 sizes inside subpages",
+);
+assert.throws(
+  () => s3Hooks.cardTransferEntriesFromEnvelopeForTest({
+    cards: [{ type: "image", entity: "camera.front_door", label: "Front Door", size: 1 }],
+  }, false),
+  (error) => String(error.cardTransferMessage || error.message).includes("does not support the image card type"),
+  "S3 card transfer rejects disabled image cards",
+);
+assert.throws(
+  () => s3Hooks.cardTransferEntriesFromEnvelopeForTest({
+    cards: [{
+      type: "subpage",
+      label: "Cameras",
+      size: 1,
+      subpage: {
+        order: ["1", "B"],
+        back_label: "Back",
+        buttons: [{ type: "image", entity: "camera.front_door", label: "Front Door" }],
+      },
+    }],
+  }, false),
+  (error) => String(error.cardTransferMessage || error.message).includes("does not support the image card type"),
+  "S3 card transfer rejects disabled image cards inside subpages",
 );
 const coverArtActionButton = { type: "media", sensor: "cover_art", options: "" };
 assert.strictEqual(hooks.mediaCoverArtAction(coverArtActionButton), "play_pause", "cover art defaults to play/pause action");

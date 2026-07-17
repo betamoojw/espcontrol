@@ -210,6 +210,9 @@ export function installAppTestHooksConfig(): GlobalDescriptors {
                 var visible: any = buttonTypeVisibleInPicker(key, !!isSub);
                 return visible;
             },
+            cardTransferEntriesFromEnvelopeForTest: function (this: any, envelope?: any, targetIsSubpage?: any) {
+                return clipboardEntriesFromCardTransfer(envelope, !!targetIsSubpage);
+            },
             buttonTypePickerKeysForInfoOnly: function (this: any, enabled?: any, selectedTypeKey?: any) {
                 var oldInfoOnly: any = CFG.infoOnly;
                 CFG.infoOnly = !!enabled;

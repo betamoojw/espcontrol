@@ -287,6 +287,8 @@ declare global {
   var buttonConfigHasLegacySliderDirection: any;
   var buttonConfigNeedsMigration: any;
   var buttonTypeDisabledForDevice: any;
+  var buttonConfigDisabledForDevice: any;
+  var clipboardEntriesFromCardTransfer: any;
   var buttonTypeInfoOnlyVisible: any;
   var buttonTypePickerDetails: any;
   var buttonTypePickerKeys: any;
