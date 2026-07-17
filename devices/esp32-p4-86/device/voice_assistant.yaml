@@ -489,7 +489,7 @@ script:
             - homeassistant.event:
                 event: esphome.alarm_delay_announcement
                 data:
-                  device: ${name}
+                  device: !lambda return App.get_name().str();
                   model: ${device_slug}
                   delay_type: !lambda |-
                     return entry_delay ? std::string("entry") : std::string("exit");

@@ -1041,10 +1041,12 @@ inline void grid_delete_transient_status_label_runtime_ptr(void *ptr) {
 inline void grid_delete_alarm_card_runtime_ptr(void *ptr) {
   AlarmCardCtx *ctx = static_cast<AlarmCardCtx *>(ptr);
   if (ctx != nullptr) {
-    if (alarm_delay_audio_coordinator().source == ctx) {
-      alarm_delay_audio_stop();
-    }
+    bool owned_alarm_audio = alarm_delay_audio_coordinator().source == ctx;
     alarm_delay_audio_unregister_context(ctx);
+    if (owned_alarm_audio) {
+      alarm_delay_audio_stop();
+      alarm_delay_audio_resume_context(ctx);
+    }
     AlarmControlModalUi &control_ui = alarm_control_modal_ui();
     if (control_ui.active == ctx) alarm_control_hide_modal();
     AlarmPinModalUi &pin_ui = alarm_pin_modal_ui();

@@ -151,6 +151,10 @@ inline std::vector<AlarmCardCtx *> &alarm_delay_audio_contexts() {
   return contexts;
 }
 
+inline void alarm_delay_audio_update(AlarmCardCtx *ctx,
+                                     bool announce_start = true);
+inline bool alarm_delay_audio_resume_context(AlarmCardCtx *excluded);
+
 inline void alarm_delay_audio_register_context(AlarmCardCtx *ctx) {
   if (!ctx) return;
   std::vector<AlarmCardCtx *> &contexts = alarm_delay_audio_contexts();
@@ -207,7 +211,11 @@ inline void alarm_delay_audio_timer_cb(lv_timer_t *timer) {
   bool enabled = coordinator.hooks.enabled && coordinator.hooks.enabled();
   int remaining = alarm_delay_audio_remaining_seconds(coordinator);
   if (!enabled || remaining == 0) {
+    AlarmCardCtx *completed_source = coordinator.source;
     alarm_delay_audio_stop();
+    if (enabled && remaining == 0) {
+      alarm_delay_audio_resume_context(completed_source);
+    }
     return;
   }
   if (coordinator.hooks.play_beep) {
@@ -218,7 +226,7 @@ inline void alarm_delay_audio_timer_cb(lv_timer_t *timer) {
   lv_timer_set_period(timer, coordinator.period_ms);
 }
 
-inline void alarm_delay_audio_update(AlarmCardCtx *ctx) {
+inline void alarm_delay_audio_update(AlarmCardCtx *ctx, bool announce_start) {
   if (!ctx) return;
   AlarmDelayAudioMode mode = alarm_delay_audio_mode_for_state(ctx->state);
   bool enabled = ctx->audio_hooks.enabled && ctx->audio_hooks.enabled();
@@ -229,7 +237,10 @@ inline void alarm_delay_audio_update(AlarmCardCtx *ctx) {
   bool owns_active_audio = coordinator.source == ctx;
   bool matches_active_entity = coordinator.entity_id == ctx->entity_id;
   if (!should_run) {
-    if (owns_active_audio) alarm_delay_audio_stop();
+    if (owns_active_audio) {
+      alarm_delay_audio_stop();
+      alarm_delay_audio_resume_context(ctx);
+    }
     return;
   }
 
@@ -245,7 +256,8 @@ inline void alarm_delay_audio_update(AlarmCardCtx *ctx) {
   coordinator.hooks = ctx->audio_hooks;
 
   if (starting) {
-    if (coordinator.hooks.tts_enabled && coordinator.hooks.tts_enabled() &&
+    if (announce_start && coordinator.hooks.tts_enabled &&
+        coordinator.hooks.tts_enabled() &&
         coordinator.hooks.announce) {
       coordinator.hooks.announce(mode);
     }
@@ -266,6 +278,23 @@ inline void alarm_delay_audio_update(AlarmCardCtx *ctx) {
     }
     lv_timer_resume(coordinator.timer);
   }
+}
+
+inline bool alarm_delay_audio_resume_context(AlarmCardCtx *excluded) {
+  for (AlarmCardCtx *ctx : alarm_delay_audio_contexts()) {
+    if (ctx == excluded || !alarm_card_context_valid(ctx)) continue;
+    AlarmDelayAudioMode mode = alarm_delay_audio_mode_for_state(ctx->state);
+    bool enabled = ctx->audio_hooks.enabled && ctx->audio_hooks.enabled();
+    int remaining = alarm_remaining_delay_seconds(ctx);
+    if (!alarm_delay_audio_should_run(
+          ctx->state, remaining, ctx->available, enabled)) {
+      continue;
+    }
+    alarm_delay_audio_update(ctx, false);
+    return alarm_delay_audio_coordinator().source == ctx &&
+           alarm_delay_audio_coordinator().mode == mode;
+  }
+  return false;
 }
 
 inline void alarm_delay_audio_refresh_contexts() {
