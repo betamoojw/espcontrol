@@ -43,6 +43,7 @@ declare global {
   var CARD_SIZE_LARGE: any;
   var CARD_SIZE_MAX_TALL: any;
   var CARD_SIZE_MAX_WIDE: any;
+  var CARD_SIZE_PORTRAIT_LARGE: any;
   var CARD_SIZE_SINGLE: any;
   var CARD_SIZE_TALL: any;
   var CARD_SIZE_WIDE: any;
@@ -322,6 +323,7 @@ declare global {
   var cardContractPickerKey: any;
   var cardRequiresSquareSize: any;
   var cardSupportsMaxSize: any;
+  var cardSupportsPortraitLargeSize: any;
   var cardContractSubpageTypeCode: any;
   var cardContractSubpageTypeFromCode: any;
   var cardIconHtml: any;

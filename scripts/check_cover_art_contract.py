@@ -155,10 +155,10 @@ if ".sp-media-cover-tint{position:absolute;inset:-2px;background:rgba(49,49,49,.
     raise SystemExit("Web preview media cover tint must use the 60% standard card grey")
 for required in (
     ".sp-btn-big .sp-media-cover-details-title{font-size:var(--media-cover-artist)}",
-    ".sp-btn-extra-large .sp-media-cover-details-title{font-size:var(--media-cover-title)}",
+    ".sp-btn-extra-large .sp-media-cover-details-title,.sp-btn-portrait-large .sp-media-cover-details-title{font-size:var(--media-cover-title)}",
     ".sp-btn-big .sp-media-cover-details-row .sp-media-now-artist{font-size:var(--btn-label)}",
-    ".sp-btn-extra-large .sp-media-cover-details-row .sp-media-now-artist{font-size:var(--media-cover-artist)}",
-    ".sp-btn-big.sp-media-cover-details-card,.sp-btn-extra-large.sp-media-cover-details-card{justify-content:flex-start}",
+    ".sp-btn-extra-large .sp-media-cover-details-row .sp-media-now-artist,.sp-btn-portrait-large .sp-media-cover-details-row .sp-media-now-artist{font-size:var(--media-cover-artist)}",
+    ".sp-btn-big.sp-media-cover-details-card,.sp-btn-extra-large.sp-media-cover-details-card,.sp-btn-portrait-large.sp-media-cover-details-card{justify-content:flex-start}",
     ".sp-btn-big .sp-media-cover-details-title{-webkit-line-clamp:2}",
     ".sp-btn-wide .sp-media-cover-details-title,.sp-btn-extra-wide .sp-media-cover-details-title{-webkit-line-clamp:2}",
 ):
