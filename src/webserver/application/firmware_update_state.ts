@@ -167,6 +167,12 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
     function firmwareUpdateControlsVisible(this: any) {
         return state.firmwareUpdateControlsSupported === true;
     }
+    function syncFirmwareCardBadge(this: any) {
+        if (els.firmwareCardBadge) {
+            els.firmwareCardBadge.classList.toggle("sp-hidden",
+                !latestFirmwareInstallAvailable() && !c6FirmwareUpdateKnownAvailable());
+        }
+    }
     function syncFirmwareUpdateUi(this: any) {
         var show: any = firmwareUpdateControlsVisible();
         if (els.fwActions)
@@ -179,8 +185,7 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
             els.autoUpdateBadge.classList.toggle("sp-hidden", !state.autoUpdate);
         if (els.firmwareUpdatesBadge)
             els.firmwareUpdatesBadge.classList.toggle("sp-hidden", !latestFirmwareInstallAvailable());
-        if (els.firmwareCardBadge)
-            els.firmwareCardBadge.classList.toggle("sp-hidden", !latestFirmwareInstallAvailable());
+        syncFirmwareCardBadge();
         if (els.setAutoUpdateRow)
             els.setAutoUpdateRow.style.display = show ? "" : "none";
         if (els.updateFreqWrap) {
@@ -360,6 +365,7 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
         "publicFirmwareReleaseKnown": staticGlobal(publicFirmwareReleaseKnown),
         "installedFirmwareMatchesPublicRelease": staticGlobal(installedFirmwareMatchesPublicRelease),
         "firmwareUpdateControlsVisible": staticGlobal(firmwareUpdateControlsVisible),
+        "syncFirmwareCardBadge": staticGlobal(syncFirmwareCardBadge),
         "syncFirmwareUpdateUi": staticGlobal(syncFirmwareUpdateUi),
         "renderFirmwareUpdateStatus": staticGlobal(renderFirmwareUpdateStatus),
         "setFirmwareUpdateInfo": staticGlobal(setFirmwareUpdateInfo),
