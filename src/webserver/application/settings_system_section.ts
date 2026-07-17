@@ -42,10 +42,6 @@ export function installSettingsSystemSectionModule(): GlobalDescriptors {
         var fwActions: any = document.createElement("div");
         fwActions.className = "sp-fw-actions sp-fw-actions-full";
         els.fwActions = fwActions;
-        var fwInlineStatus: any = document.createElement("span");
-        fwInlineStatus.className = "sp-fw-inline-status";
-        fwActions.appendChild(fwInlineStatus);
-        els.fwInlineStatus = fwInlineStatus;
         var fwCheckBtn: any = createActionButton("sp-fw-btn", "Check for Update");
         fwCheckBtn.addEventListener("click", function (this: any) {
             if (!firmwareUpdateControlsVisible())

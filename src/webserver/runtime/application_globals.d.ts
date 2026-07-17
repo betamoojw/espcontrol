@@ -517,7 +517,6 @@ declare global {
   var firmwareInstallRefreshUntil: any;
   var firmwareUpdateAvailable: any;
   var firmwareUpdateControlsVisible: any;
-  var firmwareUpToDateStatusAvailable: any;
   var firmwareVersionFromMetadata: any;
   var firmwareVersionLabel: any;
   var firmwareVersionMatches: any;

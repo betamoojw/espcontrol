@@ -164,10 +164,6 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
             isSpecificFirmwareVersion(state.firmwareVersion) &&
             firmwareVersionsSame(state.firmwareVersion, state.firmwareLatestVersion);
     }
-    function firmwareUpToDateStatusAvailable(this: any) {
-        return state.firmwareUpdateState === "NO UPDATE" &&
-            (!publicFirmwareReleaseKnown() || installedFirmwareMatchesPublicRelease());
-    }
     function firmwareUpdateControlsVisible(this: any) {
         return state.firmwareUpdateControlsSupported === true;
     }
@@ -197,7 +193,6 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
             return;
         var cls: any = "sp-fw-status";
         var status: any = "";
-        var inlineStatus: any = "";
         if (els.fwLatestVersion) {
             if (publicFirmwareReleaseKnown()) {
                 els.fwLatestVersion.textContent = state.firmwareLatestVersion;
@@ -213,15 +208,8 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
             status = escHtml(state.firmwareInstallError);
             cls += " sp-update-error";
         }
-        else if (firmwareUpToDateStatusAvailable()) {
-            inlineStatus = "Up to date";
-        }
         els.fwStatus.className = cls;
         els.fwStatus.innerHTML = status;
-        if (els.fwInlineStatus) {
-            els.fwInlineStatus.className = "sp-fw-inline-status" + (inlineStatus ? " sp-visible" : "");
-            els.fwInlineStatus.textContent = inlineStatus;
-        }
         if (els.fwCheckBtn) {
             var isBusy: any = state.firmwareUpdateState === "INSTALLING" || state.firmwareChecking;
             els.fwCheckBtn.className = "sp-fw-btn" + (isBusy ? " sp-fw-btn-busy" : "");
@@ -371,7 +359,6 @@ export function installFirmwareUpdateStateModule(): GlobalDescriptors {
         "setPublicFirmwareVersions": staticGlobal(setPublicFirmwareVersions),
         "publicFirmwareReleaseKnown": staticGlobal(publicFirmwareReleaseKnown),
         "installedFirmwareMatchesPublicRelease": staticGlobal(installedFirmwareMatchesPublicRelease),
-        "firmwareUpToDateStatusAvailable": staticGlobal(firmwareUpToDateStatusAvailable),
         "firmwareUpdateControlsVisible": staticGlobal(firmwareUpdateControlsVisible),
         "syncFirmwareUpdateUi": staticGlobal(syncFirmwareUpdateUi),
         "renderFirmwareUpdateStatus": staticGlobal(renderFirmwareUpdateStatus),
