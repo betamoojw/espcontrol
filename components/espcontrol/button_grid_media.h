@@ -2636,13 +2636,15 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color,
       lv_obj_t *title_lbl = lv_label_create(s.btn);
       lv_obj_set_style_text_color(title_lbl, lv_color_white(), LV_PART_MAIN);
       apply_width_compensation(title_lbl, width_compensation_percent);
+      lv_obj_t *artist_lbl = lv_label_create(s.btn);
+      lv_obj_set_style_text_color(artist_lbl, lv_color_white(), LV_PART_MAIN);
+      apply_width_compensation(artist_lbl, width_compensation_percent);
       if (s.text_lbl) {
-        lv_obj_set_style_text_color(s.text_lbl, lv_color_white(), LV_PART_MAIN);
-        lv_obj_clear_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(s.text_lbl, "");
+        lv_obj_add_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN);
       }
       ctx->title_lbl = title_lbl;
-      ctx->artist_lbl = s.text_lbl;
+      ctx->artist_lbl = artist_lbl;
       setup_media_now_playing_layout(
         s.btn, s.icon_lbl, ctx->title_lbl, ctx->artist_lbl,
         media_title_font, pad, row_span == 1, true, 0);

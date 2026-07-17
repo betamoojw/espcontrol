@@ -221,6 +221,26 @@ if 'state->entity_id, std::string("media_artist")' in metadata:
 if "state->artist.clear()" in metadata:
     raise SystemExit("Media title updates must preserve an unchanged subscribed artist")
 
+cover_details_start = media.find('    if (mode == "cover_art") {')
+cover_title_start = media.find(
+    "\n      lv_obj_t *title_lbl = lv_label_create(s.btn);", cover_details_start
+)
+cover_details_end = media.find(
+    "\n    lv_obj_t *title_lbl = lv_label_create(s.btn);", cover_title_start + 1
+)
+if cover_details_start < 0 or cover_details_end < 0:
+    raise SystemExit("Cover art track-details layout contract missing")
+cover_details = media[cover_details_start:cover_details_end]
+for required in (
+    "lv_obj_t *artist_lbl = lv_label_create(s.btn);",
+    "ctx->artist_lbl = artist_lbl;",
+    "lv_obj_add_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN);",
+):
+    if required not in cover_details:
+        raise SystemExit(f"Cover art track-details layout contract missing: {required}")
+if "ctx->artist_lbl = s.text_lbl;" in cover_details:
+    raise SystemExit("Cover art artist metadata must not reuse the static card caption label")
+
 grid = (ROOT / "components" / "espcontrol" / "button_grid_grid.h").read_text(encoding="utf-8")
 media_art_start = grid.find("inline void subscribe_media_cover_art(")
 media_art_end = grid.find("\ninline void setup_card_visual(", media_art_start)
