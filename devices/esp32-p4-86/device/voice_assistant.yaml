@@ -522,10 +522,16 @@ script:
                   - media_player.volume_set:
                       id: voice_media_player
                       volume: !lambda return id(alarm_delay_saved_volume);
-            - mixer_speaker.apply_ducking:
-                id: voice_media_mixing_input
-                decibel_reduction: 0
-                duration: 250ms
+            - if:
+                condition:
+                  not:
+                    media_player.is_announcing:
+                      id: voice_media_player
+                then:
+                  - mixer_speaker.apply_ducking:
+                      id: voice_media_mixing_input
+                      decibel_reduction: 0
+                      duration: 250ms
             - lambda: |-
                 id(alarm_delay_volume_overridden) = false;
                 id(alarm_delay_audio_session_active) = false;
