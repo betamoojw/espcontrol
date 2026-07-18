@@ -37,6 +37,9 @@ inline bool media_driver_setup_visual(
   const bool compact_large_cover_art =
     context.runtime.driver == card_runtime::CardDriverId::MEDIA_COVER_ART &&
     media_cover_art_uses_compact_large_fonts(row_span, col_span);
+  const bool compact_portrait_cover_art =
+    compact_large_cover_art &&
+    display.modal.layout_family == DisplayModalLayoutFamily::COMPACT_PORTRAIT;
   const lv_font_t *label_font = slot.text_lbl
     ? lv_obj_get_style_text_font(slot.text_lbl, LV_PART_MAIN)
     : nullptr;
@@ -45,12 +48,16 @@ inline bool media_driver_setup_visual(
     palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,
     palette.off_val, palette.sensor_val,
     display_sensor_font(display),
-    compact_large_cover_art
+    compact_portrait_cover_art
+      ? display_media_control_title_font(display)
+      : compact_large_cover_art
       ? display_media_cover_art_artist_font(display, display_media_title_font(display))
       : large_cover_art
       ? display_media_cover_art_title_font(display)
       : display_media_title_font(display),
-    compact_large_cover_art
+    compact_portrait_cover_art
+      ? display_media_control_artist_font(display, label_font)
+      : compact_large_cover_art
       ? label_font
       : large_cover_art
       ? display_media_cover_art_artist_font(display)
