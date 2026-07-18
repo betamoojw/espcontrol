@@ -155,8 +155,8 @@ if ".sp-media-cover-tint{position:absolute;inset:-2px;background:rgba(49,49,49,.
     raise SystemExit("Web preview media cover tint must use the 60% standard card grey")
 for required in (
     ".sp-btn-big .sp-media-cover-details-title{font-size:var(--media-cover-artist)}",
+    ".sp-btn-big.sp-media-cover-control-fonts .sp-media-cover-details-title{font-size:calc(var(--btn-label)*1.75)}",
     ".sp-btn-extra-large .sp-media-cover-details-title,.sp-btn-portrait-large .sp-media-cover-details-title{font-size:var(--media-cover-title)}",
-    ".sp-btn-big .sp-media-cover-details-row .sp-media-now-artist{font-size:var(--btn-label)}",
     ".sp-btn-extra-large .sp-media-cover-details-row .sp-media-now-artist,.sp-btn-portrait-large .sp-media-cover-details-row .sp-media-now-artist{font-size:var(--media-cover-artist)}",
     ".sp-btn-big.sp-media-cover-details-card,.sp-btn-extra-large.sp-media-cover-details-card,.sp-btn-portrait-large.sp-media-cover-details-card{justify-content:flex-start}",
     ".sp-btn-big .sp-media-cover-details-title{-webkit-line-clamp:2}",
@@ -164,6 +164,13 @@ for required in (
 ):
     if required not in web_styles:
         raise SystemExit(f"Large cover art web font-selection contract missing: {required}")
+web_media = (ROOT / "src" / "webserver" / "cards" / "media.ts").read_text(encoding="utf-8")
+for required in (
+    'DEVICE_ID === "guition-esp32-p4-jc4880p443"',
+    '" sp-media-cover-control-fonts"',
+):
+    if required not in web_media:
+        raise SystemExit(f"4.3-inch P4 cover art preview font contract missing: {required}")
 for required in (
     "image_card_uses_background_pipeline(next->image, next->source_url)",
 ):
@@ -287,10 +294,24 @@ for required in (
 media_driver = (ROOT / "components" / "espcontrol" / "button_grid_media_driver.h").read_text(encoding="utf-8")
 if "if (control) control->highlight_playing = false;" not in media_driver:
     raise SystemExit("Cover art control modals must not highlight their parent card while playing")
+for required in (
+    "display.modal.layout_family == DisplayModalLayoutFamily::COMPACT_PORTRAIT",
+    "compact_portrait_cover_art\n      ? display_media_control_title_font(display)",
+    "compact_portrait_cover_art\n      ? display_media_control_artist_font(display, label_font)",
+):
+    if required not in media_driver:
+        raise SystemExit(f"2x2 cover art must reuse All Controls fonts: {required}")
 
 grid = (ROOT / "components" / "espcontrol" / "button_grid_grid.h").read_text(encoding="utf-8")
 if "media_cover_art_limits_title_to_two_lines(row_span, col_span)" not in grid:
     raise SystemExit("Cover art layout refresh must keep track titles limited to two lines")
+for required in (
+    "display.modal.layout_family == DisplayModalLayoutFamily::COMPACT_PORTRAIT",
+    "compact_portrait\n        ? display_media_control_title_font(display)",
+    "compact_portrait\n        ? display_media_control_artist_font(display, label_font)",
+):
+    if required not in grid:
+        raise SystemExit(f"2x2 cover art refresh must reuse All Controls fonts: {required}")
 if "if (ha_api_state_connected()) refresh_image_cards();" not in grid:
     raise SystemExit("Grid startup must refresh bound cover artwork after Home Assistant state is ready")
 for required in (
