@@ -790,8 +790,11 @@ export function registerMediaCardTypes(): GlobalDescriptors {
             if (mode === "cover_art") {
                 var coverArtColor: any = WEB_UI_COLORS.tertiary;
                 if (mediaCoverArtDetailsEnabled(b)) {
+                    var controlFontClass: any = DEVICE_ID === "guition-esp32-p4-jc4880p443"
+                        ? " sp-media-cover-control-fonts"
+                        : "";
                     return {
-                        buttonClass: "sp-image-card sp-media-cover-details-card",
+                        buttonClass: "sp-image-card sp-media-cover-details-card" + controlFontClass,
                         iconHtml: '<span class="sp-image-preview sp-media-cover-artwork" style="background-color:#' +
                             helpers.escHtml(coverArtColor) + '"></span>' +
                             '<span class="sp-media-cover-tint"></span>' +
