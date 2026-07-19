@@ -39,7 +39,8 @@ export function installConfigAccessClimateAlarmOptionsModule(): GlobalDescriptor
         var out: any = labelMode !== cardContractOptionDefaultValue("garage", GARAGE_LABEL_DISPLAY_OPTION, "label")
             ? setConfigOptionValue("", GARAGE_LABEL_DISPLAY_OPTION, labelMode)
             : "";
-        return normalizeGarageConfirmationOptions(out, options);
+        var confirmationMode: any = mode === "open" ? "on" : mode === "close" ? "off" : "";
+        return normalizeGarageConfirmationOptions(out, options, confirmationMode);
     }
     function garageLabelDisplayMode(this: any, b?: any) {
         return normalizeGarageLabelDisplayMode(configOptionValue(b && b.options, GARAGE_LABEL_DISPLAY_OPTION));

@@ -148,8 +148,11 @@ export function installConfigConfirmationOptionsModule(): GlobalDescriptors {
         return configOptionValue(b && b.options, SWITCH_CONFIRM_NO_OPTION) ||
             cardContractOptionDefaultValue("garage", SWITCH_CONFIRM_NO_OPTION, SWITCH_CONFIRM_DEFAULT_NO);
     }
-    function normalizeGarageConfirmationOptions(this: any, out?: any, options?: any) {
-        var mode: any = garageConfirmationMode({ options: options });
+    function normalizeGarageConfirmationOptions(this: any, out?: any, options?: any, requestedMode?: any) {
+        var storedMode: any = garageConfirmationMode({ options: options });
+        var mode: any = storedMode && (requestedMode === "on" || requestedMode === "off")
+            ? requestedMode
+            : storedMode;
         if (!mode)
             return out;
         var storage: any = garageConfirmationModeStorage();
@@ -158,7 +161,8 @@ export function installConfigConfirmationOptionsModule(): GlobalDescriptors {
         var msg: any = configOptionValue(options, SWITCH_CONFIRM_MESSAGE_OPTION);
         var yes: any = configOptionValue(options, SWITCH_CONFIRM_YES_OPTION);
         var no: any = configOptionValue(options, SWITCH_CONFIRM_NO_OPTION);
-        if (msg && msg !== garageConfirmationDefaultMessageForMode(mode)) {
+        var storedDefaultMessage: any = garageConfirmationDefaultMessageForMode(storedMode);
+        if (msg && msg !== garageConfirmationDefaultMessageForMode(mode) && msg !== storedDefaultMessage) {
             out = setConfigOptionValue(out, SWITCH_CONFIRM_MESSAGE_OPTION, msg);
         }
         if (yes && yes !== cardContractOptionDefaultValue("garage", SWITCH_CONFIRM_YES_OPTION, SWITCH_CONFIRM_DEFAULT_YES)) {

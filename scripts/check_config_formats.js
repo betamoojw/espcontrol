@@ -880,6 +880,21 @@ assert.strictEqual(hooks.serializeButtonConfig(confirmOnGarage), "cover.garage_d
 const confirmBothGarage = hooks.parseButtonConfig("cover.garage_door;Garage;Garage;Garage Open;;;garage;;confirm_off,confirm_on");
 assert.strictEqual(hooks.garageConfirmationMode(confirmBothGarage), "both", "garage both confirmation mode");
 assert.strictEqual(hooks.garageConfirmationMessage(confirmBothGarage), "Open or close the garage door?", "garage both confirmation default message");
+const openGarageFromCloseConfirmation = hooks.parseButtonConfig(
+  "cover.garage_door;Open;Garage;Auto;open;;garage;;confirm_off,confirm_message=Close%20the%20garage%20door%3F"
+);
+assert.strictEqual(openGarageFromCloseConfirmation.options, "confirm_on", "open garage command aligns confirmation direction and default message");
+assert.strictEqual(hooks.garageConfirmationMode(openGarageFromCloseConfirmation), "on", "open garage command requires open confirmation");
+assert.strictEqual(hooks.garageConfirmationMessage(openGarageFromCloseConfirmation), "Open the garage door?", "open garage command uses open default message");
+const closeGarageFromOpenConfirmation = hooks.parseButtonConfig(
+  "cover.garage_door;Close;Garage;Auto;close;;garage;;confirm_on,confirm_message=Check%20the%20driveway,confirm_yes=Proceed,confirm_no=Wait"
+);
+assert.strictEqual(
+  closeGarageFromOpenConfirmation.options,
+  "confirm_off,confirm_message=Check the driveway,confirm_yes=Proceed,confirm_no=Wait",
+  "close garage command aligns confirmation direction while preserving custom text"
+);
+assert.strictEqual(hooks.garageConfirmationMode(closeGarageFromOpenConfirmation), "off", "close garage command requires close confirmation");
 const confirmGarageWithLabelDisplay = hooks.parseButtonConfig(
   "cover.garage_door;Garage;Garage;Garage Open;;;garage;;label_display=status,confirm_off"
 );

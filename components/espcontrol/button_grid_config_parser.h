@@ -256,32 +256,39 @@ inline void append_large_numbers_option(std::string &out, const std::string &opt
 inline void append_confirm_options(std::string &out, const std::string &options,
                                    const std::string &default_off_message,
                                    const std::string &default_on_message,
-                                   const std::string &default_both_message) {
-  if (cfg_option_token_present(options, "confirm_off")) {
+                                   const std::string &default_both_message,
+                                   const std::string &requested_mode = "") {
+  std::string stored_mode;
+  if (cfg_option_token_present(options, "confirm_off") &&
+      cfg_option_token_present(options, "confirm_on")) {
+    stored_mode = "both";
+  } else if (cfg_option_token_present(options, "confirm_on")) {
+    stored_mode = "on";
+  } else if (cfg_option_token_present(options, "confirm_off")) {
+    stored_mode = "off";
+  }
+  if (stored_mode.empty()) return;
+  std::string mode = requested_mode == "on" || requested_mode == "off"
+    ? requested_mode
+    : stored_mode;
+  if (mode == "off" || mode == "both") {
     if (!out.empty()) out += ",";
     out += "confirm_off";
   }
-  if (cfg_option_token_present(options, "confirm_on")) {
+  if (mode == "on" || mode == "both") {
     if (!out.empty()) out += ",";
     out += "confirm_on";
   }
-  std::string mode;
-  if (cfg_option_token_present(options, "confirm_off") &&
-      cfg_option_token_present(options, "confirm_on")) {
-    mode = "both";
-  } else if (cfg_option_token_present(options, "confirm_on")) {
-    mode = "on";
-  } else if (cfg_option_token_present(options, "confirm_off")) {
-    mode = "off";
-  }
-  if (mode.empty()) return;
   std::string message = cfg_option_value(options, "confirm_message");
   std::string yes = cfg_option_value(options, "confirm_yes");
   std::string no = cfg_option_value(options, "confirm_no");
   std::string default_message = mode == "on" ? default_on_message
     : mode == "both" ? default_both_message
     : default_off_message;
-  if (!message.empty() && message != default_message) {
+  std::string stored_default_message = stored_mode == "on" ? default_on_message
+    : stored_mode == "both" ? default_both_message
+    : default_off_message;
+  if (!message.empty() && message != default_message && message != stored_default_message) {
     if (!out.empty()) out += ",";
     out += "confirm_message=" + encode_compact_field(message);
   }
@@ -858,11 +865,12 @@ inline std::string normalize_garage_label_display(const std::string &value) {
 
 inline std::string garage_card_options_normalized(const std::string &options,
                                                   const std::string &sensor) {
-  (void)sensor;
   std::string out = normalize_garage_label_display(cfg_option_value(options, LABEL_DISPLAY_OPTION)) == "status"
     ? std::string(LABEL_DISPLAY_OPTION) + "=status"
     : "";
-  append_confirm_options(out, options, "Close the garage door?", "Open the garage door?", "Open or close the garage door?");
+  std::string confirmation_mode = sensor == "open" ? "on" : sensor == "close" ? "off" : "";
+  append_confirm_options(out, options, "Close the garage door?", "Open the garage door?",
+                         "Open or close the garage door?", confirmation_mode);
   return out;
 }
 
