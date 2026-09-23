@@ -40,9 +40,29 @@ If your Home Assistant instance uses a custom port, open **Settings > System > H
 - Tapping the card opens the larger view immediately. A recent tile is shown while the larger image loads, when one is available.
 - On the 4-inch S3, closing the larger view keeps its image for up to 15 seconds when memory permits. Reopening within that window reuses it if the source has not changed.
 - Recently loaded images are kept for reuse when you move between pages, so returning to a camera page does not normally start from a blank tile.
-- The card refreshes when Home Assistant reports a new entity picture or an entity state update.
+- Camera entities refresh in response to Home Assistant picture or state updates. Image entities refresh when their image-update timestamp changes, even if their URL stays the same; credential changes alone do not reload a current image.
 - If the image cannot be loaded, the card shows **Loading**, **Unavailable**, **Configure**, or **Too many** instead of leaving a blank tile.
 - Camera cards can be used on the main page or inside subpages.
+
+## Refreshing Camera Images
+
+For a `camera.*` entity, open **Refresh Settings > Camera refresh**:
+
+| Mode | Behaviour |
+|---|---|
+| **Off** (default) | Keeps the existing updates from Home Assistant and the image request when opening the camera. |
+| **Periodic** | Refreshes the visible card and expanded image. Choose **5**, **10** (default), or **30 seconds** between completed downloads and the next request. |
+| **On activity** | A trigger refreshes the visible card or expanded image for **30 seconds**, with **5 seconds** between a completed download and the next request. Another activation restarts that period. |
+
+For **On activity**, select a **Trigger entity** such as `binary_sensor.front_door_motion` or `event.front_door_doorbell`. Binary sensors trigger when they change from off to on. Event entities trigger when a new event occurs; every event type on the selected entity counts. Opening while a binary sensor is already on starts one window. Remaining on does not extend it indefinitely.
+
+Periodic and activity refresh run while the camera card is visible on the main page or a subpage. Opening the expanded view continues the same refresh schedule. On activity refreshes for 30 seconds; new activity restarts that window. Leaving the page, covering the card with another modal, or entering the screensaver stops refreshes. Events received while hidden do not queue refreshes for later.
+
+Refreshes do not open the camera, wake the screen, or extend **Home Screen Timeout**. Old doorbell events are not replayed after reconnecting.
+
+The previous image stays visible while the next snapshot loads. Slow downloads never overlap; failures increase the retry delay. A camera integration may return a cached snapshot, so the selected interval does not guarantee a newer picture every time.
+
+`image.*` entities use Home Assistant's image-update timestamp instead of these camera refresh modes. This avoids repeatedly downloading an image that has not been reported as changed.
 
 ## Refreshing Cards from Home Assistant
 
@@ -92,7 +112,7 @@ Camera performance also depends on the connection between the panel and Home Ass
 | The card says **Unavailable** | Check that the entity exists in Home Assistant and has an image available. |
 | The card says **Too many** | Remove or move some Camera cards so the panel has enough image download slots. |
 | The picture is cropped | Change **Expanded Image** to **Show full image**. |
-| The picture does not update often | Check whether the Home Assistant camera entity itself is updating its snapshot image. |
+| The picture does not update often | For a camera, enable periodic refresh or set an activity trigger, and check snapshot freshness in Home Assistant. For an image entity, check that its image-update timestamp changes. |
 | Images remain slow on several cards | Check the panel's WiFi signal and Home Assistant response time. On supported Ethernet models, consider the advanced wired firmware option. |
 
 ## Show Photos from Immich
